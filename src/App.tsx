@@ -1,11 +1,10 @@
 import { useEffect } from 'react'
 import { useGameStore } from "./useGameStore"
-import { FaRocket, FaBuilding, FaMoneyBillAlt } from 'react-icons/fa'
-import { UIButton } from "./UIButton"
+import { FaMoneyBillAlt, FaFlask } from 'react-icons/fa'
 import { RocketBackground } from "./RocketBackground"
 
 export function App() {
-  const { money, rockets, rocketCost, spaceports, spaceportCapacity, buildRocket, buySpaceport, tick, spaceportCost } = useGameStore()
+  const { money, science, tick } = useGameStore()
 
   useEffect(() => {
     const interval = setInterval(tick, 1000)
@@ -20,16 +19,8 @@ export function App() {
           <FaMoneyBillAlt className="mr-2"/> {money}
         </p>
         <p className="flex justify-center items-center text-2xl">
-          <FaRocket className="mr-2"/> {rockets}/{spaceports * spaceportCapacity}
+          <FaFlask className="mr-2"/> {science}
         </p>
-        <div className="flex justify-center gap-2">
-          <UIButton onClick={buildRocket} disabled={money < rocketCost}>
-            <FaRocket className="mr-2"/> (${rocketCost})
-          </UIButton>
-          <UIButton onClick={buySpaceport} disabled={money < spaceportCost}>
-            <FaBuilding className="mr-2"/> ($100)
-          </UIButton>
-        </div>
       </div>
     </div>
   )
