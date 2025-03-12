@@ -21,7 +21,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   rockets: 1,
   rocketCost: 10,
   profitPerRocket: 1,
-  spaceportCapacity: 10,
+  spaceportCapacity: 9,
   spaceports: 1,
   spaceportCost: 100,
   tick: () => set(state => {

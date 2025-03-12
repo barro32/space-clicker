@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useGameStore } from "./useGameStore"
 import { FaRocket, FaBuilding, FaMoneyBillAlt } from 'react-icons/fa'
 import { UIButton } from "./UIButton"
+import { RocketBackground } from "./RocketBackground"
 
 export function App() {
   const { money, rockets, rocketCost, spaceports, spaceportCapacity, buildRocket, buySpaceport, tick, spaceportCost } = useGameStore()
@@ -12,20 +13,23 @@ export function App() {
   }, [tick])
 
   return (
-    <div className="min-h-screen flex flex-col gap-4 items-center justify-center bg-gray-900 text-white">
-      <p className="flex justify-center items-center text-2xl">
-        <FaMoneyBillAlt className="mr-2"/> {money}
-      </p>
-      <p className="flex justify-center items-center text-2xl">
-        <FaRocket className="mr-2"/> {rockets}/{spaceports * spaceportCapacity}
-      </p>
-      <div className="flex justify-center gap-2">
-        <UIButton onClick={buildRocket} disabled={money < rocketCost}>
-          <FaRocket className="mr-2"/> (${rocketCost})
-        </UIButton>
-        <UIButton onClick={buySpaceport} disabled={money < spaceportCost}>
-          <FaBuilding className="mr-2"/> ($100)
-        </UIButton>
+    <div className="relative min-h-screen flex flex-col gap-4 items-center justify-center bg-gray-900 text-white overflow-hidden">
+      <RocketBackground />
+      <div className="z-10">
+        <p className="flex justify-center items-center text-2xl">
+          <FaMoneyBillAlt className="mr-2"/> {money}
+        </p>
+        <p className="flex justify-center items-center text-2xl">
+          <FaRocket className="mr-2"/> {rockets}/{spaceports * spaceportCapacity}
+        </p>
+        <div className="flex justify-center gap-2">
+          <UIButton onClick={buildRocket} disabled={money < rocketCost}>
+            <FaRocket className="mr-2"/> (${rocketCost})
+          </UIButton>
+          <UIButton onClick={buySpaceport} disabled={money < spaceportCost}>
+            <FaBuilding className="mr-2"/> ($100)
+          </UIButton>
+        </div>
       </div>
     </div>
   )
