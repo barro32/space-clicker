@@ -12,7 +12,7 @@ export function App() {
   }, [tick])
 
   return (
-    <div className="text-center flex flex-col gap-4">
+    <div className="min-h-screen flex flex-col gap-4 items-center justify-center bg-gray-900 text-white">
       <p className="flex justify-center items-center text-2xl">
         <FaMoneyBillAlt className="mr-2"/> {money}
       </p>
