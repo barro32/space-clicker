@@ -28,12 +28,22 @@ export const useGameStore = create<GameState>((set, get) => ({
   rockets: 1,
   rocketCost: 10,
   profitPerRocket: 1,
-  spaceportCapacity: 9,
+  spaceportCapacity: 1,
   spaceports: [{ type: "cargo" }],
   spaceportCost: 100,
   tick: () => set(state => {
-    let newMoney = state.money + state.rockets * state.profitPerRocket;
-    let newScience = state.science + state.rockets * 0.1;
+    let cargoProd = 0;
+    let sciProd = 0;
+    for (let i = 0; i < state.spaceports.length; i++) {
+      let fill = Math.max(0, Math.min(state.spaceportCapacity, state.rockets - i * state.spaceportCapacity));
+      if (state.spaceports[i].type === "cargo") {
+        cargoProd += fill * state.profitPerRocket;
+      } else {
+        sciProd += fill;
+      }
+    }
+    let newMoney = state.money + cargoProd;
+    let newScience = state.science + sciProd;
     let newRockets = state.rockets;
     let newSpaceports = [...state.spaceports];
 
