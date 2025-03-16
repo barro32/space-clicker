@@ -1,8 +1,8 @@
 import { useGameStore } from "./useGameStore"
-import { FaRegBuilding, FaRocket } from "react-icons/fa"
+import { FaRegBuilding, FaRocket, FaBomb } from "react-icons/fa"
 
 export function RocketBackground() {
-  const { rockets, spaceports, spaceportCapacity, toggleSpaceport, buildSpaceport, buildRocket } = useGameStore()
+  const { rockets, spaceports, spaceportCapacity, toggleSpaceport, buildSpaceport, buildRocket, explosions, clearExplosion } = useGameStore()
   return (
     <div className="absolute top-0 left-0 opacity-80 flex flex-wrap gap-1">
       {spaceports.map((sp, spIndex) => {
@@ -10,9 +10,11 @@ export function RocketBackground() {
         return (
           <div key={spIndex} onClick={() => toggleSpaceport(spIndex)} className={`cursor-pointer grid grid-cols-3 gap-1 border ${sp.type === "cargo" ? "border-green-500" : "border-blue-500"}`}>
             {Array.from({ length: spaceportCapacity }).map((_, i) =>
-              i < fill 
-                ? <FaRocket key={i} className="text-2xl" />
-                : <div key={i} className="w-6 h-6 border border-gray-300"></div>
+              explosions.some(exp => exp.spIndex === spIndex && exp.slot === i)
+                ? <FaBomb key={i} onClick={() => clearExplosion(spIndex, i)} className="text-2xl cursor-pointer" />
+                : i < fill 
+                  ? <FaRocket key={i} className="text-2xl" />
+                  : <div key={i} className="w-6 h-6 border border-gray-300"></div>
             )}
           </div>
         )
@@ -22,7 +24,9 @@ export function RocketBackground() {
           <FaRegBuilding key={i} className="text-2xl" />
         ))}
       </button>
-      <button className="cursor-pointer grid grid-cols-3 gap-1 border border-gray-500" onClick={buildRocket}><FaRocket className="text-2xl"/></button>
+      <button className="cursor-pointer grid grid-cols-3 gap-1 border border-gray-500" onClick={buildRocket}>
+        <FaRocket className="text-2xl" />
+      </button>
     </div>
   )
 }
