@@ -26,7 +26,7 @@ interface GameState {
   clearExplosion: (spIndex: number, slot: number) => void
 }
 
-const ROCKET_EXPLODE = 0.9
+const ROCKET_EXPLODE = 0.01
 const SPACEPORT_EXPLODE = 0.1
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -56,15 +56,20 @@ export const useGameStore = create<GameState>((set, get) => ({
     let newSpaceports = [...state.spaceports]
     let newExplosions = [...state.explosions]
     if (Math.random() < ROCKET_EXPLODE && newRockets > 0) {
-      newRockets = newRockets - 1
       const spIndex = Math.floor((state.rockets - 1) / state.spaceportCapacity)
       const slot = (state.rockets - 1) % state.spaceportCapacity
       newExplosions.push({ spIndex, slot })
+      let totalRocketsLost = 1
       if (Math.random() < SPACEPORT_EXPLODE) {
         let spRocketCount = Math.max(0, Math.min(state.spaceportCapacity, state.rockets - spIndex * state.spaceportCapacity))
-        newRockets = state.rockets - spRocketCount
-        newExplosions = Array.from({ length: spRocketCount }, (_, j) => ({ spIndex, slot: j }))
+        totalRocketsLost += spRocketCount -1
+        for (let j = 0; j < spRocketCount; j++) {
+          if (j !== slot) {
+            newExplosions.push({ spIndex, slot: j })
+          }
+        }
       }
+      newRockets -= totalRocketsLost
     }
     return {
       money: newMoney,
