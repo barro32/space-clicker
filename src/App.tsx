@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useGameStore, GameState } from "./useGameStore"
 import { FaMoneyBillAlt, FaFlask } from 'react-icons/fa'
 import { SpaceportView } from "./SpaceportView"
+import { DevConsole } from './DevConsole'
 
 export function App() {
   const { money, science, tick, availableUpgrades, selectUpgrade } = useGameStore()
@@ -10,6 +11,37 @@ export function App() {
     const interval = setInterval(tick, 1000)
     return () => clearInterval(interval)
   }, [tick])
+
+  useEffect(() => {
+    const savedState = localStorage.getItem('gameState');
+    if (savedState) {
+      const state = JSON.parse(savedState);
+      useGameStore.setState(state);
+    }
+
+    const interval = setInterval(() => {
+      const state = useGameStore.getState();
+      const stateToSave = {
+        money: state.money,
+        science: state.science,
+        rockets: state.rockets,
+        nextRocketId: state.nextRocketId,
+        rocketCost: state.rocketCost,
+        profitPerRocket: state.profitPerRocket,
+        spaceportCapacity: state.spaceportCapacity,
+        spaceports: state.spaceports,
+        spaceportCost: state.spaceportCost,
+        explodedRocketIds: state.explodedRocketIds,
+        upgradeLevel: state.upgradeLevel,
+        availableUpgrades: state.availableUpgrades,
+        rocketExplosionChance: state.rocketExplosionChance,
+        upgradeScienceRequirement: state.upgradeScienceRequirement,
+      };
+      localStorage.setItem('gameState', JSON.stringify(stateToSave));
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="relative min-h-screen flex flex-col gap-4 items-center justify-center bg-gray-900 text-white overflow-hidden">
@@ -34,14 +66,17 @@ export function App() {
                 const oldValue = state[changedValueKey];
                 const newValue = newState[changedValueKey];
 
-                let oldValueDisplay = oldValue;
-                let newValueDisplay = newValue;
+                let oldValueDisplay: React.ReactNode = '';
+                let newValueDisplay: React.ReactNode = '';
                 if (changedValueKey === 'rocketExplosionChance') {
                   oldValueDisplay = `${((oldValue as number) * 100).toFixed(2)}%`;
                   newValueDisplay = `${((newValue as number) * 100).toFixed(2)}%`;
                 } else if (typeof oldValue === 'number' && typeof newValue === 'number') {
                   oldValueDisplay = oldValue.toLocaleString();
                   newValueDisplay = newValue.toLocaleString();
+                } else {
+                  oldValueDisplay = String(oldValue);
+                  newValueDisplay = String(newValue);
                 }
 
                 return (
@@ -58,6 +93,7 @@ export function App() {
           </div>
         </div>
       )}
+      <DevConsole />
     </div>
   )
 }

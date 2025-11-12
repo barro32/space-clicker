@@ -46,23 +46,25 @@ const upgrades: Upgrade[] = [
 export interface GameState {
   money: number
   science: number
-  rockets: number
+  rockets: { id: number }[];
+  nextRocketId: number;
   rocketCost: number
   profitPerRocket: number;
   spaceportCapacity: number
   spaceports: Spaceport[]
   spaceportCost: number
-  explosions: Explosion[]
+  explodedRocketIds: number[];
   upgradeLevel: number;
   availableUpgrades: Upgrade[];
   rocketExplosionChance: number;
   upgradeScienceRequirement: number;
   getUpgradeScienceRequirement: () => number;
+  getCurrentSpaceportCost: () => number;
   tick: () => void
   buildRocket: () => void
   buildSpaceport: () => void
   toggleSpaceport: (index: number) => void
-  clearExplosion: (spIndex: number, slot: number) => void
+  clearExplosion: (rocketId: number) => void
   checkForUpgrades: () => void;
   selectUpgrade: (upgradeId: string) => void;
 }
@@ -72,19 +74,20 @@ const SPACEPORT_EXPLODE = 0.1
 export const useGameStore = create<GameState>((set, get) => ({
   money: 10,
   science: 0,
-  rockets: 0,
+  rockets: [],
+  nextRocketId: 0,
   rocketCost: 10,
   profitPerRocket: 1,
   spaceportCapacity: 9,
   spaceports: [{ type: "cargo" }],
   spaceportCost: 1000,
-  explosions: [],
+  explodedRocketIds: [],
   upgradeLevel: 1,
   availableUpgrades: [],
   rocketExplosionChance: 0.9,
   upgradeScienceRequirement: 10,
   tick: () => set(state => {
-    const activeRockets = state.rockets - state.explosions.length;
+    const activeRockets = state.rockets.length - state.explodedRocketIds.length;
     let cargoProd = activeRockets * state.profitPerRocket;
     let sciProd = 0
     for (let i = 0; i < state.spaceports.length; i++) {
@@ -97,14 +100,13 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
     let newMoney = state.money + cargoProd
     let newScience = state.science + sciProd
-    let newExplosions = [...state.explosions]
+    let newExplodedRocketIds = [...state.explodedRocketIds]
 
     if (Math.random() < state.rocketExplosionChance && activeRockets > 0) {
-      const rocketToExplode = Math.floor(Math.random() * state.rockets);
-      const spIndex = Math.floor(rocketToExplode / state.spaceportCapacity);
-      const slot = rocketToExplode % state.spaceportCapacity;
-      if (!state.explosions.some(exp => exp.spIndex === spIndex && exp.slot === slot)) {
-        newExplosions.push({ spIndex, slot });
+      const activeRocketIds = state.rockets.map(r => r.id).filter(id => !state.explodedRocketIds.includes(id));
+      const rocketToExplodeId = activeRocketIds[Math.floor(Math.random() * activeRocketIds.length)];
+      if (rocketToExplodeId !== undefined && !newExplodedRocketIds.includes(rocketToExplodeId)) {
+        newExplodedRocketIds.push(rocketToExplodeId);
       }
     }
 
@@ -115,26 +117,28 @@ export const useGameStore = create<GameState>((set, get) => ({
     return {
       money: newMoney,
       science: newScience,
-      rockets: state.rockets,
-      spaceports: state.spaceports,
-      explosions: newExplosions,
+      explodedRocketIds: newExplodedRocketIds,
     }
   }),
   buildRocket: () =>
     set(state => {
       const maxRockets = state.spaceports.length * state.spaceportCapacity;
-      if (state.rockets < maxRockets) {
-        const activeRockets = state.rockets - state.explosions.length;
+      if (state.rockets.length < maxRockets) {
+        const activeRockets = state.rockets.length - state.explodedRocketIds.length;
         const currentRocketCost = Math.round(state.rocketCost * Math.pow(1.2, activeRockets));
         if (state.money >= currentRocketCost) {
-          return { money: state.money - currentRocketCost, rockets: state.rockets + 1 }
+          return {
+            money: state.money - currentRocketCost,
+            rockets: [...state.rockets, { id: state.nextRocketId }],
+            nextRocketId: state.nextRocketId + 1,
+          }
         }
       }
       return {}
     }),
   buildSpaceport: () =>
     set(state => {
-      const currentSpaceportCost = Math.round(state.spaceportCost * Math.pow(1.5, state.spaceports.length));
+      const currentSpaceportCost = get().getCurrentSpaceportCost()
       if (state.money >= currentSpaceportCost) {
         return { money: state.money - currentSpaceportCost, spaceports: [...state.spaceports, { type: "cargo" }] }
       }
@@ -145,11 +149,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       const newSpaceports = state.spaceports.map((sp, i) => i === index ? ({ type: sp.type === "cargo" ? "science" : "cargo" } as Spaceport) : sp)
       return { spaceports: newSpaceports }
     }),
-  clearExplosion: (spIndex: number, slot: number) =>
+  clearExplosion: (rocketId: number) =>
     set(state => ({
-      explosions: state.explosions.filter(exp => !(exp.spIndex === spIndex && exp.slot === slot)),
+      explodedRocketIds: state.explodedRocketIds.filter(id => id !== rocketId),
+      rockets: state.rockets.filter(r => r.id !== rocketId),
       science: state.science + 1,
-      rockets: state.rockets - 1,
     })),
   checkForUpgrades: () => set(state => {
     if (state.availableUpgrades.length > 0) {
@@ -182,5 +186,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   getUpgradeScienceRequirement: () => {
     const state = get();
     return Math.floor(state.upgradeScienceRequirement * Math.pow(1.1, state.upgradeLevel));
+  },
+  getCurrentSpaceportCost: () => {
+    const state = get();
+    return Math.round(state.spaceportCost * Math.pow(1.5, state.spaceports.length));
   },
 }))
