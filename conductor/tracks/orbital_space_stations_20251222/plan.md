@@ -3,7 +3,7 @@
 ## Phase 1: Data Model and Store Integration
 Focus on updating the `useGameStore` to handle the new "Orbit" mechanics.
 
-- [ ] **Task 1: Define Orbital Types and Initial State**
+- [x] **Task 1: Define Orbital Types and Initial State** 0a493ef
   - Update `useGameStore.ts` with `SpaceStation` interface.
   - Add `spaceStations` array to `GameState`.
 - [ ] **Task 2: Implement `buildSpaceStation` Logic**
