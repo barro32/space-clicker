@@ -1,11 +1,12 @@
 import { useEffect } from 'react'
-import { useGameStore, GameState } from "./useGameStore"
-import { FaMoneyBillAlt, FaFlask } from 'react-icons/fa'
+import { useGameStore, GameState, upgrades } from "./useGameStore"
+import { FaMoneyBillAlt, FaFlask, FaGasPump } from 'react-icons/fa' // Added FaGasPump
 import { SpaceportView } from "./SpaceportView"
 import { DevConsole } from './DevConsole'
 
+
 export function App() {
-  const { money, science, tick, availableUpgrades, selectUpgrade } = useGameStore()
+  const { money, science, fuel, tick, availableUpgrades, selectUpgrade } = useGameStore()
 
   useEffect(() => {
     const interval = setInterval(tick, 1000)
@@ -16,6 +17,17 @@ export function App() {
     const savedState = localStorage.getItem('gameState');
     if (savedState) {
       const state = JSON.parse(savedState);
+      // Ensure spaceStations is initialized
+      if (!state.spaceStations) {
+        state.spaceStations = [];
+      }
+      // Re-hydrate availableUpgrades
+      if (state.availableUpgrades && state.availableUpgrades.length > 0) {
+        state.availableUpgrades = state.availableUpgrades.map((savedUpgrade: { id: string }) => {
+          const fullUpgrade = upgrades.find(u => u.id === savedUpgrade.id);
+          return fullUpgrade || savedUpgrade; // Return full upgrade or original if not found
+        });
+      }
       useGameStore.setState(state);
     }
 
@@ -24,18 +36,25 @@ export function App() {
       const stateToSave = {
         money: state.money,
         science: state.science,
+        fuel: state.fuel,
         rockets: state.rockets,
         nextRocketId: state.nextRocketId,
         rocketCost: state.rocketCost,
         profitPerRocket: state.profitPerRocket,
         spaceportCapacity: state.spaceportCapacity,
         spaceports: state.spaceports,
+        spaceStations: state.spaceStations,
         spaceportCost: state.spaceportCost,
+        fuelRefineries: state.fuelRefineries,
+        fuelProductionPerRefinery: state.fuelProductionPerRefinery,
+        fuelCostPerRocket: state.fuelCostPerRocket,
+        fuelRefineryCost: state.fuelRefineryCost,
         explodedRocketIds: state.explodedRocketIds,
         upgradeLevel: state.upgradeLevel,
         availableUpgrades: state.availableUpgrades,
         rocketExplosionChance: state.rocketExplosionChance,
         upgradeScienceRequirement: state.upgradeScienceRequirement,
+        researchedUpgrades: state.researchedUpgrades, // Add researchedUpgrades
       };
       localStorage.setItem('gameState', JSON.stringify(stateToSave));
     }, 30000);
@@ -52,6 +71,9 @@ export function App() {
         </p>
         <p className="flex justify-center items-center text-2xl">
           <FaFlask className="mr-2"/> {science}
+        </p>
+        <p className="flex justify-center items-center text-2xl">
+          <FaGasPump className="mr-2"/> {fuel}
         </p>
       </div>
       {availableUpgrades.length > 0 && (
@@ -94,6 +116,7 @@ export function App() {
         </div>
       )}
       <DevConsole />
+
     </div>
   )
 }

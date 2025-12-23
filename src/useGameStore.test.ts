@@ -105,5 +105,30 @@ describe('useGameStore - Orbital Space Stations', () => {
       expect(state.money).toBe(50);
     });
   });
+
+  describe('buildRocket regression check', () => {
+    it('should build a rocket if money and fuel are sufficient and space is available', () => {
+      useGameStore.setState({
+        money: 1000,
+        fuel: 100,
+        rockets: [],
+        nextRocketId: 0,
+        rocketCost: 10,
+        fuelCostPerRocket: 1,
+        spaceports: [{ type: 'cargo' }],
+        spaceportCapacity: 9,
+        explodedRocketIds: [],
+        spaceStations: [],
+      } as unknown as GameState);
+
+      useGameStore.getState().buildRocket();
+
+      const state = useGameStore.getState();
+      expect(state.rockets.length).toBe(1);
+      expect(state.rockets[0]).not.toBeNull();
+      expect(state.money).toBe(990); // 1000 - 10
+      expect(state.fuel).toBe(99); // 100 - 1
+    });
+  });
 });
 

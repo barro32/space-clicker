@@ -101,7 +101,7 @@ const SPACEPORT_EXPLODE = 0.1
 export const useGameStore = create<GameState>((set, get) => ({
   money: 10,
   science: 0,
-  fuel: 0,
+  fuel: 100,
   rockets: [],
   nextRocketId: 0,
   rocketCost: 10,
@@ -134,13 +134,15 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     // Apply Orbital Station Benefits
-    state.spaceStations.forEach(station => {
-      if (station.type === 'research') {
-        sciProd += 10 * station.level;
-      } else if (station.type === 'logistics') {
-        cargoProd += 50 * station.level;
-      }
-    });
+    if (state.spaceStations) {
+      state.spaceStations.forEach(station => {
+        if (station.type === 'research') {
+          sciProd += 10 * station.level;
+        } else if (station.type === 'logistics') {
+          cargoProd += 50 * station.level;
+        }
+      });
+    }
 
     let newMoney = state.money + cargoProd
     let newScience = state.science + sciProd
