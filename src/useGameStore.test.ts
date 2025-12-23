@@ -13,6 +13,14 @@ describe('useGameStore - Orbital Space Stations', () => {
     const state = useGameStore.getState();
     expect(state.spaceStations).toBeDefined();
     expect(state.spaceStations).toEqual([]);
+    expect(state.currentView).toBe("surface");
+  });
+
+  it('should change currentView when setView is called', () => {
+    useGameStore.getState().setView("orbit");
+    expect(useGameStore.getState().currentView).toBe("orbit");
+    useGameStore.getState().setView("surface");
+    expect(useGameStore.getState().currentView).toBe("surface");
   });
 
   it('should have SpaceStation interface defined (compile check)', () => {

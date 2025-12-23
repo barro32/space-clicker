@@ -65,6 +65,7 @@ export interface GameState {
   money: number
   science: number
   fuel: number;
+  currentView: "surface" | "orbit";
   rockets: ({ id: number } | null)[];
   nextRocketId: number;
   rocketCost: number
@@ -84,6 +85,7 @@ export interface GameState {
   upgradeScienceRequirement: number;
   getUpgradeScienceRequirement: () => number;
   getCurrentSpaceportCost: () => number;
+  setView: (view: "surface" | "orbit") => void;
   tick: () => void
   buildRocket: () => void
   buildSpaceport: () => void
@@ -102,6 +104,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   money: 10,
   science: 0,
   fuel: 100,
+  currentView: "surface",
   rockets: [],
   nextRocketId: 0,
   rocketCost: 10,
@@ -289,5 +292,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     const state = get();
     return Math.round(state.spaceportCost * Math.pow(1.5, state.spaceports.length));
   },
+  setView: (view: "surface" | "orbit") => set({ currentView: view }),
 }))
 

@@ -6,7 +6,7 @@ import { DevConsole } from './DevConsole'
 
 
 export function App() {
-  const { money, science, fuel, tick, availableUpgrades, selectUpgrade } = useGameStore()
+  const { money, science, fuel, tick, availableUpgrades, selectUpgrade, currentView, setView } = useGameStore()
 
   useEffect(() => {
     const interval = setInterval(tick, 1000)
@@ -20,6 +20,9 @@ export function App() {
       // Ensure spaceStations is initialized
       if (!state.spaceStations) {
         state.spaceStations = [];
+      }
+      if (!state.currentView) {
+        state.currentView = "surface";
       }
       // Re-hydrate availableUpgrades
       if (state.availableUpgrades && state.availableUpgrades.length > 0) {
@@ -37,6 +40,7 @@ export function App() {
         money: state.money,
         science: state.science,
         fuel: state.fuel,
+        currentView: state.currentView,
         rockets: state.rockets,
         nextRocketId: state.nextRocketId,
         rocketCost: state.rocketCost,
@@ -64,7 +68,21 @@ export function App() {
 
   return (
     <div className="relative min-h-screen flex flex-col gap-4 items-center justify-center bg-gray-900 text-white overflow-hidden">
-      <SpaceportView />
+      <div className="absolute top-4 right-4 flex gap-2 z-20">
+        <button 
+          onClick={() => setView("surface")} 
+          className={`px-4 py-2 rounded ${currentView === "surface" ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}
+        >
+          Surface
+        </button>
+        <button 
+          onClick={() => setView("orbit")} 
+          className={`px-4 py-2 rounded ${currentView === "orbit" ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}
+        >
+          Orbit
+        </button>
+      </div>
+      {currentView === "surface" ? <SpaceportView /> : <div className="text-4xl">Orbit View (Coming Soon)</div>}
       <div className="z-10">
         <p className="flex justify-center items-center text-2xl">
           <FaMoneyBillAlt className="mr-2"/> {money}
