@@ -42,7 +42,7 @@ Implement the company-driven contract economy.
 - [x] **Task 2: Implement Contract Generation and Acceptance** a499154
   - Logic to generate 3 random contracts based on company levels.
   - `acceptContract` action.
-- [ ] **Task 3: Implement Contract Completion and Failure Logic**
+- [x] **Task 3: Implement Contract Completion and Failure Logic** 4b73ec2
   - Check cargo/science delivery requirements.
   - Track time constraints and explosion limits (fragility) in `tick`.
 - [ ] **Task 4: Create Contracts View UI**
