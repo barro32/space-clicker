@@ -10,6 +10,30 @@ export interface SpaceStation {
   level: number;
 }
 
+export interface Company {
+  id: string;
+  name: string;
+  level: number;
+  experience: number;
+}
+
+export interface Contract {
+  id: string;
+  companyId: string;
+  title: string;
+  description: string;
+  requiredCargo: number;
+  requiredScience: number;
+  rewardMoney: number;
+  rewardScience: number;
+  rewardExperience: number;
+  timeLimitSeconds: number; // 0 for no limit
+  elapsedSeconds: number;
+  maxExplosions: number; // -1 for no limit
+  currentExplosions: number;
+  status: 'available' | 'active' | 'completed' | 'failed';
+}
+
 interface Explosion {
   spIndex: number
   slot: number
@@ -66,8 +90,11 @@ export interface GameState {
   science: number
   fuel: number;
   cargo: number;
-  currentView: "surface" | "orbit";
+  currentView: "surface" | "orbit" | "contracts";
   notifications: string[];
+  companies: Company[];
+  availableContracts: Contract[];
+  activeContract: Contract | null;
   rockets: ({ id: number } | null)[];
   nextRocketId: number;
   rocketCost: number
@@ -87,8 +114,11 @@ export interface GameState {
   upgradeScienceRequirement: number;
   getUpgradeScienceRequirement: () => number;
   getCurrentSpaceportCost: () => number;
-  setView: (view: "surface" | "orbit") => void;
+  setView: (view: "surface" | "orbit" | "contracts") => void;
   addNotification: (message: string) => void;
+  generateContracts: () => void;
+  acceptContract: (contractId: string) => void;
+  deliverContractResources: () => void;
   tick: () => void
   buildRocket: () => void
   buildSpaceport: () => void
@@ -110,6 +140,20 @@ export const useGameStore = create<GameState>((set, get) => ({
   cargo: 0,
   currentView: "surface",
   notifications: [],
+  companies: [
+    { id: 'titan', name: 'Titan Mining Corp', level: 1, experience: 0 },
+    { id: 'nova', name: 'Nova Research', level: 1, experience: 0 },
+    { id: 'zenith', name: 'Zenith Logistics', level: 1, experience: 0 },
+    { id: 'orion', name: 'Orion Heavy Industries', level: 1, experience: 0 },
+    { id: 'galactic', name: 'Galactic Energy', level: 1, experience: 0 },
+    { id: 'atlas', name: 'Atlas Construction', level: 1, experience: 0 },
+    { id: 'pulsar', name: 'Pulsar Electronics', level: 1, experience: 0 },
+    { id: 'stellar', name: 'Stellar Bio-Tech', level: 1, experience: 0 },
+    { id: 'aegis', name: 'Aegis Security', level: 1, experience: 0 },
+    { id: 'dse', name: 'Deep Space Exploration', level: 1, experience: 0 },
+  ],
+  availableContracts: [],
+  activeContract: null,
   rockets: [],
   nextRocketId: 0,
   rocketCost: 10,
