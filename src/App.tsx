@@ -3,6 +3,7 @@ import { useGameStore, GameState, upgrades } from "./useGameStore"
 import { FaMoneyBillAlt, FaFlask, FaGasPump, FaBoxOpen } from 'react-icons/fa' // Added FaGasPump
 import { SpaceportView } from "./SpaceportView"
 import { OrbitView } from "./OrbitView"
+import { ContractsView } from "./ContractsView"
 import { DevConsole } from './DevConsole'
 
 
@@ -28,6 +29,12 @@ export function App() {
       if (!state.notifications) {
         state.notifications = [];
       }
+      if (!state.companies) {
+        state.companies = useGameStore.getState().companies;
+      }
+      if (!state.availableContracts) {
+        state.availableContracts = [];
+      }
       // Re-hydrate availableUpgrades
       if (state.availableUpgrades && state.availableUpgrades.length > 0) {
         state.availableUpgrades = state.availableUpgrades.map((savedUpgrade: { id: string }) => {
@@ -47,6 +54,9 @@ export function App() {
         cargo: state.cargo,
         currentView: state.currentView,
         notifications: state.notifications,
+        companies: state.companies,
+        availableContracts: state.availableContracts,
+        activeContract: state.activeContract,
         rockets: state.rockets,
         nextRocketId: state.nextRocketId,
         rocketCost: state.rocketCost,
@@ -81,16 +91,21 @@ export function App() {
         >
           Surface
         </button>
-        <button 
-          onClick={() => setView("orbit")} 
-          className={`px-4 py-2 rounded ${currentView === "orbit" ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}
-        >
-          Orbit
-        </button>
-      </div>
-      {currentView === "surface" ? <SpaceportView /> : <OrbitView />}
-      
-      {/* Notifications Overlay */}
+                <button 
+                  onClick={() => setView("orbit")} 
+                  className={`px-4 py-2 rounded ${currentView === "orbit" ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}
+                >
+                  Orbit
+                </button>
+                <button 
+                  onClick={() => setView("contracts")} 
+                  className={`px-4 py-2 rounded ${currentView === "contracts" ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}
+                >
+                  Contracts
+                </button>
+              </div>
+              {currentView === "surface" ? <SpaceportView /> : currentView === "orbit" ? <OrbitView /> : <ContractsView />}
+              {/* Notifications Overlay */}
       <div className="absolute top-16 left-4 z-30 flex flex-col gap-2 pointer-events-none">
         {notifications.map((msg, i) => (
           <div key={i} className="bg-gray-800 border border-gray-600 px-4 py-2 rounded text-sm opacity-90 animate-pulse">
