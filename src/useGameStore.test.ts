@@ -173,6 +173,69 @@ describe('useGameStore - Orbital Space Stations', () => {
       expect(state.activeContract?.id).toBe(available[0].id);
       expect(state.availableContracts).toHaveLength(2);
     });
+
+    it('should complete contract and give rewards', () => {
+      useGameStore.setState({
+        cargo: 1000,
+        science: 1000,
+        money: 0,
+        activeContract: {
+          id: 'c1',
+          companyId: 'titan',
+          title: 'Test',
+          requiredCargo: 500,
+          requiredScience: 200,
+          rewardMoney: 5000,
+          rewardScience: 100,
+          rewardExperience: 50,
+          status: 'active'
+        },
+        companies: [{ id: 'titan', name: 'Titan', level: 1, experience: 0 }]
+      } as unknown as GameState);
+
+      useGameStore.getState().deliverContractResources();
+
+      const state = useGameStore.getState();
+      expect(state.activeContract).toBeNull();
+      expect(state.money).toBe(5000);
+      expect(state.science).toBe(900); // 1000 - 200 + 100
+      expect(state.cargo).toBe(500);
+      expect(state.companies[0].experience).toBe(50);
+    });
+
+    it('should fail contract if time limit reached', () => {
+      useGameStore.setState({
+        activeContract: {
+          id: 'c1',
+          status: 'active',
+          timeLimitSeconds: 10,
+          elapsedSeconds: 9,
+        }
+      } as unknown as GameState);
+
+      useGameStore.getState().tick();
+
+      const state = useGameStore.getState();
+      expect(state.activeContract?.status).toBe('failed');
+    });
+
+    it('should fail contract if too many explosions', () => {
+      useGameStore.setState({
+        activeContract: {
+          id: 'c1',
+          status: 'active',
+          maxExplosions: 0,
+          currentExplosions: 0,
+        },
+        rockets: [{ id: 1 }],
+        explodedRocketIds: [1],
+      } as unknown as GameState);
+
+      useGameStore.getState().clearExplosion(1);
+
+      const state = useGameStore.getState();
+      expect(state.activeContract?.status).toBe('failed');
+    });
   });
 });
 

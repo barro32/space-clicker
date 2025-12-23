@@ -204,6 +204,17 @@ export const useGameStore = create<GameState>((set, get) => ({
     let newFuel = state.fuel + state.fuelRefineries * state.fuelProductionPerRefinery;
     let newCargo = state.cargo + cargoResourceProd;
     let newExplodedRocketIds = [...state.explodedRocketIds]
+    let newActiveContract = state.activeContract ? { ...state.activeContract } : null;
+
+    if (newActiveContract && newActiveContract.status === 'active') {
+      if (newActiveContract.timeLimitSeconds > 0) {
+        newActiveContract.elapsedSeconds += 1;
+        if (newActiveContract.elapsedSeconds >= newActiveContract.timeLimitSeconds) {
+          newActiveContract.status = 'failed';
+          get().addNotification(`Contract Failed: ${newActiveContract.title} (Time limit reached)`);
+        }
+      }
+    }
 
     if (Math.random() < state.rocketExplosionChance && activeRockets > 0) {
       const activeRocketIds = state.rockets.filter(r => r !== null).map(r => r!.id).filter(id => !state.explodedRocketIds.includes(id));
@@ -222,6 +233,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       science: newScience,
       fuel: newFuel,
       cargo: newCargo,
+      activeContract: newActiveContract,
       explodedRocketIds: newExplodedRocketIds,
     }
   }),
@@ -304,10 +316,20 @@ export const useGameStore = create<GameState>((set, get) => ({
         newRockets[rocketIndex] = null; // Set the slot to null
       }
 
+      let newActiveContract = state.activeContract ? { ...state.activeContract } : null;
+      if (newActiveContract && newActiveContract.status === 'active' && newActiveContract.maxExplosions !== -1) {
+        newActiveContract.currentExplosions += 1;
+        if (newActiveContract.currentExplosions > newActiveContract.maxExplosions) {
+          newActiveContract.status = 'failed';
+          get().addNotification(`Contract Failed: ${newActiveContract.title} (Too many explosions)`);
+        }
+      }
+
       return {
         explodedRocketIds: state.explodedRocketIds.filter(id => id !== rocketId),
         rockets: newRockets,
         science: state.science + 1,
+        activeContract: newActiveContract,
       }
     }),
   checkForUpgrades: () => set(state => {
@@ -395,6 +417,41 @@ export const useGameStore = create<GameState>((set, get) => ({
       notifications: [`Contract Accepted: ${contract.title}`, ...state.notifications].slice(0, 5)
     };
   }),
-  deliverContractResources: () => {}, // To be implemented in next task
+  deliverContractResources: () => set(state => {
+    const contract = state.activeContract;
+    if (!contract || contract.status !== 'active') return {};
+
+    if (state.cargo >= contract.requiredCargo && state.science >= contract.requiredScience) {
+      // Complete Contract
+      const company = state.companies.find(c => c.id === contract.companyId);
+      if (!company) return {};
+
+      const newExperience = company.experience + contract.rewardExperience;
+      const experienceToLevel = company.level * 100;
+      let newLevel = company.level;
+      let finalExperience = newExperience;
+
+      if (finalExperience >= experienceToLevel) {
+        finalExperience -= experienceToLevel;
+        newLevel += 1;
+        get().addNotification(`${company.name} leveled up to ${newLevel}!`);
+      }
+
+      const newCompanies = state.companies.map(c => 
+        c.id === company.id ? { ...c, level: newLevel, experience: finalExperience } : c
+      );
+
+      get().addNotification(`Contract Completed: ${contract.title}`);
+
+      return {
+        cargo: state.cargo - contract.requiredCargo,
+        science: state.science - contract.requiredScience + contract.rewardScience,
+        money: state.money + contract.rewardMoney,
+        companies: newCompanies,
+        activeContract: null, // Clear active contract
+      };
+    }
+    return {};
+  }),
 }))
 
