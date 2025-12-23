@@ -6,7 +6,7 @@ Focus on updating the `useGameStore` to handle the new "Orbit" mechanics.
 - [x] **Task 1: Define Orbital Types and Initial State** 0a493ef
   - Update `useGameStore.ts` with `SpaceStation` interface.
   - Add `spaceStations` array to `GameState`.
-- [ ] **Task 2: Implement `buildSpaceStation` Logic**
+- [x] **Task 2: Implement `buildSpaceStation` Logic** e766aa7
   - Write tests for building stations (resource checks, state update).
   - Implement `buildSpaceStation` in `useGameStore`.
 - [ ] **Task 3: Implement Station Benefits in `tick` Loop**
