@@ -1,6 +1,6 @@
 # Track Plan: Implement Orbital Space Stations
 
-## Phase 1: Data Model and Store Integration
+## Phase 1: Data Model and Store Integration [checkpoint: 5b831bf]
 Focus on updating the `useGameStore` to handle the new "Orbit" mechanics.
 
 - [x] **Task 1: Define Orbital Types and Initial State** 0a493ef
