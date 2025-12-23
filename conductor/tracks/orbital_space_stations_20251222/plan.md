@@ -47,6 +47,6 @@ Implement the company-driven contract economy.
   - Track time constraints and explosion limits (fragility) in `tick`.
 - [x] **Task 4: Create Contracts View UI** 3ee2178
   - Implement `src/ContractsView.tsx` with company levels and available contracts.
-- [ ] **Task 5: Integration and Persistence**
+- [x] **Task 5: Integration and Persistence** 2b9b9fe
   - Update `App.tsx` navigation and `localStorage` save logic.
 - [ ] **Task: Conductor - User Manual Verification 'Phase 4: Contracts System' (Protocol in workflow.md)**
