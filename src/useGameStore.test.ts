@@ -71,5 +71,39 @@ describe('useGameStore - Orbital Space Stations', () => {
       expect(state.science).toBe(499);
     });
   });
+
+  describe('tick loop with space stations', () => {
+    it('should generate extra science from research stations', () => {
+      useGameStore.setState({
+        money: 0,
+        science: 0,
+        spaceStations: [{ id: '1', type: 'research', level: 1 }],
+        spaceports: [], // No surface production
+        rockets: [],
+      } as unknown as GameState);
+
+      useGameStore.getState().tick();
+
+      const state = useGameStore.getState();
+      // Assuming +10 science per tick for research station
+      expect(state.science).toBe(10);
+    });
+
+    it('should generate extra money (or profit) from logistics stations', () => {
+       useGameStore.setState({
+        money: 0,
+        science: 0,
+        spaceStations: [{ id: '2', type: 'logistics', level: 1 }],
+        spaceports: [], // No surface production
+        rockets: [],
+      } as unknown as GameState);
+
+      useGameStore.getState().tick();
+
+      const state = useGameStore.getState();
+      // Assuming +50 money per tick for logistics station (high value to offset cost)
+      expect(state.money).toBe(50);
+    });
+  });
 });
 

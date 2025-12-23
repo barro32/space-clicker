@@ -132,6 +132,16 @@ export const useGameStore = create<GameState>((set, get) => ({
         sciProd += spaceportRockets
       }
     }
+
+    // Apply Orbital Station Benefits
+    state.spaceStations.forEach(station => {
+      if (station.type === 'research') {
+        sciProd += 10 * station.level;
+      } else if (station.type === 'logistics') {
+        cargoProd += 50 * station.level;
+      }
+    });
+
     let newMoney = state.money + cargoProd
     let newScience = state.science + sciProd
     let newFuel = state.fuel + state.fuelRefineries * state.fuelProductionPerRefinery;
