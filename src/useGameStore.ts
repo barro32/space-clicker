@@ -87,6 +87,7 @@ export interface GameState {
   tick: () => void
   buildRocket: () => void
   buildSpaceport: () => void
+  buildSpaceStation: (type: SpaceStation['type']) => void
   buildFuelRefinery: () => void;
   toggleSpaceport: (index: number) => void
   clearExplosion: (rocketId: number) => void
@@ -193,6 +194,22 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
       return {}
     }),
+  buildSpaceStation: (type: SpaceStation['type']) => set(state => {
+    const costMoney = 50000;
+    const costScience = 500;
+    if (state.money >= costMoney && state.science >= costScience) {
+      return {
+        money: state.money - costMoney,
+        science: state.science - costScience,
+        spaceStations: [...state.spaceStations, {
+          id: `station-${Date.now()}-${Math.random()}`,
+          type,
+          level: 1
+        }]
+      };
+    }
+    return {};
+  }),
   buildFuelRefinery: () =>
     set(state => {
       const currentFuelRefineryCost = Math.round(state.fuelRefineryCost * Math.pow(1.5, state.fuelRefineries));

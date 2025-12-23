@@ -25,4 +25,51 @@ describe('useGameStore - Orbital Space Stations', () => {
     expect(station.type).toBe('research');
     expect(station.level).toBe(1);
   });
+
+  describe('buildSpaceStation', () => {
+    it('should build a space station if resources are sufficient', () => {
+      useGameStore.setState({
+        money: 50000,
+        science: 500,
+        spaceStations: [],
+      } as unknown as GameState);
+
+      useGameStore.getState().buildSpaceStation('research');
+
+      const state = useGameStore.getState();
+      expect(state.spaceStations).toHaveLength(1);
+      expect(state.spaceStations[0].type).toBe('research');
+      expect(state.money).toBe(0); // 50000 - 50000
+      expect(state.science).toBe(0); // 500 - 500
+    });
+
+    it('should NOT build a space station if money is insufficient', () => {
+      useGameStore.setState({
+        money: 49999,
+        science: 500,
+        spaceStations: [],
+      } as unknown as GameState);
+
+      useGameStore.getState().buildSpaceStation('research');
+
+      const state = useGameStore.getState();
+      expect(state.spaceStations).toHaveLength(0);
+      expect(state.money).toBe(49999);
+    });
+
+    it('should NOT build a space station if science is insufficient', () => {
+      useGameStore.setState({
+        money: 50000,
+        science: 499,
+        spaceStations: [],
+      } as unknown as GameState);
+
+      useGameStore.getState().buildSpaceStation('research');
+
+      const state = useGameStore.getState();
+      expect(state.spaceStations).toHaveLength(0);
+      expect(state.science).toBe(499);
+    });
+  });
 });
+
