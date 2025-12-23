@@ -39,7 +39,7 @@ Implement the company-driven contract economy.
 - [x] **Task 1: Define Companies and Contract Data Structures** 6911b84
   - Add `Company` and `Contract` interfaces to `useGameStore.ts`.
   - Initialize 10 default companies in the store.
-- [ ] **Task 2: Implement Contract Generation and Acceptance**
+- [x] **Task 2: Implement Contract Generation and Acceptance** a499154
   - Logic to generate 3 random contracts based on company levels.
   - `acceptContract` action.
 - [ ] **Task 3: Implement Contract Completion and Failure Logic**
