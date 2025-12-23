@@ -2,9 +2,9 @@ import { useGameStore } from "./useGameStore"
 import { FaSatellite, FaGlobe, FaMicroscope, FaTruckLoading } from "react-icons/fa"
 
 export function OrbitView() {
-  const { spaceStations, buildSpaceStation, money, science } = useGameStore()
+  const { spaceStations, buildSpaceStation, cargo, science } = useGameStore()
   
-  const costMoney = 50000;
+  const costCargo = 500;
   const costScience = 500;
 
   return (
@@ -47,21 +47,21 @@ export function OrbitView() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div 
           onClick={() => buildSpaceStation('research')} 
-          className={`cursor-pointer border-2 p-4 rounded-lg flex flex-col items-center gap-2 transition-colors ${money >= costMoney && science >= costScience ? 'border-blue-500 hover:bg-blue-900' : 'border-gray-700 opacity-50'}`}
+          className={`cursor-pointer border-2 p-4 rounded-lg flex flex-col items-center gap-2 transition-colors ${cargo >= costCargo && science >= costScience ? 'border-blue-500 hover:bg-blue-900' : 'border-gray-700 opacity-50'}`}
         >
           <FaMicroscope className="text-3xl text-blue-400" />
           <div className="font-bold">Build Research Station</div>
-          <div className="text-sm text-gray-400">${costMoney.toLocaleString()} / {costScience} Sci</div>
+          <div className="text-sm text-gray-400">{costCargo} Cargo / {costScience} Sci</div>
           <div className="text-xs text-blue-300">+10 Sci / tick</div>
         </div>
 
         <div 
           onClick={() => buildSpaceStation('logistics')} 
-          className={`cursor-pointer border-2 p-4 rounded-lg flex flex-col items-center gap-2 transition-colors ${money >= costMoney && science >= costScience ? 'border-green-500 hover:bg-green-900' : 'border-gray-700 opacity-50'}`}
+          className={`cursor-pointer border-2 p-4 rounded-lg flex flex-col items-center gap-2 transition-colors ${cargo >= costCargo && science >= costScience ? 'border-green-500 hover:bg-green-900' : 'border-gray-700 opacity-50'}`}
         >
           <FaTruckLoading className="text-3xl text-green-400" />
           <div className="font-bold">Build Logistics Station</div>
-          <div className="text-sm text-gray-400">${costMoney.toLocaleString()} / {costScience} Sci</div>
+          <div className="text-sm text-gray-400">{costCargo} Cargo / {costScience} Sci</div>
           <div className="text-xs text-green-300">+$50 / tick</div>
         </div>
       </div>

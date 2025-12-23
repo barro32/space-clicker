@@ -65,6 +65,7 @@ export interface GameState {
   money: number
   science: number
   fuel: number;
+  cargo: number;
   currentView: "surface" | "orbit";
   rockets: ({ id: number } | null)[];
   nextRocketId: number;
@@ -104,6 +105,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   money: 10,
   science: 0,
   fuel: 100,
+  cargo: 0,
   currentView: "surface",
   rockets: [],
   nextRocketId: 0,
@@ -127,6 +129,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     const activeRockets = state.rockets.filter(r => r !== null).length - state.explodedRocketIds.length;
     let cargoProd = activeRockets * state.profitPerRocket;
     let sciProd = 0
+    // Generate Cargo resource: 0.1 per active rocket (representing launches)
+    let cargoResourceProd = activeRockets * 0.1;
+
     for (let i = 0; i < state.spaceports.length; i++) {
       if (state.spaceports[i].type === "cargo") {
         cargoProd += (i + 1)
@@ -150,6 +155,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     let newMoney = state.money + cargoProd
     let newScience = state.science + sciProd
     let newFuel = state.fuel + state.fuelRefineries * state.fuelProductionPerRefinery;
+    let newCargo = state.cargo + cargoResourceProd;
     let newExplodedRocketIds = [...state.explodedRocketIds]
 
     if (Math.random() < state.rocketExplosionChance && activeRockets > 0) {
@@ -168,6 +174,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       money: newMoney,
       science: newScience,
       fuel: newFuel,
+      cargo: newCargo,
       explodedRocketIds: newExplodedRocketIds,
     }
   }),
@@ -210,11 +217,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       return {}
     }),
   buildSpaceStation: (type: SpaceStation['type']) => set(state => {
-    const costMoney = 50000;
+    const costCargo = 500;
     const costScience = 500;
-    if (state.money >= costMoney && state.science >= costScience) {
+    if (state.cargo >= costCargo && state.science >= costScience) {
       return {
-        money: state.money - costMoney,
+        cargo: state.cargo - costCargo,
         science: state.science - costScience,
         spaceStations: [...state.spaceStations, {
           id: `station-${Date.now()}-${Math.random()}`,

@@ -37,7 +37,7 @@ describe('useGameStore - Orbital Space Stations', () => {
   describe('buildSpaceStation', () => {
     it('should build a space station if resources are sufficient', () => {
       useGameStore.setState({
-        money: 50000,
+        cargo: 500,
         science: 500,
         spaceStations: [],
       } as unknown as GameState);
@@ -47,13 +47,13 @@ describe('useGameStore - Orbital Space Stations', () => {
       const state = useGameStore.getState();
       expect(state.spaceStations).toHaveLength(1);
       expect(state.spaceStations[0].type).toBe('research');
-      expect(state.money).toBe(0); // 50000 - 50000
+      expect(state.cargo).toBe(0); // 500 - 500
       expect(state.science).toBe(0); // 500 - 500
     });
 
-    it('should NOT build a space station if money is insufficient', () => {
+    it('should NOT build a space station if cargo is insufficient', () => {
       useGameStore.setState({
-        money: 49999,
+        cargo: 499,
         science: 500,
         spaceStations: [],
       } as unknown as GameState);
@@ -62,12 +62,12 @@ describe('useGameStore - Orbital Space Stations', () => {
 
       const state = useGameStore.getState();
       expect(state.spaceStations).toHaveLength(0);
-      expect(state.money).toBe(49999);
+      expect(state.cargo).toBe(499);
     });
 
     it('should NOT build a space station if science is insufficient', () => {
       useGameStore.setState({
-        money: 50000,
+        cargo: 500,
         science: 499,
         spaceStations: [],
       } as unknown as GameState);
@@ -112,6 +112,24 @@ describe('useGameStore - Orbital Space Stations', () => {
       // Assuming +50 money per tick for logistics station (high value to offset cost)
       expect(state.money).toBe(50);
     });
+
+    it('should generate cargo from active rockets', () => {
+      useGameStore.setState({
+       money: 0,
+       science: 0,
+       cargo: 0,
+       rockets: [{ id: 1 }],
+       explodedRocketIds: [],
+       spaceports: [],
+       spaceStations: [],
+     } as unknown as GameState);
+
+     useGameStore.getState().tick();
+
+     const state = useGameStore.getState();
+     // 1 rocket * 0.1 cargo/tick = 0.1
+     expect(state.cargo).toBeCloseTo(0.1);
+   });
   });
 
   describe('buildRocket regression check', () => {

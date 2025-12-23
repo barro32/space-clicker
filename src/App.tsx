@@ -1,13 +1,13 @@
 import { useEffect } from 'react'
 import { useGameStore, GameState, upgrades } from "./useGameStore"
-import { FaMoneyBillAlt, FaFlask, FaGasPump } from 'react-icons/fa' // Added FaGasPump
+import { FaMoneyBillAlt, FaFlask, FaGasPump, FaBoxOpen } from 'react-icons/fa' // Added FaGasPump
 import { SpaceportView } from "./SpaceportView"
 import { OrbitView } from "./OrbitView"
 import { DevConsole } from './DevConsole'
 
 
 export function App() {
-  const { money, science, fuel, tick, availableUpgrades, selectUpgrade, currentView, setView } = useGameStore()
+  const { money, science, fuel, cargo, tick, availableUpgrades, selectUpgrade, currentView, setView } = useGameStore()
 
   useEffect(() => {
     const interval = setInterval(tick, 1000)
@@ -41,6 +41,7 @@ export function App() {
         money: state.money,
         science: state.science,
         fuel: state.fuel,
+        cargo: state.cargo,
         currentView: state.currentView,
         rockets: state.rockets,
         nextRocketId: state.nextRocketId,
@@ -93,6 +94,9 @@ export function App() {
         </p>
         <p className="flex justify-center items-center text-2xl">
           <FaGasPump className="mr-2"/> {fuel}
+        </p>
+        <p className="flex justify-center items-center text-2xl">
+          <FaBoxOpen className="mr-2"/> {Math.floor(cargo)}
         </p>
       </div>
       {availableUpgrades.length > 0 && (
