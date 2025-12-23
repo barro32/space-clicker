@@ -126,6 +126,10 @@ describe('useGameStore - Orbital Space Stations', () => {
        money: 0,
        science: 0,
        cargo: 0,
+       fuel: 100,
+       fuelCostPerRocket: 1,
+       fuelRefineries: 0,
+       fuelProductionPerRefinery: 1,
        rockets: [{ id: 1 }],
        explodedRocketIds: [],
        spaceports: [],
@@ -235,6 +239,75 @@ describe('useGameStore - Orbital Space Stations', () => {
 
       const state = useGameStore.getState();
       expect(state.activeContract?.status).toBe('failed');
+    });
+  });
+
+  describe('buildRocket and fuel-per-launch', () => {
+    it('should build a rocket without consuming fuel', () => {
+      useGameStore.setState({
+        money: 1000,
+        fuel: 100,
+        rockets: [],
+        nextRocketId: 0,
+        rocketCost: 10,
+        spaceports: [{ type: 'cargo' }],
+        spaceportCapacity: 9,
+        explodedRocketIds: [],
+      } as unknown as GameState);
+
+      useGameStore.getState().buildRocket();
+
+      const state = useGameStore.getState();
+      expect(state.rockets.length).toBe(1);
+      expect(state.money).toBe(990);
+      expect(state.fuel).toBe(100);
+    });
+
+    it('should consume fuel during tick if rockets launch', () => {
+      useGameStore.setState({
+        fuel: 10,
+        rockets: [{ id: 1 }, { id: 2 }],
+        explodedRocketIds: [],
+        fuelCostPerRocket: 1,
+        profitPerRocket: 1,
+        spaceports: [{ type: 'cargo' }],
+        spaceportCapacity: 9,
+        spaceStations: [],
+        money: 0,
+        cargo: 0,
+        science: 0,
+        fuelRefineries: 0,
+        fuelProductionPerRefinery: 1,
+        rocketExplosionChance: 0, // Ensure no random explosions during test
+      } as unknown as GameState);
+
+      useGameStore.getState().tick();
+
+      const state = useGameStore.getState();
+      // 2 rockets launched: -2 fuel
+      expect(state.fuel).toBe(8);
+      // rewards for 2 successful launches
+      expect(state.cargo).toBeCloseTo(0.2);
+    });
+
+    it('should NOT generate rewards if fuel is insufficient', () => {
+      useGameStore.setState({
+        fuel: 0,
+        rockets: [{ id: 1 }],
+        explodedRocketIds: [],
+        fuelCostPerRocket: 1,
+        spaceports: [], // no passive income
+        money: 0,
+        cargo: 0,
+        science: 0,
+        fuelRefineries: 0,
+      } as unknown as GameState);
+
+      useGameStore.getState().tick();
+
+      const state = useGameStore.getState();
+      expect(state.fuel).toBe(0);
+      expect(state.cargo).toBe(0);
     });
   });
 });

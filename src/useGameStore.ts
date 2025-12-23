@@ -173,18 +173,48 @@ export const useGameStore = create<GameState>((set, get) => ({
   upgradeScienceRequirement: 10,
   researchedUpgrades: [],
   tick: () => set(state => {
-    const activeRockets = state.rockets.filter(r => r !== null).length - state.explodedRocketIds.length;
-    let cargoProd = activeRockets * state.profitPerRocket;
-    let sciProd = 0
-    // Generate Cargo resource: 0.1 per active rocket (representing launches)
-    let cargoResourceProd = activeRockets * 0.1;
+    const activeRocketIds = state.rockets.filter(r => r !== null).map(r => r!.id).filter(id => !state.explodedRocketIds.includes(id));
+    
+    let fuelAvailable = state.fuel + state.fuelRefineries * state.fuelProductionPerRefinery;
+    let successfulLaunches = 0;
+    let newExplodedRocketIds = [...state.explodedRocketIds];
+    let newActiveContract = state.activeContract ? { ...state.activeContract } : null;
 
+    // Process each rocket launch
+    for (const rocketId of activeRocketIds) {
+      if (fuelAvailable >= state.fuelCostPerRocket) {
+        fuelAvailable -= state.fuelCostPerRocket;
+        
+        // Roll for explosion
+        if (Math.random() < state.rocketExplosionChance) {
+          newExplodedRocketIds.push(rocketId);
+          // Handle contract fragility
+          if (newActiveContract && newActiveContract.status === 'active' && newActiveContract.maxExplosions !== -1) {
+            newActiveContract.currentExplosions += 1;
+            if (newActiveContract.currentExplosions > newActiveContract.maxExplosions) {
+              newActiveContract.status = 'failed';
+              get().addNotification(`Contract Failed: ${newActiveContract.title} (Too many explosions)`);
+            }
+          }
+        } else {
+          successfulLaunches += 1;
+        }
+      }
+    }
+
+    let cargoProd = successfulLaunches * state.profitPerRocket;
+    let sciProd = 0;
+    let cargoResourceProd = successfulLaunches * 0.1;
+
+    // Passive Spaceport Bonuses
     for (let i = 0; i < state.spaceports.length; i++) {
       if (state.spaceports[i].type === "cargo") {
         cargoProd += (i + 1)
       } else {
-        const spaceportRockets = Math.max(0, Math.min(state.spaceportCapacity, activeRockets - i * state.spaceportCapacity));
-        sciProd += spaceportRockets
+        // Science mode: generates science based on successful launches from this spaceport
+        // For simplicity, we split successful launches across spaceports
+        const spaceportLaunches = Math.floor(successfulLaunches / state.spaceports.length);
+        sciProd += spaceportLaunches;
       }
     }
 
@@ -199,13 +229,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       });
     }
 
-    let newMoney = state.money + cargoProd
-    let newScience = state.science + sciProd
-    let newFuel = state.fuel + state.fuelRefineries * state.fuelProductionPerRefinery;
-    let newCargo = state.cargo + cargoResourceProd;
-    let newExplodedRocketIds = [...state.explodedRocketIds]
-    let newActiveContract = state.activeContract ? { ...state.activeContract } : null;
-
     if (newActiveContract && newActiveContract.status === 'active') {
       if (newActiveContract.timeLimitSeconds > 0) {
         newActiveContract.elapsedSeconds += 1;
@@ -216,23 +239,16 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
-    if (Math.random() < state.rocketExplosionChance && activeRockets > 0) {
-      const activeRocketIds = state.rockets.filter(r => r !== null).map(r => r!.id).filter(id => !state.explodedRocketIds.includes(id));
-      const rocketToExplodeId = activeRocketIds[Math.floor(Math.random() * activeRocketIds.length)];
-      if (rocketToExplodeId !== undefined && !newExplodedRocketIds.includes(rocketToExplodeId)) {
-        newExplodedRocketIds.push(rocketToExplodeId);
-      }
-    }
-
+    const newScience = state.science + sciProd;
     if (newScience >= get().getUpgradeScienceRequirement() && state.availableUpgrades.length === 0) {
       get().checkForUpgrades();
     }
 
     return {
-      money: newMoney,
+      money: state.money + cargoProd,
       science: newScience,
-      fuel: newFuel,
-      cargo: newCargo,
+      fuel: fuelAvailable,
+      cargo: state.cargo + cargoResourceProd,
       activeContract: newActiveContract,
       explodedRocketIds: newExplodedRocketIds,
     }
@@ -242,7 +258,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const maxRockets = state.spaceports.length * state.spaceportCapacity;
       const currentTotalRockets = state.rockets.filter(r => r !== null).length;
 
-      if (currentTotalRockets < maxRockets && state.fuel >= state.fuelCostPerRocket) {
+      if (currentTotalRockets < maxRockets) {
         const currentRocketCost = Math.round(state.rocketCost * Math.pow(1.2, currentTotalRockets));
         if (state.money >= currentRocketCost) {
           const newRockets = [...state.rockets];
@@ -259,7 +275,6 @@ export const useGameStore = create<GameState>((set, get) => ({
 
           return {
             money: state.money - currentRocketCost,
-            fuel: state.fuel - state.fuelCostPerRocket,
             rockets: newRockets,
             nextRocketId: state.nextRocketId + 1,
           }
