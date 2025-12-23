@@ -45,7 +45,7 @@ Implement the company-driven contract economy.
 - [x] **Task 3: Implement Contract Completion and Failure Logic** 4b73ec2
   - Check cargo/science delivery requirements.
   - Track time constraints and explosion limits (fragility) in `tick`.
-- [ ] **Task 4: Create Contracts View UI**
+- [x] **Task 4: Create Contracts View UI** 3ee2178
   - Implement `src/ContractsView.tsx` with company levels and available contracts.
 - [ ] **Task 5: Integration and Persistence**
   - Update `App.tsx` navigation and `localStorage` save logic.
