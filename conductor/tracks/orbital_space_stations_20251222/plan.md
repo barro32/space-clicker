@@ -9,7 +9,7 @@ Focus on updating the `useGameStore` to handle the new "Orbit" mechanics.
 - [x] **Task 2: Implement `buildSpaceStation` Logic** e766aa7
   - Write tests for building stations (resource checks, state update).
   - Implement `buildSpaceStation` in `useGameStore`.
-- [ ] **Task 3: Implement Station Benefits in `tick` Loop**
+- [x] **Task 3: Implement Station Benefits in `tick` Loop** 9598794
   - Write tests for station benefits (e.g., science boost).
   - Update `tick` function to incorporate station-based modifiers.
 - [ ] **Task: Conductor - User Manual Verification 'Phase 1: Data Model and Store Integration' (Protocol in workflow.md)**
