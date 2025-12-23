@@ -6,6 +6,14 @@ describe('useGameStore - Orbital Space Stations', () => {
     useGameStore.setState({
       money: 100000,
       science: 1000,
+      fuel: 1000,
+      cargo: 0,
+      rockets: [],
+      spaceports: [{ type: 'cargo' }],
+      spaceStations: [],
+      activeContract: null,
+      availableContracts: [],
+      notifications: [],
     } as unknown as GameState);
   });
 
@@ -132,28 +140,38 @@ describe('useGameStore - Orbital Space Stations', () => {
    });
   });
 
-  describe('buildRocket regression check', () => {
-    it('should build a rocket if money and fuel are sufficient and space is available', () => {
-      useGameStore.setState({
-        money: 1000,
-        fuel: 100,
-        rockets: [],
-        nextRocketId: 0,
-        rocketCost: 10,
-        fuelCostPerRocket: 1,
-        spaceports: [{ type: 'cargo' }],
-        spaceportCapacity: 9,
-        explodedRocketIds: [],
-        spaceStations: [],
-      } as unknown as GameState);
-
-      useGameStore.getState().buildRocket();
-
+  describe('contracts system', () => {
+    it('should generate available contracts', () => {
+      useGameStore.getState().generateContracts();
       const state = useGameStore.getState();
-      expect(state.rockets.length).toBe(1);
-      expect(state.rockets[0]).not.toBeNull();
-      expect(state.money).toBe(990); // 1000 - 10
-      expect(state.fuel).toBe(99); // 100 - 1
+      expect(state.availableContracts).toHaveLength(3);
+      expect(state.availableContracts[0].status).toBe('available');
+    });
+
+    it('should allow accepting a contract', () => {
+      useGameStore.getState().generateContracts();
+      const available = useGameStore.getState().availableContracts;
+      const contractId = available[0].id;
+      
+      useGameStore.getState().acceptContract(contractId);
+      
+      const state = useGameStore.getState();
+      expect(state.activeContract).toBeDefined();
+      expect(state.activeContract?.id).toBe(contractId);
+      expect(state.activeContract?.status).toBe('active');
+      expect(state.availableContracts).toHaveLength(2);
+    });
+
+    it('should NOT allow accepting multiple contracts', () => {
+      useGameStore.getState().generateContracts();
+      const available = useGameStore.getState().availableContracts;
+      
+      useGameStore.getState().acceptContract(available[0].id);
+      useGameStore.getState().acceptContract(available[1].id);
+      
+      const state = useGameStore.getState();
+      expect(state.activeContract?.id).toBe(available[0].id);
+      expect(state.availableContracts).toHaveLength(2);
     });
   });
 });

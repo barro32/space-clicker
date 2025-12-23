@@ -138,7 +138,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   science: 0,
   fuel: 100,
   cargo: 0,
-  currentView: "surface",
+  currentView: "surface" as "surface" | "orbit" | "contracts",
   notifications: [],
   companies: [
     { id: 'titan', name: 'Titan Mining Corp', level: 1, experience: 0 },
@@ -347,7 +347,54 @@ export const useGameStore = create<GameState>((set, get) => ({
     const state = get();
     return Math.round(state.spaceportCost * Math.pow(1.5, state.spaceports.length));
   },
-  setView: (view: "surface" | "orbit") => set({ currentView: view }),
+  setView: (view: "surface" | "orbit" | "contracts") => set({ currentView: view }),
   addNotification: (message: string) => set(state => ({ notifications: [message, ...state.notifications].slice(0, 5) })),
+  generateContracts: () => set(state => {
+    if (state.availableContracts.length >= 3) return {};
+    
+    const newContracts: Contract[] = [...state.availableContracts];
+    const companiesToPick = [...state.companies];
+    
+    while (newContracts.length < 3 && companiesToPick.length > 0) {
+      const companyIndex = Math.floor(Math.random() * companiesToPick.length);
+      const company = companiesToPick.splice(companyIndex, 1)[0];
+      
+      const levelScale = company.level;
+      const isFragile = Math.random() > 0.7;
+      const isTimed = Math.random() > 0.5;
+
+      newContracts.push({
+        id: `contract-${Date.now()}-${Math.random()}`,
+        companyId: company.id,
+        title: `${company.name} ${['Supply', 'Research', 'Delivery', 'Project'][Math.floor(Math.random() * 4)]} #${Math.floor(Math.random() * 1000)}`,
+        description: `Deliver resources to support ${company.name}'s expansion.`,
+        requiredCargo: Math.round(100 * levelScale * (1 + Math.random())),
+        requiredScience: Math.round(50 * levelScale * (1 + Math.random())),
+        rewardMoney: Math.round(1000 * levelScale * (1 + Math.random())),
+        rewardScience: Math.round(100 * levelScale * (Math.random())),
+        rewardExperience: 50 * levelScale,
+        timeLimitSeconds: isTimed ? 60 + Math.floor(Math.random() * 120) : 0,
+        elapsedSeconds: 0,
+        maxExplosions: isFragile ? 1 + Math.floor(Math.random() * 3) : -1,
+        currentExplosions: 0,
+        status: 'available'
+      });
+    }
+    
+    return { availableContracts: newContracts };
+  }),
+  acceptContract: (contractId: string) => set(state => {
+    if (state.activeContract) return {};
+    
+    const contract = state.availableContracts.find(c => c.id === contractId);
+    if (!contract) return {};
+    
+    return {
+      activeContract: { ...contract, status: 'active' },
+      availableContracts: state.availableContracts.filter(c => c.id !== contractId),
+      notifications: [`Contract Accepted: ${contract.title}`, ...state.notifications].slice(0, 5)
+    };
+  }),
+  deliverContractResources: () => {}, // To be implemented in next task
 }))
 
