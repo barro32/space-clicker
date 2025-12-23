@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useGameStore, GameState, upgrades } from "./useGameStore"
 import { FaMoneyBillAlt, FaFlask, FaGasPump } from 'react-icons/fa' // Added FaGasPump
 import { SpaceportView } from "./SpaceportView"
+import { OrbitView } from "./OrbitView"
 import { DevConsole } from './DevConsole'
 
 
@@ -82,7 +83,7 @@ export function App() {
           Orbit
         </button>
       </div>
-      {currentView === "surface" ? <SpaceportView /> : <div className="text-4xl">Orbit View (Coming Soon)</div>}
+      {currentView === "surface" ? <SpaceportView /> : <OrbitView />}
       <div className="z-10">
         <p className="flex justify-center items-center text-2xl">
           <FaMoneyBillAlt className="mr-2"/> {money}
