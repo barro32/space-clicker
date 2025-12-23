@@ -19,7 +19,7 @@ Create the visual representation for the Orbit view and allow players to navigat
 
 - [x] **Task 1: Create View Switcher Component** 545a67c
   - Add a simple "Surface / Orbit" toggle to the main `App.tsx` or a new navigation component.
-- [ ] **Task 2: Implement `OrbitView` Component**
+- [x] **Task 2: Implement `OrbitView` Component** 95f66b7
   - Create `src/OrbitView.tsx`.
   - Display current stations and a "Build Station" button.
 - [ ] **Task 3: Integrate `OrbitView` into `App.tsx`**
