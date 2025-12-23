@@ -67,6 +67,7 @@ export interface GameState {
   fuel: number;
   cargo: number;
   currentView: "surface" | "orbit";
+  notifications: string[];
   rockets: ({ id: number } | null)[];
   nextRocketId: number;
   rocketCost: number
@@ -87,6 +88,7 @@ export interface GameState {
   getUpgradeScienceRequirement: () => number;
   getCurrentSpaceportCost: () => number;
   setView: (view: "surface" | "orbit") => void;
+  addNotification: (message: string) => void;
   tick: () => void
   buildRocket: () => void
   buildSpaceport: () => void
@@ -107,6 +109,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   fuel: 100,
   cargo: 0,
   currentView: "surface",
+  notifications: [],
   rockets: [],
   nextRocketId: 0,
   rocketCost: 10,
@@ -227,7 +230,8 @@ export const useGameStore = create<GameState>((set, get) => ({
           id: `station-${Date.now()}-${Math.random()}`,
           type,
           level: 1
-        }]
+        }],
+        notifications: [`Deployed ${type} station`, ...state.notifications].slice(0, 5)
       };
     }
     return {};
@@ -300,5 +304,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     return Math.round(state.spaceportCost * Math.pow(1.5, state.spaceports.length));
   },
   setView: (view: "surface" | "orbit") => set({ currentView: view }),
+  addNotification: (message: string) => set(state => ({ notifications: [message, ...state.notifications].slice(0, 5) })),
 }))
 

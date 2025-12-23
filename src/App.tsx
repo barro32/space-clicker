@@ -7,7 +7,7 @@ import { DevConsole } from './DevConsole'
 
 
 export function App() {
-  const { money, science, fuel, cargo, tick, availableUpgrades, selectUpgrade, currentView, setView } = useGameStore()
+  const { money, science, fuel, cargo, tick, availableUpgrades, selectUpgrade, currentView, setView, notifications } = useGameStore()
 
   useEffect(() => {
     const interval = setInterval(tick, 1000)
@@ -24,6 +24,9 @@ export function App() {
       }
       if (!state.currentView) {
         state.currentView = "surface";
+      }
+      if (!state.notifications) {
+        state.notifications = [];
       }
       // Re-hydrate availableUpgrades
       if (state.availableUpgrades && state.availableUpgrades.length > 0) {
@@ -43,6 +46,7 @@ export function App() {
         fuel: state.fuel,
         cargo: state.cargo,
         currentView: state.currentView,
+        notifications: state.notifications,
         rockets: state.rockets,
         nextRocketId: state.nextRocketId,
         rocketCost: state.rocketCost,
@@ -85,6 +89,16 @@ export function App() {
         </button>
       </div>
       {currentView === "surface" ? <SpaceportView /> : <OrbitView />}
+      
+      {/* Notifications Overlay */}
+      <div className="absolute top-16 left-4 z-30 flex flex-col gap-2 pointer-events-none">
+        {notifications.map((msg, i) => (
+          <div key={i} className="bg-gray-800 border border-gray-600 px-4 py-2 rounded text-sm opacity-90 animate-pulse">
+            {msg}
+          </div>
+        ))}
+      </div>
+
       <div className="z-10">
         <p className="flex justify-center items-center text-2xl">
           <FaMoneyBillAlt className="mr-2"/> {money}
