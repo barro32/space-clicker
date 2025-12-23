@@ -14,7 +14,7 @@ Focus on updating the `useGameStore` to handle the new "Orbit" mechanics.
   - Update `tick` function to incorporate station-based modifiers.
 - [ ] **Task: Conductor - User Manual Verification 'Phase 1: Data Model and Store Integration' (Protocol in workflow.md)**
 
-## Phase 2: Orbital UI and Navigation
+## Phase 2: Orbital UI and Navigation [checkpoint: 2d1eec5]
 Create the visual representation for the Orbit view and allow players to navigate to it.
 
 - [x] **Task 1: Create View Switcher Component** 545a67c
