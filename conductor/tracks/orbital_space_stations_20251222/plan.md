@@ -17,7 +17,7 @@ Focus on updating the `useGameStore` to handle the new "Orbit" mechanics.
 ## Phase 2: Orbital UI and Navigation
 Create the visual representation for the Orbit view and allow players to navigate to it.
 
-- [ ] **Task 1: Create View Switcher Component**
+- [x] **Task 1: Create View Switcher Component** 545a67c
   - Add a simple "Surface / Orbit" toggle to the main `App.tsx` or a new navigation component.
 - [ ] **Task 2: Implement `OrbitView` Component**
   - Create `src/OrbitView.tsx`.
