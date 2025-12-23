@@ -22,7 +22,7 @@ Create the visual representation for the Orbit view and allow players to navigat
 - [x] **Task 2: Implement `OrbitView` Component** 95f66b7
   - Create `src/OrbitView.tsx`.
   - Display current stations and a "Build Station" button.
-- [ ] **Task 3: Integrate `OrbitView` into `App.tsx`**
+- [x] **Task 3: Integrate `OrbitView` into `App.tsx`** a9d9aef
   - Ensure the view correctly switches based on the global state or local navigation state.
 - [ ] **Task: Conductor - User Manual Verification 'Phase 2: Orbital UI and Navigation' (Protocol in workflow.md)**
 
