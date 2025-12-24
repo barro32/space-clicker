@@ -131,7 +131,7 @@ export interface GameState {
   researchedUpgrades: string[];
 }
 
-const SPACEPORT_EXPLODE = 0.1
+
 
 export const useGameStore = create<GameState>((set, get) => ({
   money: 10,
@@ -169,7 +169,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   explodedRocketIds: [],
   upgradeLevel: 1,
   availableUpgrades: [],
-  rocketExplosionChance: 0.9,
+  rocketExplosionChance: 0.05,
   upgradeScienceRequirement: 10,
   researchedUpgrades: [],
   tick: () => set(state => {
