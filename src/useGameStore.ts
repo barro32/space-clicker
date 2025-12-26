@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { researchTree, ResearchNode } from './researchTree'
 
 interface Spaceport {
   type: "cargo" | "science"
@@ -114,6 +115,7 @@ export interface GameState {
   upgradeScienceRequirement: number;
   getUpgradeScienceRequirement: () => number;
   getCurrentSpaceportCost: () => number;
+  getEffectMultiplier: (type: string) => number;
   setView: (view: "surface" | "orbit" | "contracts") => void;
   addNotification: (message: string) => void;
   generateContracts: () => void;
@@ -129,6 +131,8 @@ export interface GameState {
   checkForUpgrades: () => void;
   selectUpgrade: (upgradeId: string) => void;
   researchedUpgrades: string[];
+  researchedNodes: string[];
+  unlockNode: (nodeId: string) => void;
 }
 
 
@@ -172,21 +176,26 @@ export const useGameStore = create<GameState>((set, get) => ({
   rocketExplosionChance: 0.05,
   upgradeScienceRequirement: 10,
   researchedUpgrades: [],
+  researchedNodes: [],
   tick: () => set(state => {
     const activeRocketIds = state.rockets.filter(r => r !== null).map(r => r!.id).filter(id => !state.explodedRocketIds.includes(id));
     
-    let fuelAvailable = state.fuel + state.fuelRefineries * state.fuelProductionPerRefinery;
+    const fuelProduction = state.fuelRefineries * state.fuelProductionPerRefinery * state.getEffectMultiplier('refineryOutputMultiplier');
+    let fuelAvailable = state.fuel + fuelProduction;
     let successfulLaunches = 0;
     let newExplodedRocketIds = [...state.explodedRocketIds];
     let newActiveContract = state.activeContract ? { ...state.activeContract } : null;
 
+    const effectiveFuelCost = state.fuelCostPerRocket * state.getEffectMultiplier('fuelCostMultiplier');
+    const effectiveExplosionChance = state.rocketExplosionChance * state.getEffectMultiplier('explosionChanceMultiplier');
+
     // Process each rocket launch
     for (const rocketId of activeRocketIds) {
-      if (fuelAvailable >= state.fuelCostPerRocket) {
-        fuelAvailable -= state.fuelCostPerRocket;
+      if (fuelAvailable >= effectiveFuelCost) {
+        fuelAvailable -= effectiveFuelCost;
         
         // Roll for explosion
-        if (Math.random() < state.rocketExplosionChance) {
+        if (Math.random() < effectiveExplosionChance) {
           newExplodedRocketIds.push(rocketId);
           // Handle contract fragility
           if (newActiveContract && newActiveContract.status === 'active' && newActiveContract.maxExplosions !== -1) {
@@ -202,17 +211,15 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
-    let cargoProd = successfulLaunches * state.profitPerRocket;
+    let cargoProd = successfulLaunches * state.profitPerRocket * state.getEffectMultiplier('profitMultiplier');
     let sciProd = 0;
-    let cargoResourceProd = successfulLaunches * 0.1;
+    let cargoResourceProd = successfulLaunches * 0.1 * state.getEffectMultiplier('cargoGenerationMultiplier');
 
     // Passive Spaceport Bonuses
     for (let i = 0; i < state.spaceports.length; i++) {
       if (state.spaceports[i].type === "cargo") {
         cargoProd += (i + 1)
       } else {
-        // Science mode: generates science based on successful launches from this spaceport
-        // For simplicity, we split successful launches across spaceports
         const spaceportLaunches = Math.floor(successfulLaunches / state.spaceports.length);
         sciProd += spaceportLaunches;
       }
@@ -222,9 +229,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (state.spaceStations) {
       state.spaceStations.forEach(station => {
         if (station.type === 'research') {
-          sciProd += 10 * station.level;
+          sciProd += 10 * station.level * state.getEffectMultiplier('stationScienceMultiplier');
         } else if (station.type === 'logistics') {
-          cargoProd += 50 * station.level;
+          cargoProd += 50 * station.level * state.getEffectMultiplier('stationLogisticsMultiplier');
         }
       });
     }
@@ -255,11 +262,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   }),
   buildRocket: () =>
     set(state => {
-      const maxRockets = state.spaceports.length * state.spaceportCapacity;
+      const effectiveCapacity = state.spaceportCapacity + state.getEffectMultiplier('spaceportCapacityBonus');
+      const maxRockets = state.spaceports.length * effectiveCapacity;
       const currentTotalRockets = state.rockets.filter(r => r !== null).length;
 
       if (currentTotalRockets < maxRockets) {
-        const currentRocketCost = Math.round(state.rocketCost * Math.pow(1.2, currentTotalRockets));
+        const baseCost = state.rocketCost * Math.pow(1.2, currentTotalRockets);
+        const currentRocketCost = Math.round(baseCost * state.getEffectMultiplier('constructionCostMultiplier'));
         if (state.money >= currentRocketCost) {
           const newRockets = [...state.rockets];
           const newRocket = { id: state.nextRocketId };
@@ -291,8 +300,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       return {}
     }),
   buildSpaceStation: (type: SpaceStation['type']) => set(state => {
-    const costCargo = 500;
-    const costScience = 500;
+    const constructionMultiplier = state.getEffectMultiplier('constructionCostMultiplier');
+    const costCargo = Math.round(500 * constructionMultiplier);
+    const costScience = Math.round(500 * constructionMultiplier);
     if (state.cargo >= costCargo && state.science >= costScience) {
       return {
         cargo: state.cargo - costCargo,
@@ -309,7 +319,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   }),
   buildFuelRefinery: () =>
     set(state => {
-      const currentFuelRefineryCost = Math.round(state.fuelRefineryCost * Math.pow(1.5, state.fuelRefineries));
+      const baseCost = state.fuelRefineryCost * Math.pow(1.5, state.fuelRefineries);
+      const currentFuelRefineryCost = Math.round(baseCost * state.getEffectMultiplier('constructionCostMultiplier'));
       if (state.money >= currentFuelRefineryCost) {
         return {
           money: state.money - currentFuelRefineryCost,
@@ -382,7 +393,23 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
   getCurrentSpaceportCost: () => {
     const state = get();
-    return Math.round(state.spaceportCost * Math.pow(1.5, state.spaceports.length));
+    return Math.round(state.spaceportCost * Math.pow(1.5, state.spaceports.length) * state.getEffectMultiplier('constructionCostMultiplier'));
+  },
+  getEffectMultiplier: (type: string) => {
+    const state = get();
+    const multipliers = researchTree
+      .filter(node => state.researchedNodes.includes(node.id) && node.effect.type === type)
+      .map(node => node.effect.value);
+    
+    if (multipliers.length === 0) return 1;
+    
+    // Most effects are multiplicative, but some might be additive bonuses
+    // We treat 'Multiplier' suffix as multiplicative, others as additive
+    if (type.endsWith('Multiplier')) {
+      return multipliers.reduce((acc, val) => acc * val, 1);
+    } else {
+      return multipliers.reduce((acc, val) => acc + val, 0); // Wait, base is usually different for additive
+    }
   },
   setView: (view: "surface" | "orbit" | "contracts") => set({ currentView: view }),
   addNotification: (message: string) => set(state => ({ notifications: [message, ...state.notifications].slice(0, 5) })),
@@ -461,12 +488,33 @@ export const useGameStore = create<GameState>((set, get) => ({
       return {
         cargo: state.cargo - contract.requiredCargo,
         science: state.science - contract.requiredScience + contract.rewardScience,
-        money: state.money + contract.rewardMoney,
+        money: state.money + contract.rewardMoney * state.getEffectMultiplier('contractMoneyMultiplier'),
         companies: newCompanies,
         activeContract: null, // Clear active contract
       };
     }
     return {};
+  }),
+  unlockNode: (nodeId: string) => set(state => {
+    const node = researchTree.find(n => n.id === nodeId);
+    if (!node) return {};
+    
+    // Check if already researched
+    if (state.researchedNodes.includes(nodeId)) return {};
+    
+    // Check prerequisites
+    const metPrereqs = node.prerequisites.every(p => state.researchedNodes.includes(p));
+    if (!metPrereqs) return {};
+    
+    // Check science cost
+    if (state.science < node.scienceCost) return {};
+    
+    get().addNotification(`Technology Unlocked: ${node.name}`);
+    
+    return {
+      science: state.science - node.scienceCost,
+      researchedNodes: [...state.researchedNodes, nodeId]
+    };
   }),
 }))
 
