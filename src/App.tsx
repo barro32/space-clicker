@@ -4,6 +4,7 @@ import { FaMoneyBillAlt, FaFlask, FaGasPump, FaBoxOpen } from 'react-icons/fa' /
 import { SpaceportView } from "./SpaceportView"
 import { OrbitView } from "./OrbitView"
 import { ContractsView } from "./ContractsView"
+import { ResearchTreeView } from "./ResearchTreeView"
 import { DevConsole } from './DevConsole'
 
 
@@ -97,15 +98,21 @@ export function App() {
                 >
                   Orbit
                 </button>
-                <button 
-                  onClick={() => setView("contracts")} 
-                  className={`px-4 py-2 rounded ${currentView === "contracts" ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}
-                >
-                  Contracts
-                </button>
-              </div>
-              {currentView === "surface" ? <SpaceportView /> : currentView === "orbit" ? <OrbitView /> : <ContractsView />}
-              {/* Notifications Overlay */}
+                        <button 
+                          onClick={() => setView("contracts")} 
+                          className={`px-4 py-2 rounded ${currentView === "contracts" ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}
+                        >
+                          Contracts
+                        </button>
+                        <button 
+                          onClick={() => setView("research")} 
+                          className={`px-4 py-2 rounded ${currentView === "research" ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}
+                        >
+                          Research
+                                </button>
+                              </div>
+                              {currentView === "surface" ? <SpaceportView /> : currentView === "orbit" ? <OrbitView /> : currentView === "contracts" ? <ContractsView /> : <ResearchTreeView />}
+                              {/* Notifications Overlay */}
       <div className="absolute top-16 left-4 z-30 flex flex-col gap-2 pointer-events-none">
         {notifications.map((msg, i) => (
           <div key={i} className="bg-gray-800 border border-gray-600 px-4 py-2 rounded text-sm opacity-90 animate-pulse">
