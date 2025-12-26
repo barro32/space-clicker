@@ -13,15 +13,15 @@ Define the tree configuration and implement the core unlocking mechanics in the 
   - Ensure that unlocked research benefits are correctly applied to the game logic (e.g., updating multipliers used in `tick`).
 - [ ] **Task: Conductor - User Manual Verification 'Phase 1: Research Tree Data Structure and Logic' (Protocol in workflow.md)**
 
-## Phase 2: Research Tree UI
+## Phase 2: Research Tree UI [checkpoint: 222f796]
 Create the visual tree and integrate the new tab into the navigation.
 
-- [ ] **Task 1: Update Navigation for Research Tab**
+- [~] **Task 1: Update Navigation for Research Tab**
   - Add "Research" button to the `App.tsx` navigation bar.
-- [ ] **Task 2: Create `ResearchTreeView` Component**
+- [~] **Task 2: Create `ResearchTreeView` Component**
   - Implement a visual tree layout using CSS Grid or Flexbox.
   - Display node status (Locked/Available/Unlocked).
-- [ ] **Task 3: Implement Node Interaction**
+- [~] **Task 3: Implement Node Interaction**
   - Show details on hover or click.
   - Trigger `unlockNode` when purchasing.
 - [ ] **Task: Conductor - User Manual Verification 'Phase 2: Research Tree UI' (Protocol in workflow.md)**
