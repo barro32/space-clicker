@@ -14,6 +14,7 @@ describe('useGameStore - Orbital Space Stations', () => {
       activeContract: null,
       availableContracts: [],
       notifications: [],
+      researchedNodes: [],
     } as unknown as GameState);
   });
 
@@ -239,6 +240,82 @@ describe('useGameStore - Orbital Space Stations', () => {
 
       const state = useGameStore.getState();
       expect(state.activeContract?.status).toBe('failed');
+    });
+  });
+
+  describe('Research System Logic', () => {
+    it('should unlock a node if cost and prereqs met', () => {
+      useGameStore.setState({
+        science: 1000,
+        researchedNodes: [],
+      } as unknown as GameState);
+
+      // Unlock p1 (Efficient Engines, cost 100, no prereqs)
+      useGameStore.getState().unlockNode('p1');
+
+      const state = useGameStore.getState();
+      expect(state.researchedNodes).toContain('p1');
+      expect(state.science).toBe(900);
+    });
+
+    it('should NOT unlock a node if science is insufficient', () => {
+      useGameStore.setState({
+        science: 50,
+        researchedNodes: [],
+      } as unknown as GameState);
+
+      useGameStore.getState().unlockNode('p1');
+
+      const state = useGameStore.getState();
+      expect(state.researchedNodes).not.toContain('p1');
+      expect(state.science).toBe(50);
+    });
+
+    it('should NOT unlock a node if prerequisites are NOT met', () => {
+      useGameStore.setState({
+        science: 1000,
+        researchedNodes: [],
+      } as unknown as GameState);
+
+      // p2 requires p1
+      useGameStore.getState().unlockNode('p2');
+
+      const state = useGameStore.getState();
+      expect(state.researchedNodes).not.toContain('p2');
+    });
+
+    it('should apply fuel cost multiplier correctly', () => {
+      useGameStore.setState({
+        fuel: 100,
+        fuelCostPerRocket: 10,
+        researchedNodes: ['p1'], // 0.9 multiplier
+        rockets: [{ id: 1 }],
+        explodedRocketIds: [],
+        fuelRefineries: 0,
+        spaceports: [],
+        spaceStations: [],
+      } as unknown as GameState);
+
+      useGameStore.getState().tick();
+
+      const state = useGameStore.getState();
+      // 100 - (10 * 0.9) = 91
+      expect(state.fuel).toBe(91);
+    });
+
+    it('should apply construction cost multiplier correctly', () => {
+      useGameStore.setState({
+        spaceportCost: 1000,
+        spaceports: [],
+        researchedNodes: ['i3'], // 0.85 multiplier (wait, i3 requires i2 requires i1)
+      } as unknown as GameState);
+      
+      // Manually set prereqs to bypass check if needed, 
+      // but unlockNode handles it. Here we test getCurrentSpaceportCost directly.
+      
+      const cost = useGameStore.getState().getCurrentSpaceportCost();
+      // 1000 * 1.5^0 * 0.85 = 850
+      expect(cost).toBe(850);
     });
   });
 
