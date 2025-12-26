@@ -40,52 +40,6 @@ interface Explosion {
   slot: number
 }
 
-interface Upgrade {
-  id: string;
-  name: string;
-  description: string;
-  apply: (state: GameState) => Partial<GameState>;
-  prerequisites: string[];
-}
-
-export const upgrades: Upgrade[] = [
-  {
-    id: 'profit',
-    name: 'Increased Profits',
-    description: 'Increases profit per rocket by 1.',
-    apply: state => ({ profitPerRocket: state.profitPerRocket + 1 }),
-    prerequisites: [],
-  },
-  {
-    id: 'rocket_cost',
-    name: 'Cheaper Rockets',
-    description: 'Decreases rocket cost by 10%.',
-    apply: state => ({ rocketCost: Math.max(1, Math.floor(state.rocketCost * 0.9)) }),
-    prerequisites: [],
-  },
-  {
-    id: 'spaceport_cost',
-    name: 'Cheaper Spaceports',
-    description: 'Decreases spaceport cost by 10%.',
-    apply: state => ({ spaceportCost: Math.max(10, Math.floor(state.spaceportCost * 0.9)) }),
-    prerequisites: [],
-  },
-  {
-    id: 'explosion_chance',
-    name: 'Safer Rockets',
-    description: 'Decreases rocket explosion chance by 10%.',
-    apply: state => ({ rocketExplosionChance: state.rocketExplosionChance * 0.9 }),
-    prerequisites: [],
-  },
-  {
-    id: 'improved_refinery_output',
-    name: 'Improved Refinery Output',
-    description: 'Increases fuel production per refinery by 1.',
-    apply: state => ({ fuelProductionPerRefinery: state.fuelProductionPerRefinery + 1 }),
-    prerequisites: [],
-  },
-];
-
 export interface GameState {
   money: number
   science: number
@@ -109,14 +63,10 @@ export interface GameState {
   fuelCostPerRocket: number;
   fuelRefineryCost: number;
   explodedRocketIds: number[];
-  upgradeLevel: number;
-  availableUpgrades: Upgrade[];
   rocketExplosionChance: number;
-  upgradeScienceRequirement: number;
-  getUpgradeScienceRequirement: () => number;
   getCurrentSpaceportCost: () => number;
   getEffectMultiplier: (type: string) => number;
-  setView: (view: "surface" | "orbit" | "contracts") => void;
+  setView: (view: "surface" | "orbit" | "contracts" | "research") => void;
   addNotification: (message: string) => void;
   generateContracts: () => void;
   acceptContract: (contractId: string) => void;
@@ -127,10 +77,7 @@ export interface GameState {
   buildSpaceStation: (type: SpaceStation['type']) => void
   buildFuelRefinery: () => void;
   toggleSpaceport: (index: number) => void
-  clearExplosion: (rocketId: number) => void
-  checkForUpgrades: () => void;
-  selectUpgrade: (upgradeId: string) => void;
-  researchedUpgrades: string[];
+  clearExplosion: (rocketId: number) => void;
   researchedNodes: string[];
   unlockNode: (nodeId: string) => void;
 }
@@ -171,11 +118,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   fuelCostPerRocket: 1,
   fuelRefineryCost: 500,
   explodedRocketIds: [],
-  upgradeLevel: 1,
-  availableUpgrades: [],
   rocketExplosionChance: 0.05,
-  upgradeScienceRequirement: 10,
-  researchedUpgrades: [],
   researchedNodes: [],
   tick: () => set(state => {
     const activeRocketIds = state.rockets.filter(r => r !== null).map(r => r!.id).filter(id => !state.explodedRocketIds.includes(id));
@@ -247,9 +190,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     const newScience = state.science + sciProd;
-    if (newScience >= get().getUpgradeScienceRequirement() && state.availableUpgrades.length === 0) {
-      get().checkForUpgrades();
-    }
 
     return {
       money: state.money + cargoProd,
@@ -358,39 +298,6 @@ export const useGameStore = create<GameState>((set, get) => ({
         activeContract: newActiveContract,
       }
     }),
-  checkForUpgrades: () => set(state => {
-    if (state.availableUpgrades.length > 0) {
-      return {};
-    }
-    const chosenUpgrades = [];
-    const available = upgrades.filter(u => u.prerequisites.every(p => state.researchedUpgrades.includes(p)));
-    for (let i = 0; i < 3; i++) {
-      if (available.length === 0) break;
-      const randomIndex = Math.floor(Math.random() * available.length);
-      chosenUpgrades.push(available.splice(randomIndex, 1)[0]);
-    }
-    return { availableUpgrades: chosenUpgrades };
-  }),
-  selectUpgrade: (upgradeId: string) => set(state => {
-    const upgrade = upgrades.find(u => u.id === upgradeId);
-    if (!upgrade) {
-      return {};
-    }
-
-    const newState = upgrade.apply(get());
-
-    return {
-      ...newState,
-      science: state.science - get().getUpgradeScienceRequirement(),
-      upgradeLevel: state.upgradeLevel + 1,
-      availableUpgrades: [],
-      researchedUpgrades: [...state.researchedUpgrades, upgradeId],
-    };
-  }),
-  getUpgradeScienceRequirement: () => {
-    const state = get();
-    return Math.floor(state.upgradeScienceRequirement * Math.pow(1.1, state.upgradeLevel));
-  },
   getCurrentSpaceportCost: () => {
     const state = get();
     return Math.round(state.spaceportCost * Math.pow(1.5, state.spaceports.length) * state.getEffectMultiplier('constructionCostMultiplier'));

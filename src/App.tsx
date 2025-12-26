@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useGameStore, GameState, upgrades } from "./useGameStore"
+import { useGameStore, GameState } from "./useGameStore"
 import { FaMoneyBillAlt, FaFlask, FaGasPump, FaBoxOpen } from 'react-icons/fa' // Added FaGasPump
 import { SpaceportView } from "./SpaceportView"
 import { OrbitView } from "./OrbitView"
@@ -9,7 +9,7 @@ import { DevConsole } from './DevConsole'
 
 
 export function App() {
-  const { money, science, fuel, cargo, tick, availableUpgrades, selectUpgrade, currentView, setView, notifications } = useGameStore()
+  const { money, science, fuel, cargo, tick, currentView, setView, notifications } = useGameStore()
 
   useEffect(() => {
     const interval = setInterval(tick, 1000)
@@ -35,13 +35,6 @@ export function App() {
       }
       if (!state.availableContracts) {
         state.availableContracts = [];
-      }
-      // Re-hydrate availableUpgrades
-      if (state.availableUpgrades && state.availableUpgrades.length > 0) {
-        state.availableUpgrades = state.availableUpgrades.map((savedUpgrade: { id: string }) => {
-          const fullUpgrade = upgrades.find(u => u.id === savedUpgrade.id);
-          return fullUpgrade || savedUpgrade; // Return full upgrade or original if not found
-        });
       }
       useGameStore.setState(state);
     }
@@ -71,11 +64,8 @@ export function App() {
         fuelCostPerRocket: state.fuelCostPerRocket,
         fuelRefineryCost: state.fuelRefineryCost,
         explodedRocketIds: state.explodedRocketIds,
-        upgradeLevel: state.upgradeLevel,
-        availableUpgrades: state.availableUpgrades,
         rocketExplosionChance: state.rocketExplosionChance,
-        upgradeScienceRequirement: state.upgradeScienceRequirement,
-        researchedUpgrades: state.researchedUpgrades, // Add researchedUpgrades
+        researchedNodes: state.researchedNodes,
       };
       localStorage.setItem('gameState', JSON.stringify(stateToSave));
     }, 30000);
@@ -92,26 +82,26 @@ export function App() {
         >
           Surface
         </button>
-                <button 
-                  onClick={() => setView("orbit")} 
-                  className={`px-4 py-2 rounded ${currentView === "orbit" ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}
-                >
-                  Orbit
-                </button>
-                        <button 
-                          onClick={() => setView("contracts")} 
-                          className={`px-4 py-2 rounded ${currentView === "contracts" ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}
-                        >
-                          Contracts
-                        </button>
-                        <button 
-                          onClick={() => setView("research")} 
-                          className={`px-4 py-2 rounded ${currentView === "research" ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}
-                        >
-                          Research
-                                </button>
-                              </div>
-                              {currentView === "surface" ? <SpaceportView /> : currentView === "orbit" ? <OrbitView /> : currentView === "contracts" ? <ContractsView /> : <ResearchTreeView />}
+        <button 
+          onClick={() => setView("orbit")} 
+          className={`px-4 py-2 rounded ${currentView === "orbit" ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}
+        >
+          Orbit
+        </button>
+        <button 
+          onClick={() => setView("contracts")} 
+          className={`px-4 py-2 rounded ${currentView === "contracts" ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}
+        >
+          Contracts
+        </button>
+        <button 
+          onClick={() => setView("research")} 
+          className={`px-4 py-2 rounded ${currentView === "research" ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}
+        >
+          Research
+        </button>
+      </div>
+      {currentView === "surface" ? <SpaceportView /> : currentView === "orbit" ? <OrbitView /> : currentView === "contracts" ? <ContractsView /> : <ResearchTreeView />}
                               {/* Notifications Overlay */}
       <div className="absolute top-16 left-4 z-30 flex flex-col gap-2 pointer-events-none">
         {notifications.map((msg, i) => (
@@ -135,45 +125,6 @@ export function App() {
           <FaBoxOpen className="mr-2"/> {Math.floor(cargo)}
         </p>
       </div>
-      {availableUpgrades.length > 0 && (
-        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-8 rounded-lg">
-            <h2 className="text-2xl mb-4">Select an Upgrade</h2>
-            <div className="grid grid-cols-3 gap-4">
-              {availableUpgrades.map(upgrade => {
-                const state = useGameStore.getState();
-                const newState = upgrade.apply(state);
-                const changedValueKey = Object.keys(newState)[0] as keyof GameState;
-                const oldValue = state[changedValueKey];
-                const newValue = newState[changedValueKey];
-
-                let oldValueDisplay: React.ReactNode = '';
-                let newValueDisplay: React.ReactNode = '';
-                if (changedValueKey === 'rocketExplosionChance') {
-                  oldValueDisplay = `${((oldValue as number) * 100).toFixed(2)}%`;
-                  newValueDisplay = `${((newValue as number) * 100).toFixed(2)}%`;
-                } else if (typeof oldValue === 'number' && typeof newValue === 'number') {
-                  oldValueDisplay = oldValue.toLocaleString();
-                  newValueDisplay = newValue.toLocaleString();
-                } else {
-                  oldValueDisplay = String(oldValue);
-                  newValueDisplay = String(newValue);
-                }
-
-                return (
-                  <div key={upgrade.id} className="bg-gray-700 p-4 rounded-lg cursor-pointer" onClick={() => selectUpgrade(upgrade.id)}>
-                    <h3 className="text-xl">{upgrade.name}</h3>
-                    <p>{upgrade.description}</p>
-                    <p>
-                      {oldValueDisplay}{" -> "}{newValueDisplay}
-                    </p>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      )}
       <DevConsole />
 
     </div>
