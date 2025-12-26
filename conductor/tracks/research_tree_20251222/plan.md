@@ -16,22 +16,22 @@ Define the tree configuration and implement the core unlocking mechanics in the 
 ## Phase 2: Research Tree UI [checkpoint: 222f796]
 Create the visual tree and integrate the new tab into the navigation.
 
-- [~] **Task 1: Update Navigation for Research Tab**
+- [x] **Task 1: Update Navigation for Research Tab** d8aaef1
   - Add "Research" button to the `App.tsx` navigation bar.
-- [~] **Task 2: Create `ResearchTreeView` Component**
+- [x] **Task 2: Create `ResearchTreeView` Component** d8aaef1
   - Implement a visual tree layout using CSS Grid or Flexbox.
   - Display node status (Locked/Available/Unlocked).
-- [~] **Task 3: Implement Node Interaction**
+- [x] **Task 3: Implement Node Interaction** d8aaef1
   - Show details on hover or click.
   - Trigger `unlockNode` when purchasing.
-- [ ] **Task: Conductor - User Manual Verification 'Phase 2: Research Tree UI' (Protocol in workflow.md)**
+- [x] **Task: Conductor - User Manual Verification 'Phase 2: Research Tree UI' (Protocol in workflow.md)**
 
-## Phase 3: Integration and Cleanup
+## Phase 3: Integration and Cleanup [checkpoint: b3ef689]
 Remove the legacy upgrade system and finalize the experience.
 
-- [ ] **Task 1: Disable Legacy Upgrade Pop-ups**
+- [x] **Task 1: Disable Legacy Upgrade Pop-ups** 7871f72
   - Remove `availableUpgrades` logic from `tick` and `App.tsx`.
-- [ ] **Task 2: Migrate and Balance**
+- [x] **Task 2: Migrate and Balance** 7871f72
   - Ensure all previous "Upgrades" are now part of the tree.
   - Adjust Science costs for a smooth progression.
-- [ ] **Task: Conductor - User Manual Verification 'Phase 3: Integration and Cleanup' (Protocol in workflow.md)**
+- [x] **Task: Conductor - User Manual Verification 'Phase 3: Integration and Cleanup' (Protocol in workflow.md)**
