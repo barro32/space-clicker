@@ -1,6 +1,6 @@
 # Track Plan: Implement Research Tree System
 
-## Phase 1: Research Tree Data Structure and Logic [checkpoint: 9cd9574]
+## Phase 1: Research Tree Data Structure and Logic [checkpoint: 23b48db]
 Define the tree configuration and implement the core unlocking mechanics in the store.
 
 - [x] **Task 1: Define Research Tree Configuration** db24bba
@@ -11,7 +11,7 @@ Define the tree configuration and implement the core unlocking mechanics in the 
   - Implement `unlockNode` action with cost and prerequisite checks.
 - [x] **Task 3: Implement Benefit Application** 9672aa3
   - Ensure that unlocked research benefits are correctly applied to the game logic (e.g., updating multipliers used in `tick`).
-- [ ] **Task: Conductor - User Manual Verification 'Phase 1: Research Tree Data Structure and Logic' (Protocol in workflow.md)**
+- [x] **Task: Conductor - User Manual Verification 'Phase 1: Research Tree Data Structure and Logic' (Protocol in workflow.md)** 23b48db
 
 ## Phase 2: Research Tree UI [checkpoint: 222f796]
 Create the visual tree and integrate the new tab into the navigation.
