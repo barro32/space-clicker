@@ -42,21 +42,21 @@ export function SpaceportView() {
           <div></div> {/* Removed Fuel cost label */}
           {scienceRocketsUnlocked && (
             <>
-              <div onClick={buildScienceRocket} className="cursor-pointer"><FaFlask className="text-2xl text-purple-400" /></div>
+               <div onClick={buildScienceRocket} className="cursor-pointer" title="Science Rocket (o4): +1 science per successful launch"><FaFlask className="text-2xl text-purple-400" /></div>
               <div>${currentRocketCost}</div>
               <div></div>
             </>
           )}
           {spaceportsUnlocked && (
             <>
-              <div onClick={buildSpaceport} className="cursor-pointer"><FaRegBuilding className="text-2xl" /></div>
+               <div onClick={buildSpaceport} className="cursor-pointer" title="New Spaceport (o5): Expand rocket capacity"><FaRegBuilding className="text-2xl" /></div>
               <div>${currentSpaceportCost}</div>
               <div></div>
             </>
           )}
           {refineriesUnlocked && (
             <>
-              <div onClick={buildFuelRefinery} className="cursor-pointer"><FaGasPump className="text-2xl" /></div>
+               <div onClick={buildFuelRefinery} className="cursor-pointer" title="Fuel Refinery (o6): +1 fuel/sec"><FaGasPump className="text-2xl" /></div>
               <div>${currentFuelRefineryCost}</div>
               <div>Refineries: {fuelRefineries}</div>
             </>
@@ -68,7 +68,7 @@ export function SpaceportView() {
                   const explosionToClear = explodedRocketIds[0];
                   clearExplosion(explosionToClear);
                 }
-              }} className="cursor-pointer"><FaBomb className="text-2xl text-red-500" /></div>
+               }} className="cursor-pointer" title="Clear Explosion (o7): -1 science"><FaBomb className="text-2xl text-red-500" /></div>
               <div>-1 Sci</div>
               <div></div>
             </>
