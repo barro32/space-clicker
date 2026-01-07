@@ -131,10 +131,12 @@ describe('useGameStore - Orbital Space Stations', () => {
        fuelCostPerRocket: 1,
        fuelRefineries: 0,
        fuelProductionPerRefinery: 1,
+       rocketExplosionChance: 0, // Ensure no random explosions during test
        rockets: [{ id: 1 }],
        explodedRocketIds: [],
        spaceports: [],
        spaceStations: [],
+       researchedNodes: [],
      } as unknown as GameState);
 
      useGameStore.getState().tick();

@@ -13,11 +13,13 @@ AI Game is an engaging idle simulation where players manage an interstellar spac
 - Players looking for a "low-pressure" experience with meaningful long-term progression.
 
 ## Core Features
-- **Resource Management:** Balance the generation of Money and Science points. Money drives expansion, while Science fuels technological advancement.
-- **Spaceport Infrastructure:** Build and customize spaceports with "Cargo" and "Science" modes to suit your current strategy.
-- **Dynamic Risk (Explosions):** Manage the risk of rocket failures and chain reactions. Clearing debris adds a layer of active management to the idle experience.
-- **Planetary Prestige System:** Once a planet's potential is reached, players can "prestige" by moving to a new planet. This resets local progress in exchange for permanent, powerful bonuses that accelerate future growth.
-- **Offline Progression:** Earn resources while away from the game at a balanced rate, receiving a "Welcome Back" report upon return to track progress.
+- **Resource Management:** Balance Money, Science, and **Cargo**. Money drives expansion, Science fuels research, and Cargo (from successful launches) is essential for off-world construction.
+- **Orbital Layer:** Build and manage Space Stations in planetary orbit. Research Stations boost Science output, while Logistics Stations provide economic benefits.
+- **Contracts System:** Partner with 10 unique industrial companies (e.g., Titan Mining, Nova Research) to complete delivery and research missions for rewards and permanent reputation bonuses.
+- **Spaceport Infrastructure:** Build and customize spaceports with "Cargo" and "Science" modes. Manage fuel-per-launch logistics to keep the program running.
+- **Dynamic Risk (Explosions):** Manage rocket failure risks. Explosions can impact active contracts, requiring careful balancing of fleet size and safety.
+- **Planetary Prestige System:** Once a planet's potential is reached, "prestige" to move to a new system with permanent bonuses.
+- **Offline Progression:** Earn resources while away from the game at a balanced rate.
 
 ## Long-term Goals
 - **Interstellar Expansion:** Reach the farthest edges of the galaxy through continuous upgrades and planet-hopping.

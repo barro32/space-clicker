@@ -11,4 +11,5 @@
 - **Environment:** Node.js (v18+ recommended)
 - **Package Manager:** npm
 - **Type Checking:** TypeScript compiler (tsc)
+- **Testing:** [Vitest](https://vitest.dev/) with [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
 - **Formatting/Linting:** Standard React/TypeScript configuration (as per project files)
