@@ -1,4 +1,4 @@
-import { useGameStore } from "./useGameStore"
+import { useGameStore } from "./useGameStore.js"
 import { FaSatellite, FaGlobe, FaMicroscope, FaTruckLoading } from "react-icons/fa"
 
 export function OrbitView() {

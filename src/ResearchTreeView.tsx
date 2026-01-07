@@ -1,5 +1,5 @@
-import { useGameStore } from "./useGameStore"
-import { researchTree, ResearchBranch } from "./researchTree"
+import { useGameStore } from "./useGameStore.js"
+import { researchTree, ResearchBranch } from "./researchTree.js"
 import { FaFlask, FaLock, FaCheckCircle, FaRocket, FaCogs, FaHandHoldingUsd, FaSatellite } from "react-icons/fa"
 
 const BranchIcon = ({ branch }: { branch: ResearchBranch }) => {

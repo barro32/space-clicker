@@ -1,4 +1,4 @@
-import { useGameStore } from "./useGameStore"
+import { useGameStore } from "./useGameStore.js"
 import { FaRegBuilding, FaRocket, FaBomb, FaGasPump } from "react-icons/fa" // Added FaGasPump
 
 export function SpaceportView() {

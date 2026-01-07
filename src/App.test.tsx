@@ -10,8 +10,8 @@ vi.mock('./DevConsole', () => ({ DevConsole: () => null }));
 
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { App } from './App';
-import { useGameStore } from './useGameStore';
+import { App } from './App.js';
+import { useGameStore } from './useGameStore.js';
 
 describe('App navigation & persistence', () => {
   beforeEach(() => {

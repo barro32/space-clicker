@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useGameStore, GameState } from './useGameStore';
+import { useGameStore, GameState } from './useGameStore.js';
 
 describe('useGameStore - Orbital Space Stations', () => {
   beforeEach(() => {

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useGameStore, Contract, Company } from "./useGameStore"
+import { useGameStore, Contract, Company } from "./useGameStore.js"
 import { FaBuilding, FaBoxOpen, FaFlask, FaMoneyBillAlt, FaClock, FaBomb, FaCheckCircle, FaTimesCircle } from "react-icons/fa"
 
 export function ContractsView() {

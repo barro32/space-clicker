@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { useGameStore } from './useGameStore';
+import { useGameStore } from './useGameStore.js';
 
 describe('Research effect multipliers and special effects', () => {
   it('getEffectMultiplier returns multiplicative product for *Multiplier types', () => {

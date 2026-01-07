@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { OrbitView } from './OrbitView';
-import { useGameStore } from './useGameStore';
+import { OrbitView } from './OrbitView.js';
+import { useGameStore } from './useGameStore.js';
 import React from 'react';
 
 // Mock the store

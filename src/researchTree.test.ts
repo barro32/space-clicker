@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { researchTree } from './researchTree';
+import { researchTree } from './researchTree.js';
 
 describe('Research Tree Configuration', () => {
   it('should have nodes for all branches', () => {

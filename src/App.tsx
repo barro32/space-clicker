@@ -1,11 +1,11 @@
 import { useEffect } from 'react'
-import { useGameStore, GameState } from "./useGameStore"
+import { useGameStore, GameState } from "./useGameStore.js"
 import { FaMoneyBillAlt, FaFlask, FaGasPump, FaBoxOpen } from 'react-icons/fa' // Added FaGasPump
-import { SpaceportView } from "./SpaceportView"
-import { OrbitView } from "./OrbitView"
-import { ContractsView } from "./ContractsView"
-import { ResearchTreeView } from "./ResearchTreeView"
-import { DevConsole } from './DevConsole'
+import { SpaceportView } from "./SpaceportView.js"
+import { OrbitView } from "./OrbitView.js"
+import { ContractsView } from "./ContractsView.js"
+import { ResearchTreeView } from "./ResearchTreeView.js"
+import { DevConsole } from './DevConsole.js'
 
 
 export function App() {
@@ -102,13 +102,21 @@ export function App() {
         </button>
       </div>
       {currentView === "surface" ? <SpaceportView /> : currentView === "orbit" ? <OrbitView /> : currentView === "contracts" ? <ContractsView /> : <ResearchTreeView />}
-                              {/* Notifications Overlay */}
-      <div className="absolute top-16 left-4 z-30 flex flex-col gap-2 pointer-events-none">
-        {notifications.map((msg, i) => (
-          <div key={i} className="bg-gray-800 border border-gray-600 px-4 py-2 rounded text-sm opacity-90 animate-pulse">
-            {msg}
+                              {/* Status Box (bottom-right) */}
+      <div className="fixed bottom-4 right-4 z-40 w-96 max-w-full">
+        <div className="bg-black/40 backdrop-blur-sm border border-gray-700 p-2 rounded-lg shadow-lg">
+          <div className="flex flex-col gap-2 pointer-events-auto">
+            {notifications.length === 0 ? (
+              <div className="text-xs text-gray-400 px-2 py-1">No notifications</div>
+            ) : (
+              notifications.map((msg: string, i: number) => (
+                <div key={i} className="bg-gray-800 border border-gray-600 px-3 py-2 rounded text-sm opacity-95">
+                  {msg}
+                </div>
+              ))
+            )}
           </div>
-        ))}
+        </div>
       </div>
 
       <div className="z-10">

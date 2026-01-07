@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { ResearchTreeView } from './ResearchTreeView';
-import { useGameStore } from './useGameStore';
+import { ResearchTreeView } from './ResearchTreeView.js';
+import { useGameStore } from './useGameStore.js';
 import { vi } from 'vitest';
 
 vi.mock('./useGameStore', () => ({ useGameStore: vi.fn() }));

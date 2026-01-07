@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1767801487853" clover="3.2.0">
-  <project timestamp="1767801487853" name="All files">
+<coverage generated="1767801885777" clover="3.2.0">
+  <project timestamp="1767801885777" name="All files">
     <metrics statements="224" coveredstatements="185" conditionals="190" coveredconditionals="117" methods="78" coveredmethods="62" elements="492" coveredelements="364" complexity="0" loc="224" ncloc="224" packages="1" files="6" classes="6"/>
     <file name="App.tsx" path="/home/barro/code/barro/ai-game/src/App.tsx">
       <metrics statements="30" coveredstatements="21" conditionals="26" coveredconditionals="12" methods="11" coveredmethods="6"/>

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { researchTree, ResearchNode } from './researchTree'
+import { researchTree, ResearchNode } from './researchTree.js'
 
 interface Spaceport {
   type: "cargo" | "science"
@@ -45,7 +45,7 @@ export interface GameState {
   science: number
   fuel: number;
   cargo: number;
-  currentView: "surface" | "orbit" | "contracts";
+  currentView: "surface" | "orbit" | "contracts" | "research";
   notifications: string[];
   companies: Company[];
   availableContracts: Contract[];
@@ -89,7 +89,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   science: 0,
   fuel: 100,
   cargo: 0,
-  currentView: "surface" as "surface" | "orbit" | "contracts",
+  currentView: "surface",
   notifications: [],
   companies: [
     { id: 'titan', name: 'Titan Mining Corp', level: 1, experience: 0 },
@@ -121,7 +121,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   rocketExplosionChance: 0.05,
   researchedNodes: [],
   tick: () => set(state => {
-    const activeRocketIds = state.rockets.filter(r => r !== null).map(r => r!.id).filter(id => !state.explodedRocketIds.includes(id));
+    const activeRocketIds = state.rockets.filter((r): r is { id: number } => r !== null).map(r => r.id).filter(id => !state.explodedRocketIds.includes(id));
     
     const fuelProduction = state.fuelRefineries * state.fuelProductionPerRefinery * state.getEffectMultiplier('refineryOutputMultiplier');
     let fuelAvailable = state.fuel + fuelProduction;
@@ -305,8 +305,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   getEffectMultiplier: (type: string) => {
     const state = get();
     const multipliers = researchTree
-      .filter(node => state.researchedNodes.includes(node.id) && node.effect.type === type)
-      .map(node => node.effect.value);
+      .filter((node: ResearchNode) => state.researchedNodes.includes(node.id) && node.effect.type === type)
+      .map((node: ResearchNode) => node.effect.value);
     
     if (multipliers.length === 0) return 1;
     
@@ -318,7 +318,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       return multipliers.reduce((acc, val) => acc + val, 0); // Wait, base is usually different for additive
     }
   },
-  setView: (view: "surface" | "orbit" | "contracts") => set({ currentView: view }),
+  setView: (view: "surface" | "orbit" | "contracts" | "research") => set({ currentView: view }),
   addNotification: (message: string) => set(state => ({ notifications: [message, ...state.notifications].slice(0, 5) })),
   generateContracts: () => set(state => {
     if (state.availableContracts.length >= 3) return {};
