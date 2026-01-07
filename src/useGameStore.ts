@@ -41,29 +41,29 @@ interface Explosion {
 }
 
 export interface GameState {
-  money: number
-  science: number
-  fuel: number;
-  cargo: number;
-  currentView: "surface" | "orbit" | "contracts" | "research";
-  notifications: string[];
-  companies: Company[];
-  availableContracts: Contract[];
-  activeContract: Contract | null;
-  rockets: ({ id: number } | null)[];
-  nextRocketId: number;
-  rocketCost: number
-  profitPerRocket: number;
-  spaceportCapacity: number
-  spaceports: Spaceport[]
-  spaceStations: SpaceStation[]
-  spaceportCost: number
-  fuelRefineries: number;
-  fuelProductionPerRefinery: number;
-  fuelCostPerRocket: number;
-  fuelRefineryCost: number;
-  explodedRocketIds: number[];
-  rocketExplosionChance: number;
+   money: number
+   science: number
+   fuel: number;
+   cargo: number;
+   currentView: "surface" | "orbit" | "contracts" | "research";
+   notifications: string[];
+   companies: Company[];
+   availableContracts: Contract[];
+   activeContract: Contract | null;
+   rockets: ({ id: number; type: 'cargo' | 'science' } | null)[];
+   nextRocketId: number;
+   rocketCost: number
+   profitPerRocket: number;
+   spaceportCapacity: number
+   spaceports: Spaceport[]
+   spaceStations: SpaceStation[]
+   spaceportCost: number
+   fuelRefineries: number;
+   fuelProductionPerRefinery: number;
+   fuelCostPerRocket: number;
+   fuelRefineryCost: number;
+   explodedRocketIds: number[];
+   rocketExplosionChance: number;
   getCurrentSpaceportCost: () => number;
   getEffectMultiplier: (type: string) => number;
   setView: (view: "surface" | "orbit" | "contracts" | "research") => void;
@@ -72,14 +72,19 @@ export interface GameState {
   acceptContract: (contractId: string) => void;
   deliverContractResources: () => void;
   tick: () => void
-  buildRocket: () => void
-  buildSpaceport: () => void
-  buildSpaceStation: (type: SpaceStation['type']) => void
-  buildFuelRefinery: () => void;
-  toggleSpaceport: (index: number) => void
-  clearExplosion: (rocketId: number) => void;
-  researchedNodes: string[];
-  unlockNode: (nodeId: string) => void;
+   buildRocket: () => void
+   buildScienceRocket: () => void
+   buildSpaceport: () => void
+   buildSpaceStation: (type: SpaceStation['type']) => void
+   buildFuelRefinery: () => void;
+   toggleSpaceport: (index: number) => void
+   clearExplosion: (rocketId: number) => void;
+   researchedNodes: string[];
+   previouslyAvailableResearch: string[];
+   autoBuildActive: boolean;
+   toggleAutoBuild: () => void;
+   unlockNode: (nodeId: string) => void;
+   getAvailableNodes: () => ResearchNode[];
 }
 
 
@@ -104,28 +109,32 @@ export const useGameStore = create<GameState>((set, get) => ({
     { id: 'dse', name: 'Deep Space Exploration', level: 1, experience: 0 },
   ],
   availableContracts: [],
-  activeContract: null,
-  rockets: [],
-  nextRocketId: 0,
-  rocketCost: 10,
-  profitPerRocket: 1,
-  spaceportCapacity: 9,
-  spaceports: [{ type: "cargo" }],
-  spaceStations: [],
-  spaceportCost: 1000,
-  fuelRefineries: 0,
-  fuelProductionPerRefinery: 1,
-  fuelCostPerRocket: 1,
-  fuelRefineryCost: 500,
-  explodedRocketIds: [],
-  rocketExplosionChance: 0.05,
-  researchedNodes: [],
-  tick: () => set(state => {
-    const activeRocketIds = state.rockets.filter((r): r is { id: number } => r !== null).map(r => r.id).filter(id => !state.explodedRocketIds.includes(id));
+   activeContract: null,
+   rockets: [],
+   nextRocketId: 0,
+   rocketCost: 1,
+    profitPerRocket: 1,
+    spaceportCapacity: 3,
+    spaceports: [{ type: "cargo" }],
+    spaceStations: [],
+    spaceportCost: 200,
+   fuelRefineries: 0,
+    fuelProductionPerRefinery: 1,
+    fuelCostPerRocket: 1,
+    fuelRefineryCost: 20,
+     explodedRocketIds: [],
+     rocketExplosionChance: 0.75,
+     researchedNodes: [],
+     previouslyAvailableResearch: [],
+     autoBuildActive: false,
+    tick: () => set(state => {
+     const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
     
     const fuelProduction = state.fuelRefineries * state.fuelProductionPerRefinery * state.getEffectMultiplier('refineryOutputMultiplier');
     let fuelAvailable = state.fuel + fuelProduction;
-    let successfulLaunches = 0;
+    let successfulCargoLaunches = 0;
+    let successfulScienceLaunches = 0;
+    let explosionCount = 0;
     let newExplodedRocketIds = [...state.explodedRocketIds];
     let newActiveContract = state.activeContract ? { ...state.activeContract } : null;
 
@@ -133,13 +142,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     const effectiveExplosionChance = state.rocketExplosionChance * state.getEffectMultiplier('explosionChanceMultiplier');
 
     // Process each rocket launch
-    for (const rocketId of activeRocketIds) {
+    for (const rocket of activeRockets) {
       if (fuelAvailable >= effectiveFuelCost) {
         fuelAvailable -= effectiveFuelCost;
         
         // Roll for explosion
         if (Math.random() < effectiveExplosionChance) {
-          newExplodedRocketIds.push(rocketId);
+          newExplodedRocketIds.push(rocket.id);
+          explosionCount += 1;
           // Handle contract fragility
           if (newActiveContract && newActiveContract.status === 'active' && newActiveContract.maxExplosions !== -1) {
             newActiveContract.currentExplosions += 1;
@@ -149,21 +159,25 @@ export const useGameStore = create<GameState>((set, get) => ({
             }
           }
         } else {
-          successfulLaunches += 1;
+          if (rocket.type === 'cargo') {
+            successfulCargoLaunches += 1;
+          } else {
+            successfulScienceLaunches += 1;
+          }
         }
       }
     }
 
-    let cargoProd = successfulLaunches * state.profitPerRocket * state.getEffectMultiplier('profitMultiplier');
-    let sciProd = 0;
-    let cargoResourceProd = successfulLaunches * 0.1 * state.getEffectMultiplier('cargoGenerationMultiplier');
+    let cargoProd = successfulCargoLaunches * state.profitPerRocket * state.getEffectMultiplier('profitMultiplier');
+    let sciProd = successfulScienceLaunches * 1 + explosionCount * 1;
+    let cargoResourceProd = successfulCargoLaunches * 0.1 * state.getEffectMultiplier('cargoGenerationMultiplier');
 
     // Passive Spaceport Bonuses
     for (let i = 0; i < state.spaceports.length; i++) {
       if (state.spaceports[i].type === "cargo") {
         cargoProd += (i + 1)
       } else {
-        const spaceportLaunches = Math.floor(successfulLaunches / state.spaceports.length);
+        const spaceportLaunches = Math.floor(successfulCargoLaunches / state.spaceports.length);
         sciProd += spaceportLaunches;
       }
     }
@@ -191,13 +205,88 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const newScience = state.science + sciProd;
 
+    // Auto-build logic (only during passive phase, before returning state)
+    let finalMoney = state.money + cargoProd;
+    let finalRockets = state.rockets;
+    let finalNextId = state.nextRocketId;
+
+    const autoBuildEnabled = state.getEffectMultiplier('autoBuildEnabled') > 0;
+    if (autoBuildEnabled && state.autoBuildActive) {
+      const effectiveCapacity = state.spaceportCapacity + state.getEffectMultiplier('spaceportCapacityBonus');
+      const maxRockets = state.spaceports.length * effectiveCapacity;
+      let currentTotalRockets = state.rockets.filter(r => r !== null).length;
+
+      if (currentTotalRockets < maxRockets) {
+        const buildMultiplier = state.getEffectMultiplier('buildRocketMultiplier');
+        const batchBonus = state.getEffectMultiplier('buildRocketBatchBonus') || 0;
+        const actionSpeed = state.getEffectMultiplier('actionSpeedMultiplier') || 1;
+        const desiredCountFloat = 1 * buildMultiplier * actionSpeed + batchBonus;
+        let desiredCount = Math.max(1, Math.floor(desiredCountFloat));
+        desiredCount = Math.min(desiredCount, maxRockets - currentTotalRockets);
+
+        const constructionMultiplier = state.getEffectMultiplier('constructionCostMultiplier');
+
+        // Calculate how many rockets we can afford
+        let affordableCount = 0;
+        let totalBatchCost = 0;
+        for (let i = 0; i < desiredCount; i++) {
+          const idx = currentTotalRockets + i;
+          const baseCost = state.rocketCost * Math.pow(1.2, idx);
+          const cost = Math.round(baseCost * constructionMultiplier);
+          if (finalMoney >= totalBatchCost + cost) {
+            totalBatchCost += cost;
+            affordableCount += 1;
+          } else {
+            break;
+          }
+        }
+
+         if (affordableCount > 0) {
+           const newRockets = [...state.rockets];
+           for (let i = 0; i < affordableCount; i++) {
+             const newRocket = { id: finalNextId + i, type: 'cargo' as const };
+             const firstNullIndex = newRockets.findIndex(r => r === null);
+             if (firstNullIndex !== -1) {
+               newRockets[firstNullIndex] = newRocket;
+             } else {
+               newRockets.push(newRocket);
+             }
+           }
+           finalRockets = newRockets;
+           finalNextId += affordableCount;
+           finalMoney -= totalBatchCost;
+         }
+      }
+    }
+
+    // Detect newly available research nodes
+    const currentAvailableIds = get().getAvailableNodes().map(n => n.id);
+    const newlyAvailable = currentAvailableIds.filter(id => !state.previouslyAvailableResearch.includes(id));
+    
+    // Add notifications for newly available research
+    let notificationsToAdd: string[] = [];
+    for (const nodeId of newlyAvailable) {
+      const node = researchTree.find(n => n.id === nodeId);
+      if (node) {
+        notificationsToAdd.push(`New research available: ${node.name}`);
+      }
+    }
+
+    const updatedNotifications = newlyAvailable.length > 0 
+      ? [...notificationsToAdd, ...state.notifications].slice(0, 5)
+      : state.notifications;
+
     return {
-      money: state.money + cargoProd,
+      money: finalMoney,
       science: newScience,
       fuel: fuelAvailable,
       cargo: state.cargo + cargoResourceProd,
       activeContract: newActiveContract,
       explodedRocketIds: newExplodedRocketIds,
+      rockets: finalRockets,
+      nextRocketId: finalNextId,
+      previouslyAvailableResearch: currentAvailableIds,
+      notifications: updatedNotifications,
     }
   }),
   buildRocket: () =>
@@ -206,39 +295,79 @@ export const useGameStore = create<GameState>((set, get) => ({
       const maxRockets = state.spaceports.length * effectiveCapacity;
       const currentTotalRockets = state.rockets.filter(r => r !== null).length;
 
-      if (currentTotalRockets < maxRockets) {
-        const baseCost = state.rocketCost * Math.pow(1.2, currentTotalRockets);
-        const currentRocketCost = Math.round(baseCost * state.getEffectMultiplier('constructionCostMultiplier'));
-        if (state.money >= currentRocketCost) {
-          const newRockets = [...state.rockets];
-          const newRocket = { id: state.nextRocketId };
+       if (currentTotalRockets < maxRockets) {
+         const baseCost = state.rocketCost * Math.pow(1.2, currentTotalRockets);
+         const currentRocketCost = Math.round(baseCost * state.getEffectMultiplier('constructionCostMultiplier'));
+         if (state.money >= currentRocketCost) {
+           const newRockets = [...state.rockets];
+           const newRocket = { id: state.nextRocketId, type: 'cargo' as const };
 
-          // Find first null slot
-          const firstNullIndex = newRockets.findIndex(r => r === null);
-          if (firstNullIndex !== -1) {
-            newRockets[firstNullIndex] = newRocket;
-          } else {
-            // If no null slot, append
-            newRockets.push(newRocket);
-          }
+           // Find first null slot
+           const firstNullIndex = newRockets.findIndex(r => r === null);
+           if (firstNullIndex !== -1) {
+             newRockets[firstNullIndex] = newRocket;
+           } else {
+             // If no null slot, append
+             newRockets.push(newRocket);
+           }
 
-          return {
-            money: state.money - currentRocketCost,
-            rockets: newRockets,
-            nextRocketId: state.nextRocketId + 1,
+           return {
+             money: state.money - currentRocketCost,
+             rockets: newRockets,
+             nextRocketId: state.nextRocketId + 1,
+           }
+         }
+       }
+       return {}
+     }),
+   buildScienceRocket: () =>
+     set(state => {
+       // Check if science rockets are unlocked
+       if (state.researchedNodes.indexOf('o4') === -1) {
+         return {}; // Science rockets not unlocked
+       }
+       
+       const effectiveCapacity = state.spaceportCapacity + state.getEffectMultiplier('spaceportCapacityBonus');
+       const maxRockets = state.spaceports.length * effectiveCapacity;
+       const currentTotalRockets = state.rockets.filter(r => r !== null).length;
+
+        if (currentTotalRockets < maxRockets) {
+          const baseCost = state.rocketCost * Math.pow(1.2, currentTotalRockets);
+          const currentRocketCost = Math.round(baseCost * state.getEffectMultiplier('constructionCostMultiplier'));
+          if (state.money >= currentRocketCost) {
+            const newRockets = [...state.rockets];
+            const newRocket = { id: state.nextRocketId, type: 'science' as const };
+
+            // Find first null slot
+            const firstNullIndex = newRockets.findIndex(r => r === null);
+            if (firstNullIndex !== -1) {
+              newRockets[firstNullIndex] = newRocket;
+            } else {
+              // If no null slot, append
+              newRockets.push(newRocket);
+            }
+
+            return {
+              money: state.money - currentRocketCost,
+              rockets: newRockets,
+              nextRocketId: state.nextRocketId + 1,
+            }
           }
         }
-      }
-      return {}
-    }),
-  buildSpaceport: () =>
-    set(state => {
-      const currentSpaceportCost = get().getCurrentSpaceportCost()
-      if (state.money >= currentSpaceportCost) {
-        return { money: state.money - currentSpaceportCost, spaceports: [...state.spaceports, { type: "cargo" }] }
-      }
-      return {}
-    }),
+       return {}
+     }),
+    buildSpaceport: () =>
+      set(state => {
+        // Check if spaceports are unlocked via research
+        if (state.researchedNodes.indexOf('o5') === -1) {
+          return {}; // Spaceports not unlocked
+        }
+        const currentSpaceportCost = get().getCurrentSpaceportCost()
+        if (state.money >= currentSpaceportCost) {
+          return { money: state.money - currentSpaceportCost, spaceports: [...state.spaceports, { type: "cargo" }] }
+        }
+        return {}
+      }),
   buildSpaceStation: (type: SpaceStation['type']) => set(state => {
     const constructionMultiplier = state.getEffectMultiplier('constructionCostMultiplier');
     const costCargo = Math.round(500 * constructionMultiplier);
@@ -257,47 +386,60 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
     return {};
   }),
-  buildFuelRefinery: () =>
-    set(state => {
-      const baseCost = state.fuelRefineryCost * Math.pow(1.5, state.fuelRefineries);
-      const currentFuelRefineryCost = Math.round(baseCost * state.getEffectMultiplier('constructionCostMultiplier'));
-      if (state.money >= currentFuelRefineryCost) {
-        return {
-          money: state.money - currentFuelRefineryCost,
-          fuelRefineries: state.fuelRefineries + 1,
-        }
-      }
-      return {}
-    }),
+   buildFuelRefinery: () =>
+     set(state => {
+       // Check if refineries are unlocked via research
+       if (state.researchedNodes.indexOf('o6') === -1) {
+         return {}; // Refineries not unlocked
+       }
+       const baseCost = state.fuelRefineryCost * Math.pow(1.5, state.fuelRefineries);
+       const currentFuelRefineryCost = Math.round(baseCost * state.getEffectMultiplier('constructionCostMultiplier'));
+       if (state.money >= currentFuelRefineryCost) {
+         return {
+           money: state.money - currentFuelRefineryCost,
+           fuelRefineries: state.fuelRefineries + 1,
+         }
+       }
+       return {}
+     }),
   toggleSpaceport: (index: number) =>
     set(state => {
       const newSpaceports = state.spaceports.map((sp, i) => i === index ? ({ type: sp.type === "cargo" ? "science" : "cargo" } as Spaceport) : sp)
       return { spaceports: newSpaceports }
     }),
-  clearExplosion: (rocketId: number) =>
-    set(state => {
-      const newRockets = [...state.rockets];
-      const rocketIndex = newRockets.findIndex(r => r !== null && r.id === rocketId);
-      if (rocketIndex !== -1) {
-        newRockets[rocketIndex] = null; // Set the slot to null
-      }
+   clearExplosion: (rocketId: number) =>
+     set(state => {
+       // Check if explosion clearing is unlocked via research
+       if (state.researchedNodes.indexOf('o7') === -1) {
+         return {}; // Explosion clearing not unlocked
+       }
+       // Check if we have science to spend
+       if (state.science < 1) {
+         return {}; // Not enough science
+       }
+       
+       const newRockets = [...state.rockets];
+       const rocketIndex = newRockets.findIndex(r => r !== null && r.id === rocketId);
+       if (rocketIndex !== -1) {
+         newRockets[rocketIndex] = null; // Set the slot to null
+       }
 
-      let newActiveContract = state.activeContract ? { ...state.activeContract } : null;
-      if (newActiveContract && newActiveContract.status === 'active' && newActiveContract.maxExplosions !== -1) {
-        newActiveContract.currentExplosions += 1;
-        if (newActiveContract.currentExplosions > newActiveContract.maxExplosions) {
-          newActiveContract.status = 'failed';
-          get().addNotification(`Contract Failed: ${newActiveContract.title} (Too many explosions)`);
-        }
-      }
+       let newActiveContract = state.activeContract ? { ...state.activeContract } : null;
+       if (newActiveContract && newActiveContract.status === 'active' && newActiveContract.maxExplosions !== -1) {
+         newActiveContract.currentExplosions += 1;
+         if (newActiveContract.currentExplosions > newActiveContract.maxExplosions) {
+           newActiveContract.status = 'failed';
+           get().addNotification(`Contract Failed: ${newActiveContract.title} (Too many explosions)`);
+         }
+       }
 
-      return {
-        explodedRocketIds: state.explodedRocketIds.filter(id => id !== rocketId),
-        rockets: newRockets,
-        science: state.science + 1,
-        activeContract: newActiveContract,
-      }
-    }),
+       return {
+         explodedRocketIds: state.explodedRocketIds.filter(id => id !== rocketId),
+         rockets: newRockets,
+         science: state.science - 1,
+         activeContract: newActiveContract,
+       }
+     }),
   getCurrentSpaceportCost: () => {
     const state = get();
     return Math.round(state.spaceportCost * Math.pow(1.5, state.spaceports.length) * state.getEffectMultiplier('constructionCostMultiplier'));
@@ -315,10 +457,22 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (type.endsWith('Multiplier')) {
       return multipliers.reduce((acc, val) => acc * val, 1);
     } else {
-      return multipliers.reduce((acc, val) => acc + val, 0); // Wait, base is usually different for additive
-    }
-  },
-  setView: (view: "surface" | "orbit" | "contracts" | "research") => set({ currentView: view }),
+       return multipliers.reduce((acc, val) => acc + val, 0); // Wait, base is usually different for additive
+     }
+   },
+   getAvailableNodes: () => {
+     const state = get();
+     return researchTree.filter((node: ResearchNode) => {
+       // Not already researched
+       if (state.researchedNodes.includes(node.id)) return false;
+       // Has enough science
+       if (state.science < node.scienceCost) return false;
+       // Prerequisites are met
+       if (!node.prerequisites.every(p => state.researchedNodes.includes(p))) return false;
+       return true;
+     });
+   },
+   setView: (view: "surface" | "orbit" | "contracts" | "research") => set({ currentView: view }),
   addNotification: (message: string) => set(state => ({ notifications: [message, ...state.notifications].slice(0, 5) })),
   generateContracts: () => set(state => {
     if (state.availableContracts.length >= 3) return {};
@@ -400,9 +554,10 @@ export const useGameStore = create<GameState>((set, get) => ({
         activeContract: null, // Clear active contract
       };
     }
-    return {};
-  }),
-  unlockNode: (nodeId: string) => set(state => {
+     return {};
+   }),
+   toggleAutoBuild: () => set(state => ({ autoBuildActive: !state.autoBuildActive })),
+   unlockNode: (nodeId: string) => set(state => {
     const node = researchTree.find(n => n.id === nodeId);
     if (!node) return {};
     

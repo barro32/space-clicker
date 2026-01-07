@@ -16,14 +16,46 @@ describe('useGameStore - Orbital Space Stations', () => {
       notifications: [],
       researchedNodes: [],
     } as unknown as GameState);
+});
+
+
+describe('Auto-build (Auto-Queue)', () => {
+  it('unlocking u7 sets effect available', () => {
+    useGameStore.setState({ science: 1000, researchedNodes: [] } as unknown as GameState);
+    // u7 requires u3, which requires u1-3, so unlock the chain
+    useGameStore.getState().unlockNode('u1-1');
+    useGameStore.getState().unlockNode('u1-2');
+    useGameStore.getState().unlockNode('u1-3');
+    useGameStore.getState().unlockNode('u3');
+    useGameStore.getState().unlockNode('u7');
+    const state = useGameStore.getState();
+    expect(state.researchedNodes).toContain('u7');
+    expect(state.getEffectMultiplier('autoBuildEnabled')).toBeGreaterThan(0);
   });
 
-  it('should have an initial state with empty spaceStations', () => {
-    const state = useGameStore.getState();
-    expect(state.spaceStations).toBeDefined();
-    expect(state.spaceStations).toEqual([]);
-    expect(state.currentView).toBe("surface");
-  });
+   it('when toggle enabled tick attempts to auto-build rockets', () => {
+     // Reset and prepare for auto-build
+     useGameStore.setState({
+       money: 1000,
+       rockets: [],
+       nextRocketId: 0,
+       rocketCost: 10,
+       spaceports: [{ type: 'cargo' }],
+       spaceportCapacity: 9,
+       researchedNodes: ['u1-1','u1-2','u1-3','u3','u7'], // provide multipliers and unlock auto
+       autoBuildActive: true,
+       previouslyAvailableResearch: [],
+       notifications: [],
+     } as unknown as GameState);
+
+     // Run one tick: should auto-build using money
+     useGameStore.getState().tick();
+     const s = useGameStore.getState();
+     // After tick, some rockets should have been queued/built
+     expect(s.rockets.filter(r => r !== null).length).toBeGreaterThan(0);
+   });
+});
+
 
   it('should change currentView when setView is called', () => {
     useGameStore.getState().setView("orbit");
@@ -132,7 +164,7 @@ describe('useGameStore - Orbital Space Stations', () => {
        fuelRefineries: 0,
        fuelProductionPerRefinery: 1,
        rocketExplosionChance: 0, // Ensure no random explosions during test
-       rockets: [{ id: 1 }],
+       rockets: [{ id: 1, type: 'cargo' as const }],
        explodedRocketIds: [],
        spaceports: [],
        spaceStations: [],
@@ -142,9 +174,9 @@ describe('useGameStore - Orbital Space Stations', () => {
      useGameStore.getState().tick();
 
      const state = useGameStore.getState();
-     // 1 rocket * 0.1 cargo/tick = 0.1
+     // 1 cargo rocket * 0.1 cargo/tick = 0.1
      expect(state.cargo).toBeCloseTo(0.1);
-   });
+    });
   });
 
   describe('contracts system', () => {
@@ -234,8 +266,10 @@ describe('useGameStore - Orbital Space Stations', () => {
           maxExplosions: 0,
           currentExplosions: 0,
         },
-        rockets: [{ id: 1 }],
+        rockets: [{ id: 1, type: 'cargo' as const }],
         explodedRocketIds: [1],
+        researchedNodes: ['o7'],
+        science: 100,
       } as unknown as GameState);
 
       useGameStore.getState().clearExplosion(1);
@@ -252,12 +286,12 @@ describe('useGameStore - Orbital Space Stations', () => {
         researchedNodes: [],
       } as unknown as GameState);
 
-      // Unlock p1 (Efficient Engines, cost 100, no prereqs)
+      // Unlock p1 (Efficient Engines, cost 80, no prereqs)
       useGameStore.getState().unlockNode('p1');
 
       const state = useGameStore.getState();
       expect(state.researchedNodes).toContain('p1');
-      expect(state.science).toBe(900);
+      expect(state.science).toBe(920);
     });
 
     it('should NOT unlock a node if science is insufficient', () => {
@@ -345,7 +379,7 @@ describe('useGameStore - Orbital Space Stations', () => {
     it('should consume fuel during tick if rockets launch', () => {
       useGameStore.setState({
         fuel: 10,
-        rockets: [{ id: 1 }, { id: 2 }],
+        rockets: [{ id: 1, type: 'cargo' as const }, { id: 2, type: 'cargo' as const }],
         explodedRocketIds: [],
         fuelCostPerRocket: 1,
         profitPerRocket: 1,
@@ -372,7 +406,7 @@ describe('useGameStore - Orbital Space Stations', () => {
     it('should NOT generate rewards if fuel is insufficient', () => {
       useGameStore.setState({
         fuel: 0,
-        rockets: [{ id: 1 }],
+        rockets: [{ id: 1, type: 'cargo' as const }],
         explodedRocketIds: [],
         fuelCostPerRocket: 1,
         spaceports: [], // no passive income

@@ -38,23 +38,23 @@ const loadInitialState = () => {
           if (!parsed.companies) parsed.companies = DEFAULT_COMPANIES;
           if (!parsed.availableContracts) parsed.availableContracts = [];
           if (!parsed.researchedNodes) parsed.researchedNodes = [];
-          if (parsed.autoBuildActive === undefined) parsed.autoBuildActive = false;
-          if (!parsed.previouslyAvailableResearch) parsed.previouslyAvailableResearch = [];
-          if (!parsed.rockets) parsed.rockets = [];
-          if (parsed.nextRocketId === undefined) parsed.nextRocketId = 0;
-          if (parsed.rocketCost === undefined) parsed.rocketCost = 10;
-          if (parsed.profitPerRocket === undefined) parsed.profitPerRocket = 1;
-          if (parsed.spaceportCapacity === undefined) parsed.spaceportCapacity = 9;
-          if (!parsed.spaceports) parsed.spaceports = [{ type: "cargo" }];
-          if (parsed.spaceportCost === undefined) parsed.spaceportCost = 1000;
+           if (parsed.autoBuildActive === undefined) parsed.autoBuildActive = false;
+           if (!parsed.previouslyAvailableResearch) parsed.previouslyAvailableResearch = [];
+           if (!parsed.rockets) parsed.rockets = [];
+           if (parsed.nextRocketId === undefined) parsed.nextRocketId = 0;
+           if (parsed.rocketCost === undefined) parsed.rocketCost = 1;
+           if (parsed.profitPerRocket === undefined) parsed.profitPerRocket = 1;
+           if (parsed.spaceportCapacity === undefined) parsed.spaceportCapacity = 3;
+           if (!parsed.spaceports) parsed.spaceports = [{ type: "cargo" }];
+           if (parsed.spaceportCost === undefined) parsed.spaceportCost = 200;
           if (parsed.fuelRefineries === undefined) parsed.fuelRefineries = 0;
-          if (parsed.fuelProductionPerRefinery === undefined) parsed.fuelProductionPerRefinery = 1;
-          if (parsed.fuelCostPerRocket === undefined) parsed.fuelCostPerRocket = 1;
-          if (parsed.fuelRefineryCost === undefined) parsed.fuelRefineryCost = 500;
-          if (!parsed.explodedRocketIds) parsed.explodedRocketIds = [];
-          if (parsed.rocketExplosionChance === undefined) parsed.rocketExplosionChance = 0.05;
-          
-          return parsed;
+           if (parsed.fuelProductionPerRefinery === undefined) parsed.fuelProductionPerRefinery = 1;
+           if (parsed.fuelCostPerRocket === undefined) parsed.fuelCostPerRocket = 1;
+            if (parsed.fuelRefineryCost === undefined) parsed.fuelRefineryCost = 20;
+           if (!parsed.explodedRocketIds) parsed.explodedRocketIds = [];
+           if (parsed.rocketExplosionChance === undefined) parsed.rocketExplosionChance = 0.75;
+           
+           return parsed;
         }
       }
     } catch (e) {
