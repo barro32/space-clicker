@@ -14,8 +14,9 @@ describe('Research effect multipliers and special effects', () => {
 
   it('unlocking special nodes updates researchedNodes', () => {
     useGameStore.setState({ science: 1000, researchedNodes: [] } as any);
-    useGameStore.getState().unlockNode('c3');
+    // Unlock a node with no prerequisites (c1 has no prereqs)
+    useGameStore.getState().unlockNode('c1');
     const state = useGameStore.getState();
-    expect(state.researchedNodes).toContain('c3');
+    expect(state.researchedNodes).toContain('c1');
   });
 });
