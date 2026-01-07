@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useGameStore, GameState } from "./useGameStore.js"
 import { FaMoneyBillAlt, FaFlask, FaGasPump, FaBoxOpen } from 'react-icons/fa' // Added FaGasPump
 import { SpaceportView } from "./SpaceportView.js"
@@ -8,70 +8,151 @@ import { ResearchTreeView } from "./ResearchTreeView.js"
 import { DevConsole } from './DevConsole.js'
 
 
+// Default companies - used as fallback when loading state
+const DEFAULT_COMPANIES = [
+  { id: 'titan', name: 'Titan Mining Corp', level: 1, experience: 0 },
+  { id: 'nova', name: 'Nova Research', level: 1, experience: 0 },
+  { id: 'zenith', name: 'Zenith Logistics', level: 1, experience: 0 },
+  { id: 'orion', name: 'Orion Heavy Industries', level: 1, experience: 0 },
+  { id: 'galactic', name: 'Galactic Energy', level: 1, experience: 0 },
+  { id: 'atlas', name: 'Atlas Construction', level: 1, experience: 0 },
+  { id: 'pulsar', name: 'Pulsar Electronics', level: 1, experience: 0 },
+  { id: 'stellar', name: 'Stellar Bio-Tech', level: 1, experience: 0 },
+  { id: 'aegis', name: 'Aegis Security', level: 1, experience: 0 },
+  { id: 'dse', name: 'Deep Space Exploration', level: 1, experience: 0 },
+];
+
+// Load persisted state immediately on app load (synchronously before any render)
+const loadInitialState = () => {
+  if (typeof window !== 'undefined') {
+    try {
+      const savedState = localStorage.getItem('gameState');
+      if (savedState) {
+        const parsed = JSON.parse(savedState);
+        // Validate that it has core properties
+        if (parsed.money !== undefined && parsed.science !== undefined) {
+          // Ensure all required fields exist - use defaults if missing
+          if (!parsed.spaceStations) parsed.spaceStations = [];
+          if (!parsed.currentView) parsed.currentView = "surface";
+          if (!parsed.notifications) parsed.notifications = [];
+          if (!parsed.companies) parsed.companies = DEFAULT_COMPANIES;
+          if (!parsed.availableContracts) parsed.availableContracts = [];
+          if (!parsed.researchedNodes) parsed.researchedNodes = [];
+          if (parsed.autoBuildActive === undefined) parsed.autoBuildActive = false;
+          if (!parsed.previouslyAvailableResearch) parsed.previouslyAvailableResearch = [];
+          if (!parsed.rockets) parsed.rockets = [];
+          if (parsed.nextRocketId === undefined) parsed.nextRocketId = 0;
+          if (parsed.rocketCost === undefined) parsed.rocketCost = 10;
+          if (parsed.profitPerRocket === undefined) parsed.profitPerRocket = 1;
+          if (parsed.spaceportCapacity === undefined) parsed.spaceportCapacity = 9;
+          if (!parsed.spaceports) parsed.spaceports = [{ type: "cargo" }];
+          if (parsed.spaceportCost === undefined) parsed.spaceportCost = 1000;
+          if (parsed.fuelRefineries === undefined) parsed.fuelRefineries = 0;
+          if (parsed.fuelProductionPerRefinery === undefined) parsed.fuelProductionPerRefinery = 1;
+          if (parsed.fuelCostPerRocket === undefined) parsed.fuelCostPerRocket = 1;
+          if (parsed.fuelRefineryCost === undefined) parsed.fuelRefineryCost = 500;
+          if (!parsed.explodedRocketIds) parsed.explodedRocketIds = [];
+          if (parsed.rocketExplosionChance === undefined) parsed.rocketExplosionChance = 0.05;
+          
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load persisted state:', e);
+    }
+  }
+  return null;
+};
+
+// Load state synchronously BEFORE first render - this is critical for hot reload
+const persistedInitialState = loadInitialState();
+if (persistedInitialState) {
+  useGameStore.setState(persistedInitialState);
+}
+
 export function App() {
+  // Note: State is already loaded synchronously above, before this component even mounts
+  // The useRef below is kept as a safety measure for edge cases, but it shouldn't be needed
+  const hasLoadedRef = useRef(false);
+
   const { money, science, fuel, cargo, tick, currentView, setView, notifications } = useGameStore()
+  const [lastSaveTime, setLastSaveTime] = useState<number>(Date.now())
+  const [displayTime, setDisplayTime] = useState<string>('just now')
 
   useEffect(() => {
     const interval = setInterval(tick, 1000)
     return () => clearInterval(interval)
   }, [tick])
 
+  // Update display time every second
   useEffect(() => {
-    const savedState = localStorage.getItem('gameState');
-    if (savedState) {
-      const state = JSON.parse(savedState);
-      // Ensure spaceStations is initialized
-      if (!state.spaceStations) {
-        state.spaceStations = [];
+    const updateDisplayTime = () => {
+      const elapsedSeconds = Math.floor((Date.now() - lastSaveTime) / 1000);
+      if (elapsedSeconds === 0) {
+        setDisplayTime('just now');
+      } else if (elapsedSeconds < 60) {
+        setDisplayTime(`${elapsedSeconds}s ago`);
+      } else {
+        const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+        setDisplayTime(`${elapsedMinutes}m ago`);
       }
-      if (!state.currentView) {
-        state.currentView = "surface";
-      }
-      if (!state.notifications) {
-        state.notifications = [];
-      }
-      if (!state.companies) {
-        state.companies = useGameStore.getState().companies;
-      }
-      if (!state.availableContracts) {
-        state.availableContracts = [];
-      }
-      useGameStore.setState(state);
-    }
+    };
 
-    const interval = setInterval(() => {
-      const state = useGameStore.getState();
-      const stateToSave = {
-        money: state.money,
-        science: state.science,
-        fuel: state.fuel,
-        cargo: state.cargo,
-        currentView: state.currentView,
-        notifications: state.notifications,
-        companies: state.companies,
-        availableContracts: state.availableContracts,
-        activeContract: state.activeContract,
-        rockets: state.rockets,
-        nextRocketId: state.nextRocketId,
-        rocketCost: state.rocketCost,
-        profitPerRocket: state.profitPerRocket,
-        spaceportCapacity: state.spaceportCapacity,
-        spaceports: state.spaceports,
-        spaceStations: state.spaceStations,
-        spaceportCost: state.spaceportCost,
-        fuelRefineries: state.fuelRefineries,
-        fuelProductionPerRefinery: state.fuelProductionPerRefinery,
-        fuelCostPerRocket: state.fuelCostPerRocket,
-        fuelRefineryCost: state.fuelRefineryCost,
-        explodedRocketIds: state.explodedRocketIds,
-        rocketExplosionChance: state.rocketExplosionChance,
-        researchedNodes: state.researchedNodes,
-      };
-      localStorage.setItem('gameState', JSON.stringify(stateToSave));
-    }, 30000);
-
+    updateDisplayTime(); // Update immediately
+    const interval = setInterval(updateDisplayTime, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [lastSaveTime]);
+
+   useEffect(() => {
+      // Setup autosave interval - state is already loaded synchronously
+      const saveState = () => {
+        const state = useGameStore.getState();
+        const stateToSave = {
+          money: state.money,
+          science: state.science,
+          fuel: state.fuel,
+          cargo: state.cargo,
+          currentView: state.currentView,
+          notifications: state.notifications,
+          companies: state.companies,
+          availableContracts: state.availableContracts,
+          activeContract: state.activeContract,
+          rockets: state.rockets,
+          nextRocketId: state.nextRocketId,
+          rocketCost: state.rocketCost,
+          profitPerRocket: state.profitPerRocket,
+          spaceportCapacity: state.spaceportCapacity,
+          spaceports: state.spaceports,
+          spaceStations: state.spaceStations,
+          spaceportCost: state.spaceportCost,
+          fuelRefineries: state.fuelRefineries,
+          fuelProductionPerRefinery: state.fuelProductionPerRefinery,
+          fuelCostPerRocket: state.fuelCostPerRocket,
+          fuelRefineryCost: state.fuelRefineryCost,
+          explodedRocketIds: state.explodedRocketIds,
+          rocketExplosionChance: state.rocketExplosionChance,
+          researchedNodes: state.researchedNodes,
+          autoBuildActive: state.autoBuildActive,
+          previouslyAvailableResearch: state.previouslyAvailableResearch || [],
+        };
+        localStorage.setItem('gameState', JSON.stringify(stateToSave));
+        setLastSaveTime(Date.now());
+      };
+
+      // Save every 30 seconds
+      const interval = setInterval(saveState, 30000);
+      
+      // Also save when the page is about to unload (for better UX during hot reload)
+      const handleBeforeUnload = () => {
+        saveState();
+      };
+      window.addEventListener('beforeunload', handleBeforeUnload);
+
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      };
+    }, []);
 
   return (
     <div className="relative min-h-screen flex flex-col gap-4 items-center justify-center bg-gray-900 text-white overflow-hidden">
@@ -101,23 +182,27 @@ export function App() {
           Research
         </button>
       </div>
-      {currentView === "surface" ? <SpaceportView /> : currentView === "orbit" ? <OrbitView /> : currentView === "contracts" ? <ContractsView /> : <ResearchTreeView />}
-                              {/* Status Box (bottom-right) */}
-      <div className="fixed bottom-4 right-4 z-40 w-96 max-w-full">
-        <div className="bg-black/40 backdrop-blur-sm border border-gray-700 p-2 rounded-lg shadow-lg">
-          <div className="flex flex-col gap-2 pointer-events-auto">
-            {notifications.length === 0 ? (
-              <div className="text-xs text-gray-400 px-2 py-1">No notifications</div>
-            ) : (
-              notifications.map((msg: string, i: number) => (
-                <div key={i} className="bg-gray-800 border border-gray-600 px-3 py-2 rounded text-sm opacity-95">
-                  {msg}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
+       {currentView === "surface" ? <SpaceportView /> : currentView === "orbit" ? <OrbitView /> : currentView === "contracts" ? <ContractsView /> : <ResearchTreeView />}
+                               {/* Status Box (bottom-right) */}
+       <div className="fixed bottom-4 right-4 z-40 w-96 max-w-full">
+         <div className="bg-black/40 backdrop-blur-sm border border-gray-700 p-2 rounded-lg shadow-lg">
+           <div className="flex flex-col gap-2 pointer-events-auto">
+             {/* Autosave Indicator */}
+             <div className="text-xs text-gray-400 px-2 py-1 border-b border-gray-600">
+               Saved: {displayTime}
+             </div>
+             {notifications.length === 0 ? (
+               <div className="text-xs text-gray-400 px-2 py-1">No notifications</div>
+             ) : (
+               notifications.map((msg: string, i: number) => (
+                 <div key={i} className="bg-gray-800 border border-gray-600 px-3 py-2 rounded text-sm opacity-95">
+                   {msg}
+                 </div>
+               ))
+             )}
+           </div>
+         </div>
+       </div>
 
       <div className="z-10">
         <p className="flex justify-center items-center text-2xl">
