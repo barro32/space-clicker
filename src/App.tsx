@@ -207,20 +207,37 @@ export function App() {
          </div>
        </div>
 
-        <div className="z-10">
-          <p className="flex justify-center items-center text-2xl">
-            <FaMoneyBillAlt className="mr-2"/> {Math.floor(money)} <span className="text-xs text-gray-400 ml-1">(+{Math.floor(productionRates.moneyPerSec)}/s)</span>
-          </p>
-          <p className="flex justify-center items-center text-2xl">
-            <FaFlask className="mr-2"/> {Math.floor(science)} <span className="text-xs text-gray-400 ml-1">(+{Math.floor(productionRates.sciencePerSec)}/s)</span>
-          </p>
-          <p className="flex justify-center items-center text-2xl">
-            <FaGasPump className="mr-2"/> {Math.floor(fuel)} <span className="text-xs text-gray-400 ml-1">(+{Math.floor(productionRates.fuelPerSec)}/s)</span>
-          </p>
-          <p className="flex justify-center items-center text-2xl">
-            <FaBoxOpen className="mr-2"/> {Math.floor(cargo)}
-          </p>
-        </div>
+         <div className="z-10">
+           <p className="flex justify-center items-center text-2xl">
+             <FaMoneyBillAlt className="mr-2"/> {Math.floor(money)} <span className="text-xs text-gray-400 ml-1">(+{Math.floor(productionRates.moneyPerSec)}/s)</span>
+           </p>
+           <p className="flex justify-center items-center text-2xl">
+             <FaFlask className="mr-2"/> {Math.floor(science)} <span className="text-xs text-gray-400 ml-1">(+{Math.floor(productionRates.sciencePerSec)}/s)</span>
+           </p>
+           <div className="flex flex-col items-center gap-1">
+             <p className="flex justify-center items-center text-2xl">
+               <FaGasPump className="mr-2"/> {Math.floor(fuel)} <span className="text-xs text-gray-400 ml-1">(+{Math.floor(productionRates.fuelPerSec)}/s)</span>
+             </p>
+             {/* Fuel Status Gauge */}
+             <div className="w-48 h-6 bg-gray-800 border border-gray-600 rounded overflow-hidden">
+               {(() => {
+                 const fuelPercent = Math.min(100, (fuel / 200) * 100);
+                 const getGaugeColor = () => {
+                   if (fuelPercent >= 75) return 'bg-green-500';
+                   if (fuelPercent >= 50) return 'bg-blue-500';
+                   if (fuelPercent >= 25) return 'bg-yellow-500';
+                   return 'bg-red-500';
+                 };
+                 return (
+                   <div className={`h-full transition-all duration-100 ${getGaugeColor()}`} style={{ width: `${fuelPercent}%` }} />
+                 );
+               })()}
+             </div>
+           </div>
+           <p className="flex justify-center items-center text-2xl">
+             <FaBoxOpen className="mr-2"/> {Math.floor(cargo)}
+           </p>
+         </div>
       <DevConsole />
 
     </div>
