@@ -128,45 +128,46 @@ export const useGameStore = create<GameState>((set, get) => ({
      researchedNodes: [],
      previouslyAvailableResearch: [],
      autoBuildActive: false,
-     tick: () => set(state => {
-      const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
-     
-     const fuelProduction = state.fuelRefineries * state.fuelProductionPerRefinery * state.getEffectMultiplier('refineryOutputMultiplier');
-     let fuelAvailable = state.fuel + fuelProduction;
-     let successfulCargoLaunches = 0;
-     let successfulScienceLaunches = 0;
-     let explosionCount = 0;
-     let newExplodedRocketIds = [...state.explodedRocketIds];
-     let newActiveContract = state.activeContract ? { ...state.activeContract } : null;
+    tick: () => set(state => {
+     const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
+    
+    const fuelProduction = state.fuelRefineries * state.fuelProductionPerRefinery * state.getEffectMultiplier('refineryOutputMultiplier');
+    let fuelAvailable = state.fuel + fuelProduction;
+    let successfulCargoLaunches = 0;
+    let successfulScienceLaunches = 0;
+    let explosionCount = 0;
+    let newExplodedRocketIds = [...state.explodedRocketIds];
+    let newActiveContract = state.activeContract ? { ...state.activeContract } : null;
 
-     const effectiveFuelCost = state.fuelCostPerRocket * state.getEffectMultiplier('fuelCostMultiplier');
-     const effectiveExplosionChance = state.rocketExplosionChance * state.getEffectMultiplier('explosionChanceMultiplier');
+    const effectiveFuelCost = state.fuelCostPerRocket * state.getEffectMultiplier('fuelCostMultiplier');
+    const effectiveExplosionChance = state.rocketExplosionChance * state.getEffectMultiplier('explosionChanceMultiplier');
 
-     // Process each rocket launch
-     for (const rocket of activeRockets) {
-       // All rockets have a chance to explode, whether fueled or not
-       if (Math.random() < effectiveExplosionChance) {
-         newExplodedRocketIds.push(rocket.id);
-         explosionCount += 1;
-         // Handle contract fragility
-         if (newActiveContract && newActiveContract.status === 'active' && newActiveContract.maxExplosions !== -1) {
-           newActiveContract.currentExplosions += 1;
-           if (newActiveContract.currentExplosions > newActiveContract.maxExplosions) {
-             newActiveContract.status = 'failed';
-             get().addNotification(`Contract Failed: ${newActiveContract.title} (Too many explosions)`);
-           }
-         }
-       } else if (fuelAvailable >= effectiveFuelCost) {
-         // Only successful launches if: (1) didn't explode AND (2) have fuel
-         fuelAvailable -= effectiveFuelCost;
-         if (rocket.type === 'cargo') {
-           successfulCargoLaunches += 1;
-         } else {
-           successfulScienceLaunches += 1;
-         }
-       }
-       // If didn't explode but no fuel: rocket stays active (waiting)
-     }
+    // Process each rocket launch
+    for (const rocket of activeRockets) {
+      if (fuelAvailable >= effectiveFuelCost) {
+        fuelAvailable -= effectiveFuelCost;
+        
+        // Roll for explosion
+        if (Math.random() < effectiveExplosionChance) {
+          newExplodedRocketIds.push(rocket.id);
+          explosionCount += 1;
+          // Handle contract fragility
+          if (newActiveContract && newActiveContract.status === 'active' && newActiveContract.maxExplosions !== -1) {
+            newActiveContract.currentExplosions += 1;
+            if (newActiveContract.currentExplosions > newActiveContract.maxExplosions) {
+              newActiveContract.status = 'failed';
+              get().addNotification(`Contract Failed: ${newActiveContract.title} (Too many explosions)`);
+            }
+          }
+        } else {
+          if (rocket.type === 'cargo') {
+            successfulCargoLaunches += 1;
+          } else {
+            successfulScienceLaunches += 1;
+          }
+        }
+      }
+    }
 
     let cargoProd = successfulCargoLaunches * state.profitPerRocket * state.getEffectMultiplier('profitMultiplier');
     let sciProd = successfulScienceLaunches * PRODUCTION.SCIENCE_PER_SCIENCE_ROCKET + explosionCount * PRODUCTION.SCIENCE_PER_EXPLOSION;
