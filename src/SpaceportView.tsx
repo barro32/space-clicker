@@ -30,7 +30,7 @@ export function SpaceportView() {
                  if (isExploded) {
                    return <FaBomb key={i} onClick={(e) => { e.stopPropagation(); clearExplosion(rocket.id); }} className="text-2xl cursor-pointer text-red-500 animate-pulse" title="Click to clear explosion" />;
                  } else if (isLaunching) {
-                   return <FaRocket key={i} className="text-2xl text-yellow-300 animate-ping" title="Launching!" />;
+                   return <FaRocket key={i} className="text-2xl text-yellow-400 animate-launch" title="Launching!" />;
                  } else {
                    return <FaRocket key={i} className={`text-2xl ${fuel >= fuelCostPerRocket ? 'text-blue-400 animate-bounce-slow' : 'text-gray-500'}`} title={fuel >= fuelCostPerRocket ? 'Ready to launch' : 'Waiting for fuel'} />;
                  }

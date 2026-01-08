@@ -131,16 +131,17 @@ export const useGameStore = create<GameState>((set, get) => ({
       previouslyAvailableResearch: [],
       autoBuildActive: false,
      tick: () => set(state => {
+      // Clear animation flags at start of each tick
       const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
      
-     const fuelProduction = state.fuelRefineries * state.fuelProductionPerRefinery * state.getEffectMultiplier('refineryOutputMultiplier');
-     let fuelAvailable = state.fuel + fuelProduction;
-     let successfulCargoLaunches = 0;
-     let successfulScienceLaunches = 0;
-     let explosionCount = 0;
-     let newExplodedRocketIds = [...state.explodedRocketIds];
-     let newActiveContract = state.activeContract ? { ...state.activeContract } : null;
-     let recentlyLaunchedIds: number[] = [];
+      const fuelProduction = state.fuelRefineries * state.fuelProductionPerRefinery * state.getEffectMultiplier('refineryOutputMultiplier');
+      let fuelAvailable = state.fuel + fuelProduction;
+      let successfulCargoLaunches = 0;
+      let successfulScienceLaunches = 0;
+      let explosionCount = 0;
+      let newExplodedRocketIds = [...state.explodedRocketIds];
+      let newActiveContract = state.activeContract ? { ...state.activeContract } : null;
+      let recentlyLaunchedIds: number[] = [];
 
      const effectiveFuelCost = state.fuelCostPerRocket * state.getEffectMultiplier('fuelCostMultiplier');
      const effectiveExplosionChance = state.rocketExplosionChance * state.getEffectMultiplier('explosionChanceMultiplier');
