@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { researchTree, ResearchNode } from './researchTree.js'
+import { INITIAL_STATE, COST_SCALING, PRODUCTION } from './gameConstants.js'
 
 interface Spaceport {
   type: "cargo" | "science"
@@ -90,10 +91,10 @@ export interface GameState {
 
 
 export const useGameStore = create<GameState>((set, get) => ({
-  money: 10,
-  science: 0,
-  fuel: 100,
-  cargo: 0,
+  money: INITIAL_STATE.MONEY,
+  science: INITIAL_STATE.SCIENCE,
+  fuel: INITIAL_STATE.FUEL,
+  cargo: INITIAL_STATE.CARGO,
   currentView: "surface",
   notifications: [],
   companies: [
@@ -112,18 +113,18 @@ export const useGameStore = create<GameState>((set, get) => ({
    activeContract: null,
    rockets: [],
    nextRocketId: 0,
-   rocketCost: 1,
-    profitPerRocket: 1,
-     spaceportCapacity: 2,
+    rocketCost: INITIAL_STATE.ROCKET_COST,
+     profitPerRocket: INITIAL_STATE.PROFIT_PER_ROCKET,
+     spaceportCapacity: INITIAL_STATE.SPACEPORT_CAPACITY,
     spaceports: [{ type: "cargo" }],
     spaceStations: [],
-    spaceportCost: 200,
-   fuelRefineries: 0,
-    fuelProductionPerRefinery: 1,
-    fuelCostPerRocket: 1,
-    fuelRefineryCost: 20,
-     explodedRocketIds: [],
-     rocketExplosionChance: 0.75,
+     spaceportCost: INITIAL_STATE.SPACEPORT_COST,
+    fuelRefineries: 0,
+     fuelProductionPerRefinery: INITIAL_STATE.FUEL_PRODUCTION_PER_REFINERY,
+     fuelCostPerRocket: INITIAL_STATE.FUEL_COST_PER_ROCKET,
+     fuelRefineryCost: INITIAL_STATE.FUEL_REFINERY_COST,
+      explodedRocketIds: [],
+      rocketExplosionChance: INITIAL_STATE.ROCKET_EXPLOSION_CHANCE,
      researchedNodes: [],
      previouslyAvailableResearch: [],
      autoBuildActive: false,
@@ -169,13 +170,13 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     let cargoProd = successfulCargoLaunches * state.profitPerRocket * state.getEffectMultiplier('profitMultiplier');
-    let sciProd = successfulScienceLaunches * 1 + explosionCount * 1;
-    let cargoResourceProd = successfulCargoLaunches * 0.1 * state.getEffectMultiplier('cargoGenerationMultiplier');
+    let sciProd = successfulScienceLaunches * PRODUCTION.SCIENCE_PER_SCIENCE_ROCKET + explosionCount * PRODUCTION.SCIENCE_PER_EXPLOSION;
+    let cargoResourceProd = successfulCargoLaunches * PRODUCTION.CARGO_PER_SUCCESSFUL_LAUNCH * state.getEffectMultiplier('cargoGenerationMultiplier');
 
-    // Passive Spaceport Bonuses
-    for (let i = 0; i < state.spaceports.length; i++) {
-      if (state.spaceports[i].type === "cargo") {
-        cargoProd += (i + 1)
+     // Passive Spaceport Bonuses
+     for (let i = 0; i < state.spaceports.length; i++) {
+       if (state.spaceports[i].type === "cargo") {
+         cargoProd += (i + 1) * PRODUCTION.PASSIVE_CARGO_BONUS_PER_SPACEPORT;
       } else {
         const spaceportLaunches = Math.floor(successfulCargoLaunches / state.spaceports.length);
         sciProd += spaceportLaunches;
@@ -186,9 +187,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (state.spaceStations) {
       state.spaceStations.forEach(station => {
         if (station.type === 'research') {
-          sciProd += 10 * station.level * state.getEffectMultiplier('stationScienceMultiplier');
+          sciProd += PRODUCTION.STATION_SCIENCE_BONUS * station.level * state.getEffectMultiplier('stationScienceMultiplier');
         } else if (station.type === 'logistics') {
-          cargoProd += 50 * station.level * state.getEffectMultiplier('stationLogisticsMultiplier');
+          cargoProd += PRODUCTION.STATION_LOGISTICS_BONUS * station.level * state.getEffectMultiplier('stationLogisticsMultiplier');
         }
       });
     }
@@ -231,7 +232,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         let totalBatchCost = 0;
         for (let i = 0; i < desiredCount; i++) {
           const idx = currentTotalRockets + i;
-          const baseCost = state.rocketCost * Math.pow(1.2, idx);
+          const baseCost = state.rocketCost * Math.pow(COST_SCALING.ROCKET_COST_EXPONENT, idx);
           const cost = Math.round(baseCost * constructionMultiplier);
           if (finalMoney >= totalBatchCost + cost) {
             totalBatchCost += cost;
@@ -296,7 +297,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const currentTotalRockets = state.rockets.filter(r => r !== null).length;
 
        if (currentTotalRockets < maxRockets) {
-         const baseCost = state.rocketCost * Math.pow(1.2, currentTotalRockets);
+          const baseCost = state.rocketCost * Math.pow(COST_SCALING.ROCKET_COST_EXPONENT, currentTotalRockets);
          const currentRocketCost = Math.round(baseCost * state.getEffectMultiplier('constructionCostMultiplier'));
          if (state.money >= currentRocketCost) {
            const newRockets = [...state.rockets];
@@ -332,7 +333,7 @@ export const useGameStore = create<GameState>((set, get) => ({
        const currentTotalRockets = state.rockets.filter(r => r !== null).length;
 
         if (currentTotalRockets < maxRockets) {
-          const baseCost = state.rocketCost * Math.pow(1.2, currentTotalRockets);
+         const baseCost = state.rocketCost * Math.pow(COST_SCALING.ROCKET_COST_EXPONENT, currentTotalRockets);
           const currentRocketCost = Math.round(baseCost * state.getEffectMultiplier('constructionCostMultiplier'));
           if (state.money >= currentRocketCost) {
             const newRockets = [...state.rockets];
@@ -392,7 +393,7 @@ export const useGameStore = create<GameState>((set, get) => ({
        if (state.researchedNodes.indexOf('o6') === -1) {
          return {}; // Refineries not unlocked
        }
-       const baseCost = state.fuelRefineryCost * Math.pow(1.5, state.fuelRefineries);
+       const baseCost = state.fuelRefineryCost * Math.pow(COST_SCALING.FUEL_REFINERY_COST_EXPONENT, state.fuelRefineries);
        const currentFuelRefineryCost = Math.round(baseCost * state.getEffectMultiplier('constructionCostMultiplier'));
        if (state.money >= currentFuelRefineryCost) {
          return {
@@ -442,7 +443,7 @@ export const useGameStore = create<GameState>((set, get) => ({
      }),
   getCurrentSpaceportCost: () => {
     const state = get();
-    return Math.round(state.spaceportCost * Math.pow(1.5, state.spaceports.length) * state.getEffectMultiplier('constructionCostMultiplier'));
+    return Math.round(state.spaceportCost * Math.pow(COST_SCALING.SPACEPORT_COST_EXPONENT, state.spaceports.length) * state.getEffectMultiplier('constructionCostMultiplier'));
   },
   getEffectMultiplier: (type: string) => {
     const state = get();

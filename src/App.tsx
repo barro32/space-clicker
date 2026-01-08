@@ -6,6 +6,7 @@ import { OrbitView } from "./OrbitView.js"
 import { ContractsView } from "./ContractsView.js"
 import { ResearchTreeView } from "./ResearchTreeView.js"
 import { DevConsole } from './DevConsole.js'
+import { INITIAL_STATE, TIME } from './gameConstants.js'
 
 
 // Default companies - used as fallback when loading state
@@ -30,29 +31,30 @@ const loadInitialState = () => {
       if (savedState) {
         const parsed = JSON.parse(savedState);
         // Validate that it has core properties
-        if (parsed.money !== undefined && parsed.science !== undefined) {
-          // Ensure all required fields exist - use defaults if missing
-          if (!parsed.spaceStations) parsed.spaceStations = [];
-          if (!parsed.currentView) parsed.currentView = "surface";
-          if (!parsed.notifications) parsed.notifications = [];
-          if (!parsed.companies) parsed.companies = DEFAULT_COMPANIES;
-          if (!parsed.availableContracts) parsed.availableContracts = [];
-          if (!parsed.researchedNodes) parsed.researchedNodes = [];
-           if (parsed.autoBuildActive === undefined) parsed.autoBuildActive = false;
-           if (!parsed.previouslyAvailableResearch) parsed.previouslyAvailableResearch = [];
-           if (!parsed.rockets) parsed.rockets = [];
-           if (parsed.nextRocketId === undefined) parsed.nextRocketId = 0;
-           if (parsed.rocketCost === undefined) parsed.rocketCost = 1;
-           if (parsed.profitPerRocket === undefined) parsed.profitPerRocket = 1;
-            if (parsed.spaceportCapacity === undefined) parsed.spaceportCapacity = 2;
-           if (!parsed.spaceports) parsed.spaceports = [{ type: "cargo" }];
-           if (parsed.spaceportCost === undefined) parsed.spaceportCost = 200;
-          if (parsed.fuelRefineries === undefined) parsed.fuelRefineries = 0;
-           if (parsed.fuelProductionPerRefinery === undefined) parsed.fuelProductionPerRefinery = 1;
-           if (parsed.fuelCostPerRocket === undefined) parsed.fuelCostPerRocket = 1;
-            if (parsed.fuelRefineryCost === undefined) parsed.fuelRefineryCost = 20;
-           if (!parsed.explodedRocketIds) parsed.explodedRocketIds = [];
-           if (parsed.rocketExplosionChance === undefined) parsed.rocketExplosionChance = 0.75;
+         if (parsed.money !== undefined && parsed.science !== undefined) {
+           // Ensure all required fields exist - use defaults if missing
+           if (!parsed.spaceStations) parsed.spaceStations = [];
+           if (!parsed.currentView) parsed.currentView = "surface";
+           if (!parsed.notifications) parsed.notifications = [];
+           if (!parsed.companies) parsed.companies = DEFAULT_COMPANIES;
+           if (!parsed.availableContracts) parsed.availableContracts = [];
+           if (!parsed.researchedNodes) parsed.researchedNodes = [];
+            if (parsed.autoBuildActive === undefined) parsed.autoBuildActive = false;
+            if (!parsed.previouslyAvailableResearch) parsed.previouslyAvailableResearch = [];
+            if (!parsed.rockets) parsed.rockets = [];
+             if (parsed.nextRocketId === undefined) parsed.nextRocketId = 0;
+             if (parsed.rocketCost === undefined) parsed.rocketCost = INITIAL_STATE.ROCKET_COST;
+             if (parsed.profitPerRocket === undefined) parsed.profitPerRocket = INITIAL_STATE.PROFIT_PER_ROCKET;
+              // Force spaceportCapacity to match current default (migration from old saved values of 3 or 4)
+              parsed.spaceportCapacity = INITIAL_STATE.SPACEPORT_CAPACITY;
+             if (!parsed.spaceports) parsed.spaceports = [{ type: "cargo" }];
+             if (parsed.spaceportCost === undefined) parsed.spaceportCost = INITIAL_STATE.SPACEPORT_COST;
+           if (parsed.fuelRefineries === undefined) parsed.fuelRefineries = 0;
+            if (parsed.fuelProductionPerRefinery === undefined) parsed.fuelProductionPerRefinery = INITIAL_STATE.FUEL_PRODUCTION_PER_REFINERY;
+            if (parsed.fuelCostPerRocket === undefined) parsed.fuelCostPerRocket = INITIAL_STATE.FUEL_COST_PER_ROCKET;
+             if (parsed.fuelRefineryCost === undefined) parsed.fuelRefineryCost = INITIAL_STATE.FUEL_REFINERY_COST;
+            if (!parsed.explodedRocketIds) parsed.explodedRocketIds = [];
+            if (parsed.rocketExplosionChance === undefined) parsed.rocketExplosionChance = INITIAL_STATE.ROCKET_EXPLOSION_CHANCE;
            
            return parsed;
         }
@@ -79,19 +81,19 @@ export function App() {
   const [lastSaveTime, setLastSaveTime] = useState<number>(Date.now())
   const [displayTime, setDisplayTime] = useState<string>('just now')
 
-  useEffect(() => {
-    const interval = setInterval(tick, 1000)
-    return () => clearInterval(interval)
-  }, [tick])
+   useEffect(() => {
+     const interval = setInterval(tick, TIME.TICK_INTERVAL_MS)
+     return () => clearInterval(interval)
+   }, [tick])
 
-  // Update display time every second
-  useEffect(() => {
-    const updateDisplayTime = () => {
-      const elapsedSeconds = Math.floor((Date.now() - lastSaveTime) / 1000);
-      if (elapsedSeconds === 0) {
-        setDisplayTime('just now');
-      } else if (elapsedSeconds < 60) {
-        setDisplayTime(`${elapsedSeconds}s ago`);
+   // Update display time every second
+   useEffect(() => {
+     const updateDisplayTime = () => {
+       const elapsedSeconds = Math.floor((Date.now() - lastSaveTime) / 1000);
+       if (elapsedSeconds === 0) {
+         setDisplayTime('just now');
+       } else if (elapsedSeconds < TIME.DISPLAY_TIME_THRESHOLD_SECONDS) {
+         setDisplayTime(`${elapsedSeconds}s ago`);
       } else {
         const elapsedMinutes = Math.floor(elapsedSeconds / 60);
         setDisplayTime(`${elapsedMinutes}m ago`);

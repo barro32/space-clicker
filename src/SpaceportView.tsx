@@ -1,14 +1,15 @@
 import { useGameStore } from "./useGameStore.js"
 import { FaRegBuilding, FaRocket, FaBomb, FaGasPump, FaFlask } from "react-icons/fa" // Added FaFlask for science rockets
+import { COST_SCALING } from "./gameConstants.js"
 
 export function SpaceportView() {
      const { rockets, spaceports, buildSpaceport, buildRocket, explodedRocketIds, clearExplosion, fuelRefineries, buildFuelRefinery, fuelRefineryCost, autoBuildActive, toggleAutoBuild, buildScienceRocket } = useGameStore()
      
-     // use effective capacity from research
-     const effectiveCapacity = useGameStore(state => Math.max(1, state.spaceportCapacity + state.getEffectMultiplier('spaceportCapacityBonus')));
-     const currentRocketCost = useGameStore(state => Math.floor(state.rocketCost * Math.pow(1.2, state.rockets.filter(r => r !== null).length - state.explodedRocketIds.length)));
-     const currentSpaceportCost = useGameStore(state => state.getCurrentSpaceportCost());
-     const currentFuelRefineryCost = useGameStore(state => Math.round(state.fuelRefineryCost * Math.pow(1.5, state.fuelRefineries)));
+      // use effective capacity from research
+      const effectiveCapacity = useGameStore(state => Math.max(1, state.spaceportCapacity + state.getEffectMultiplier('spaceportCapacityBonus')));
+      const currentRocketCost = useGameStore(state => Math.floor(state.rocketCost * Math.pow(COST_SCALING.ROCKET_COST_EXPONENT, state.rockets.filter(r => r !== null).length - state.explodedRocketIds.length)));
+      const currentSpaceportCost = useGameStore(state => state.getCurrentSpaceportCost());
+      const currentFuelRefineryCost = useGameStore(state => Math.round(state.fuelRefineryCost * Math.pow(COST_SCALING.FUEL_REFINERY_COST_EXPONENT, state.fuelRefineries)));
      const scienceRocketsUnlocked = useGameStore(state => state.researchedNodes.includes('o4'));
      const spaceportsUnlocked = useGameStore(state => state.researchedNodes.includes('o5'));
      const refineriesUnlocked = useGameStore(state => state.researchedNodes.includes('o6'));
