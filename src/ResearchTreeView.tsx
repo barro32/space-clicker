@@ -156,11 +156,11 @@ export function ResearchTreeView() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">Research Tree</h1>
           <div className="flex items-center gap-4 text-sm text-gray-300">
-            <div className="flex items-center gap-2">
-              <FaFlask className="text-blue-400" />
-              <span className="font-mono text-lg font-bold text-white">{science}</span>
-              <span>Science available</span>
-            </div>
+             <div className="flex items-center gap-2">
+               <FaFlask className="text-blue-400" />
+               <span className="font-mono text-lg font-bold text-white">{Math.floor(science)}</span>
+               <span>Science available</span>
+             </div>
           </div>
         </div>
 

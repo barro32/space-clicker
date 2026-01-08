@@ -206,20 +206,20 @@ export function App() {
          </div>
        </div>
 
-      <div className="z-10">
-        <p className="flex justify-center items-center text-2xl">
-          <FaMoneyBillAlt className="mr-2"/> {money}
-        </p>
-        <p className="flex justify-center items-center text-2xl">
-          <FaFlask className="mr-2"/> {science}
-        </p>
-        <p className="flex justify-center items-center text-2xl">
-          <FaGasPump className="mr-2"/> {fuel}
-        </p>
-        <p className="flex justify-center items-center text-2xl">
-          <FaBoxOpen className="mr-2"/> {Math.floor(cargo)}
-        </p>
-      </div>
+       <div className="z-10">
+         <p className="flex justify-center items-center text-2xl">
+           <FaMoneyBillAlt className="mr-2"/> {Math.floor(money)}
+         </p>
+         <p className="flex justify-center items-center text-2xl">
+           <FaFlask className="mr-2"/> {Math.floor(science)}
+         </p>
+         <p className="flex justify-center items-center text-2xl">
+           <FaGasPump className="mr-2"/> {Math.floor(fuel)}
+         </p>
+         <p className="flex justify-center items-center text-2xl">
+           <FaBoxOpen className="mr-2"/> {Math.floor(cargo)}
+         </p>
+       </div>
       <DevConsole />
 
     </div>
