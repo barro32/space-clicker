@@ -12,7 +12,7 @@ describe('Control branch research effects', () => {
       rockets: [],
       nextRocketId: 0,
       rocketCost: 10,
-      spaceports: [{ type: 'cargo' }],
+      spaceports: [{ id: 1 }],
       spaceportCapacity: 9,
       explodedRocketIds: [],
       rocketExplosionChance: 0,
@@ -67,30 +67,40 @@ describe('Control branch research effects', () => {
       expect(s.science).toBeGreaterThan(100); // Clearing produces science
    });
 
-   it('u7 Auto-Queue + toggled auto-build causes tick() to build rockets', () => {
-     // u7 requires u3, which requires u1-3, so include full chain
-     // u1-1,u1-2,u1-3 gives 1.2^3=1.728x build multiplier, u3 gives +1 batch
-     // So: desiredCount = 1 * 1.728 * 1 + 1 = 2.728 -> 2 rockets
+   it('u7 Auto-Queue + toggled auto-build causes tick() to build rockets on interval', () => {
+     // Auto-build now only builds 1 rocket every 20 seconds (20 ticks at tickCount % interval === 0)
+     // Build speed multipliers reduce the interval: 20 / 1.728 = 11.57 -> 11 ticks
+     // So it should build on tick 0, 11, 22, etc.
      useGameStore.setState({ 
-       researchedNodes: ['u1-1','u1-2','u1-3','u3','u7'], 
+       researchedNodes: ['u1-1','u1-2','u1-3','u7'], 
        money: 1000, 
        rockets: [], 
        nextRocketId: 0, 
        autoBuildActive: true, 
-       spaceports: [{ type: 'cargo' }],
+       spaceports: [{ id: 1 }],
        previouslyAvailableResearch: [],
        notifications: [],
+       tickCount: 0, // Start at tick 0 to trigger build
      } as unknown as GameState);
 
      useGameStore.getState().tick();
 
      const s = useGameStore.getState();
-     // debug
-     // eslint-disable-next-line no-console
-     console.log('AUTO BUILD STATE:', JSON.stringify(s));
-     // auto-build builds 2 rockets due to multipliers and batch bonus
-     expect(s.rockets.filter(r => r !== null).length).toBe(2);
-     // Cost: 10 + 12 = 22. Money: 1000 + 1 (cargo spaceport) - 22 = 979
-     expect(s.money).toBe(979);
+     // Auto-build should have built 1 rocket on tick 0
+     expect(s.rockets.filter(r => r !== null).length).toBe(1);
+     // Cost: 10 (first rocket). Money: 1000 + 1 (passive cargo) - 10 = 991
+     expect(s.money).toBe(991);
+     expect(s.tickCount).toBe(1);
+     
+     // Run more ticks and verify it builds again after interval
+     // With 1.728x multiplier, interval is floor(20/1.728) = 11 ticks
+     // Need to run 11 more ticks to reach tickCount=11, then tick 12 to trigger the build check
+     for (let i = 0; i < 11; i++) {
+       useGameStore.getState().tick();
+     }
+     const s2 = useGameStore.getState();
+     // At tickCount=11 (which happens on the 12th tick), it should build the 2nd rocket
+     expect(s2.tickCount).toBe(12);
+     expect(s2.rockets.filter(r => r !== null).length).toBe(2);
    });
 });

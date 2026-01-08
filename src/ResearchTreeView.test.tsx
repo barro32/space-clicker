@@ -60,7 +60,10 @@ describe('ResearchTreeView Component', () => {
 
       render(<ResearchTreeView />);
       
-      // Researched nodes are now hidden from the UI, so p1 should NOT appear
-      expect(() => screen.getByTestId('node-p1')).toThrow();
+      // Researched nodes are shown in a collapsed completed state
+      const p1Node = screen.getByTestId('node-p1');
+      expect(p1Node).toBeDefined();
+      // Completed nodes have green styling and checkmark
+      expect(p1Node.className).toContain('green');
     });
 });

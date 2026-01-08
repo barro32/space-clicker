@@ -23,15 +23,17 @@ describe('App navigation & persistence', () => {
       removeItem(key: string) { delete this._store[key] },
     };
 
+    // Mock scrollTo on Element.prototype for jsdom (used by scroll navigation)
+    Element.prototype.scrollTo = vi.fn();
+
     // reset mock if available
     if ((useGameStore as any).mockReset) (useGameStore as any).mockReset();
   });
 
-  it('calls setView("research") when Research button clicked', () => {
-    const setView = vi.fn();
+  it('scrolls to research layer when Research button clicked', () => {
     const mockState = {
       currentView: 'surface',
-      setView,
+      setView: vi.fn(),
       money: 0,
       science: 0,
       fuel: 0,
@@ -42,30 +44,30 @@ describe('App navigation & persistence', () => {
       rockets: [],
       explodedRocketIds: [],
       fuelRefineries: 0,
+      spaceports: [{ type: 'cargo' }],
+      fuelProductionPerRefinery: 1,
+      fuelCostPerRocket: 1,
+      rocketExplosionChance: 0.5,
+      profitPerRocket: 1,
     };
     
-    (useGameStore as any).mockReturnValue({
-      currentView: 'surface',
-      setView,
-      money: 0,
-      science: 0,
-      fuel: 0,
-      cargo: 0,
-      tick: vi.fn(),
-      notifications: [],
-      researchedNodes: [],
-      rockets: [],
-      explodedRocketIds: [],
-      fuelRefineries: 0,
+    // Handle both selector and non-selector calls
+    (useGameStore as any).mockImplementation((selector?: (state: any) => any) => {
+      if (typeof selector === 'function') {
+        return selector(mockState);
+      }
+      return mockState;
     });
     
     // Provide getState for the useMemo calls
     (useGameStore as any).getState = () => mockState;
 
     render(<App />);
-    const btn = screen.getByRole('button', { name: /research/i });
+    // New UI uses scroll-based navigation - the Research button triggers scrollTo
+    const btn = screen.getByRole('button', { name: /research lab/i });
     fireEvent.click(btn);
-    expect(setView).toHaveBeenCalledWith('research');
+    // Verify scrollTo was called (scroll-based navigation)
+    expect(Element.prototype.scrollTo).toHaveBeenCalled();
   });
 
    it.skip('rehydrates researchedNodes from localStorage on mount', () => {

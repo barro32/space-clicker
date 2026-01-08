@@ -3,7 +3,7 @@ import { FaRegBuilding, FaRocket, FaBomb, FaGasPump, FaFlask } from "react-icons
 import { COST_SCALING } from "./gameConstants.js"
 
 export function SpaceportView() {
-     const { rockets, spaceports, buildSpaceport, buildRocket, explodedRocketIds, clearExplosion, fuelRefineries, buildFuelRefinery, fuelRefineryCost, autoBuildActive, toggleAutoBuild, buildScienceRocket, fuel, recentlyLaunchedRocketIds } = useGameStore()
+     const { rockets, spaceports, buildSpaceport, buildRocket, explodedRocketIds, clearExplosion, fuelRefineries, buildFuelRefinery, fuelRefineryCost, autoBuildActive, autoSalvageActive, toggleAutoBuild, toggleAutoSalvage, buildScienceRocket, fuel, recentlyLaunchedRocketIds, tickCount } = useGameStore()
      
       // use effective capacity from research
       const effectiveCapacity = useGameStore(state => Math.max(1, state.spaceportCapacity + state.getEffectMultiplier('spaceportCapacityBonus')));
@@ -17,67 +17,71 @@ export function SpaceportView() {
      const explosionClearingUnlocked = useGameStore(state => state.researchedNodes.includes('o7'));
 
    return (
-     <div className="w-full h-full flex flex-col items-center justify-center px-8">
-       {/* Spaceports Grid */}
-       <div className="grid gap-6 mb-8">
+     <div className="w-full h-full flex flex-col items-center justify-center px-8 overflow-auto">
+       {/* Spaceports Grid - scrollable for many spaceports */}
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 max-h-[50vh] overflow-y-auto w-full max-w-4xl">
          {spaceports.map((sp, spIndex) => {
            return (
-             <div key={spIndex} className={`bg-gradient-to-br from-gray-800 to-gray-900 border-2 p-6 rounded-lg shadow-lg ${sp.type === 'cargo' ? 'border-green-500/50 shadow-green-500/20' : 'border-blue-500/50 shadow-blue-500/20'}`}>
+             <div key={sp.id} className="bg-gradient-to-br from-gray-800 to-gray-900 border-2 p-4 rounded-lg shadow-lg border-cyan-500/50 shadow-cyan-500/20">
                {/* Spaceport Header */}
-               <div className="flex items-center gap-3 mb-4">
-                 <FaRegBuilding className={sp.type === 'cargo' ? 'text-green-400 text-2xl' : 'text-blue-400 text-2xl'} />
+               <div className="flex items-center gap-2 mb-3">
+                 <FaRegBuilding className="text-cyan-400 text-xl" />
                  <div className="font-mono font-bold">
-                   <span className={sp.type === 'cargo' ? 'text-green-400' : 'text-blue-400'}>
-                     {sp.type === 'cargo' ? 'CARGO' : 'SCIENCE'} SPACEPORT
-                   </span>
-                   <div className="text-xs text-gray-400 font-normal">ID: {spIndex + 1}</div>
+                   <span className="text-cyan-400">SPACEPORT {sp.id}</span>
                  </div>
-                 <button 
-                   onClick={() => useGameStore.getState().toggleSpaceport(spIndex)}
-                   className={`ml-auto px-3 py-1 text-xs font-mono border rounded transition-all ${sp.type === 'cargo' ? 'border-green-500/50 text-green-400 hover:bg-green-500/10' : 'border-blue-500/50 text-blue-400 hover:bg-blue-500/10'}`}
-                   title="Toggle between cargo and science"
-                 >
-                   TOGGLE
-                 </button>
                </div>
 
-               {/* Rocket Slots Grid - Make it larger */}
-               <div className={`grid gap-2 p-4 bg-black/30 rounded border border-gray-700/50`} style={{ gridTemplateColumns: `repeat(${Math.min(9, effectiveCapacity)}, minmax(0, 1fr))` }}>
+               {/* Rocket Slots Grid */}
+               <div className="grid gap-1.5 p-3 bg-black/30 rounded border border-gray-700/50" style={{ gridTemplateColumns: `repeat(${Math.min(6, effectiveCapacity)}, minmax(0, 1fr))` }}>
                  {Array.from({ length: effectiveCapacity }).map((_, i) => {
                    const rocketIndex = spIndex * effectiveCapacity + i;
                    const rocket = rockets[rocketIndex];
                    if (rocket) {
                      const isExploded = explodedRocketIds.includes(rocket.id);
                      const isLaunching = recentlyLaunchedRocketIds.includes(rocket.id);
+                     const isScience = rocket.type === 'science';
                      if (isExploded) {
                        return (
                          <div 
                            key={i} 
-                           className="w-10 h-10 flex items-center justify-center bg-red-900/30 border-2 border-red-500/50 rounded cursor-pointer hover:bg-red-900/50 transition-all"
+                           className="w-8 h-8 flex items-center justify-center bg-red-900/30 border-2 border-red-500/50 rounded cursor-pointer hover:bg-red-900/50 transition-all"
                            onClick={(e) => { e.stopPropagation(); clearExplosion(rocket.id); }}
                            title="Click to clear explosion"
                          >
-                           <FaBomb className="text-lg text-red-400 animate-pulse" />
+                           <FaBomb className="text-sm text-red-400 animate-pulse" />
                          </div>
                        );
                      } else if (isLaunching) {
                        return (
                          <div 
                            key={i} 
-                           className="w-10 h-10 flex items-center justify-center bg-yellow-900/30 border-2 border-yellow-500/50 rounded"
+                           className="w-8 h-8 flex items-center justify-center bg-yellow-900/30 border-2 border-yellow-500/50 rounded"
                            title="Launching!"
                          >
-                           <FaRocket className="text-lg text-yellow-300 animate-launch" style={{ transform: 'rotate(-45deg)' }} />
+                           {isScience ? (
+                             <FaFlask className="text-sm text-purple-300 animate-launch" />
+                           ) : (
+                             <FaRocket className="text-sm text-yellow-300 animate-launch" style={{ transform: 'rotate(-45deg)' }} />
+                           )}
                          </div>
                        );
                      } else {
+                       const readyToLaunch = fuel >= fuelCostPerRocket;
                        return (
                          <div 
-                           key={i} 
-                           className={`w-10 h-10 flex items-center justify-center border-2 rounded transition-all ${fuel >= fuelCostPerRocket ? 'bg-blue-900/30 border-blue-500/50 animate-bounce-slow' : 'bg-gray-800/30 border-gray-600/50'}`}
-                           title={fuel >= fuelCostPerRocket ? 'Ready to launch' : 'Waiting for fuel'}
+                           key={readyToLaunch ? `${i}-${tickCount}` : i} 
+                           className={`w-8 h-8 flex items-center justify-center border-2 rounded transition-all ${
+                             isScience 
+                               ? (readyToLaunch ? 'bg-purple-900/30 border-purple-500/50' : 'bg-gray-800/30 border-gray-600/50')
+                               : (readyToLaunch ? 'bg-blue-900/30 border-blue-500/50' : 'bg-gray-800/30 border-gray-600/50')
+                           } ${readyToLaunch ? 'animate-rocket-ready' : ''}`}
+                           title={readyToLaunch ? 'Ready to launch' : 'Waiting for fuel'}
                          >
-                           <FaRocket className={`text-lg ${fuel >= fuelCostPerRocket ? 'text-blue-400' : 'text-gray-500'}`} style={{ transform: 'rotate(-45deg)' }} />
+                           {isScience ? (
+                             <FaFlask className={`text-sm ${readyToLaunch ? 'text-purple-400' : 'text-gray-500'}`} />
+                           ) : (
+                             <FaRocket className={`text-sm ${readyToLaunch ? 'text-blue-400' : 'text-gray-500'}`} style={{ transform: 'rotate(-45deg)' }} />
+                           )}
                          </div>
                        );
                      }
@@ -85,7 +89,7 @@ export function SpaceportView() {
                      return (
                        <div 
                          key={i} 
-                         className="w-10 h-10 border-2 border-dashed border-gray-700/50 rounded bg-gray-900/20 hover:border-gray-600/50 transition-all"
+                         className="w-8 h-8 border-2 border-dashed border-gray-700/50 rounded bg-gray-900/20 hover:border-gray-600/50 transition-all"
                        />
                      );
                    }
@@ -179,7 +183,7 @@ export function SpaceportView() {
                className="w-5 h-5 mb-2 cursor-pointer"
                aria-label="auto-build-toggle"
                disabled={useGameStore.getState().getEffectMultiplier('autoBuildEnabled') === 0}
-               title={useGameStore.getState().getEffectMultiplier('autoBuildEnabled') === 0 ? 'Requires Auto-Queue tech (u7)' : 'Toggle auto-build'}
+               title={useGameStore.getState().getEffectMultiplier('autoBuildEnabled') === 0 ? 'Requires Auto-Queue tech (u7)' : 'Toggle auto-build (1 rocket/20s)'}
              />
              <div className="text-xs font-mono text-center">
                <div className={useGameStore.getState().getEffectMultiplier('autoBuildEnabled') === 0 ? 'text-gray-500' : 'text-cyan-400 font-bold'}>
@@ -187,6 +191,27 @@ export function SpaceportView() {
                </div>
                <div className={useGameStore.getState().getEffectMultiplier('autoBuildEnabled') === 0 ? 'text-gray-600 text-xs' : 'text-gray-400 text-xs'}>
                  {autoBuildActive ? 'ACTIVE' : 'INACTIVE'}
+               </div>
+             </div>
+           </div>
+
+           {/* Auto Salvage Toggle */}
+           <div className="bg-black/30 border-2 border-orange-500/50 rounded p-4 flex flex-col items-center justify-center">
+             <input
+               type="checkbox"
+               checked={autoSalvageActive}
+               onChange={() => toggleAutoSalvage()}
+               className="w-5 h-5 mb-2 cursor-pointer"
+               aria-label="auto-salvage-toggle"
+               disabled={useGameStore.getState().getEffectMultiplier('autoSalvageEnabled') === 0}
+               title={useGameStore.getState().getEffectMultiplier('autoSalvageEnabled') === 0 ? 'Requires Auto-Salvage tech (u8)' : 'Toggle auto-salvage (1 clear/20s)'}
+             />
+             <div className="text-xs font-mono text-center">
+               <div className={useGameStore.getState().getEffectMultiplier('autoSalvageEnabled') === 0 ? 'text-gray-500' : 'text-orange-400 font-bold'}>
+                 AUTO-SALVAGE
+               </div>
+               <div className={useGameStore.getState().getEffectMultiplier('autoSalvageEnabled') === 0 ? 'text-gray-600 text-xs' : 'text-gray-400 text-xs'}>
+                 {autoSalvageActive ? 'ACTIVE' : 'INACTIVE'}
                </div>
              </div>
            </div>

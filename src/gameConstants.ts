@@ -3,6 +3,20 @@
  * Centralized configuration for all game mechanics to avoid magic numbers
  */
 
+// Default Companies - used across App.tsx and useGameStore.ts
+export const DEFAULT_COMPANIES = [
+  { id: 'titan', name: 'Titan Mining Corp', level: 1, experience: 0 },
+  { id: 'nova', name: 'Nova Research', level: 1, experience: 0 },
+  { id: 'zenith', name: 'Zenith Logistics', level: 1, experience: 0 },
+  { id: 'orion', name: 'Orion Heavy Industries', level: 1, experience: 0 },
+  { id: 'galactic', name: 'Galactic Energy', level: 1, experience: 0 },
+  { id: 'atlas', name: 'Atlas Construction', level: 1, experience: 0 },
+  { id: 'pulsar', name: 'Pulsar Electronics', level: 1, experience: 0 },
+  { id: 'stellar', name: 'Stellar Bio-Tech', level: 1, experience: 0 },
+  { id: 'aegis', name: 'Aegis Security', level: 1, experience: 0 },
+  { id: 'dse', name: 'Deep Space Exploration', level: 1, experience: 0 },
+];
+
 // Initial Game State
 export const INITIAL_STATE = {
   MONEY: 10,
@@ -21,7 +35,7 @@ export const INITIAL_STATE = {
 
 // Cost Scaling Factors
 export const COST_SCALING = {
-  ROCKET_COST_EXPONENT: 1.2,
+  ROCKET_COST_EXPONENT: 1.35,
   SPACEPORT_COST_EXPONENT: 1.5,
   FUEL_REFINERY_COST_EXPONENT: 1.5,
 };
@@ -34,46 +48,11 @@ export const PRODUCTION = {
   STATION_SCIENCE_BONUS: 10,
   STATION_LOGISTICS_BONUS: 50,
   PASSIVE_CARGO_BONUS_PER_SPACEPORT: 1,
-};
-
-// Research Effects (defaults)
-export const RESEARCH_EFFECTS = {
-  FUEL_COST_MULTIPLIER: 0.9,
-  EXPLOSION_CHANCE_MULTIPLIER: 0.95,
-  PROFIT_MULTIPLIER: 1.25,
-  CARGO_GENERATION_MULTIPLIER: 1.1,
-  REFINERY_OUTPUT_MULTIPLIER: 1.1,
-  CONSTRUCTION_COST_MULTIPLIER: 0.9,
-  SPACEPORT_CAPACITY_BONUS: 3,
-  CONTRACT_MONEY_MULTIPLIER: 1.2,
-  STATION_LOGISTICS_MULTIPLIER: 1.25,
-  STATION_SCIENCE_MULTIPLIER: 1.1,
-  BUILD_ROCKET_MULTIPLIER: 1.2,
-  CLEAR_EXPLOSION_MULTIPLIER: 1.2,
-};
-
-// UI Display
-export const UI = {
-  NOTIFICATIONS_MAX: 5,
-  GRID_COLS: 3,
-  TEXT_ICON_SIZE: '2xl',
-  SMALL_ICON_SIZE: '4',
-  OPACITY: 0.8,
+  PASSIVE_SCIENCE_PER_SPACEPORT: 1,
 };
 
 // Time-related
 export const TIME = {
   TICK_INTERVAL_MS: 1000,
   DISPLAY_TIME_THRESHOLD_SECONDS: 60,
-};
-
-// Grid layout (in SpaceportView)
-export const GRID = {
-  COLS: 3,
-};
-
-// Default Container Sizes
-export const CONTAINERS = {
-  SPACEPORT_INITIAL_COUNT: 1,
-  SPACEPORT_GRID_COLUMNS: 3,
 };

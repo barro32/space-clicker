@@ -1,9 +1,9 @@
 import { create } from 'zustand'
-import { researchTree, ResearchNode } from './researchTree.js'
-import { INITIAL_STATE, COST_SCALING, PRODUCTION } from './gameConstants.js'
+import { researchTree, ResearchNode, EffectType } from './researchTree.js'
+import { INITIAL_STATE, COST_SCALING, PRODUCTION, DEFAULT_COMPANIES } from './gameConstants.js'
 
 interface Spaceport {
-  type: "cargo" | "science"
+  id: number;
 }
 
 export interface SpaceStation {
@@ -26,6 +26,10 @@ export interface Contract {
   description: string;
   requiredCargo: number;
   requiredScience: number;
+  requiredMoney: number;
+  deliveredCargo: number;
+  deliveredScience: number;
+  deliveredMoney: number;
   rewardMoney: number;
   rewardScience: number;
   rewardExperience: number;
@@ -36,16 +40,12 @@ export interface Contract {
   status: 'available' | 'active' | 'completed' | 'failed';
 }
 
-interface Explosion {
-  spIndex: number
-  slot: number
-}
-
 export interface GameState {
    money: number
    science: number
    fuel: number;
    cargo: number;
+   tickCount: number; // Increments each tick, used for animations
    currentView: "surface" | "orbit" | "contracts" | "research";
    notifications: string[];
    companies: Company[];
@@ -68,24 +68,26 @@ export interface GameState {
     recentlyLaunchedRocketIds: number[]; // Rockets that launched this tick (for animation)
     newlyAvailableResearchIds: string[]; // Research nodes that just became available (for animation)
    getCurrentSpaceportCost: () => number;
-    getEffectMultiplier: (type: string) => number;
+    getEffectMultiplier: (type: EffectType) => number;
    setView: (view: "surface" | "orbit" | "contracts" | "research") => void;
   addNotification: (message: string) => void;
   generateContracts: () => void;
   acceptContract: (contractId: string) => void;
-  deliverContractResources: () => void;
+  forfeitContract: () => void;
   tick: () => void
    buildRocket: () => void
    buildScienceRocket: () => void
    buildSpaceport: () => void
    buildSpaceStation: (type: SpaceStation['type']) => void
    buildFuelRefinery: () => void;
-   toggleSpaceport: (index: number) => void
+   toggleSpaceport: (index: number) => void; // Deprecated - no-op
    clearExplosion: (rocketId: number) => void;
    researchedNodes: string[];
    previouslyAvailableResearch: string[];
    autoBuildActive: boolean;
+   autoSalvageActive: boolean;
    toggleAutoBuild: () => void;
+   toggleAutoSalvage: () => void;
    unlockNode: (nodeId: string) => void;
    getAvailableNodes: () => ResearchNode[];
 }
@@ -97,20 +99,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   science: INITIAL_STATE.SCIENCE,
   fuel: INITIAL_STATE.FUEL,
   cargo: INITIAL_STATE.CARGO,
+  tickCount: 0,
   currentView: "surface",
   notifications: [],
-  companies: [
-    { id: 'titan', name: 'Titan Mining Corp', level: 1, experience: 0 },
-    { id: 'nova', name: 'Nova Research', level: 1, experience: 0 },
-    { id: 'zenith', name: 'Zenith Logistics', level: 1, experience: 0 },
-    { id: 'orion', name: 'Orion Heavy Industries', level: 1, experience: 0 },
-    { id: 'galactic', name: 'Galactic Energy', level: 1, experience: 0 },
-    { id: 'atlas', name: 'Atlas Construction', level: 1, experience: 0 },
-    { id: 'pulsar', name: 'Pulsar Electronics', level: 1, experience: 0 },
-    { id: 'stellar', name: 'Stellar Bio-Tech', level: 1, experience: 0 },
-    { id: 'aegis', name: 'Aegis Security', level: 1, experience: 0 },
-    { id: 'dse', name: 'Deep Space Exploration', level: 1, experience: 0 },
-  ],
+  companies: DEFAULT_COMPANIES.map(c => ({ ...c })),
   availableContracts: [],
    activeContract: null,
    rockets: [],
@@ -118,7 +110,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     rocketCost: INITIAL_STATE.ROCKET_COST,
      profitPerRocket: INITIAL_STATE.PROFIT_PER_ROCKET,
      spaceportCapacity: INITIAL_STATE.SPACEPORT_CAPACITY,
-    spaceports: [{ type: "cargo" }],
+    spaceports: [{ id: 1 }],
     spaceStations: [],
      spaceportCost: INITIAL_STATE.SPACEPORT_COST,
     fuelRefineries: 0,
@@ -132,6 +124,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       researchedNodes: [],
       previouslyAvailableResearch: [],
       autoBuildActive: false,
+      autoSalvageActive: false,
      tick: () => set(state => {
       // Clear animation flags at start of each tick
       const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
@@ -143,6 +136,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       let explosionCount = 0;
       let newExplodedRocketIds = [...state.explodedRocketIds];
       let newActiveContract = state.activeContract ? { ...state.activeContract } : null;
+      let newCompanies = [...state.companies];
       let recentlyLaunchedIds: number[] = [];
 
      const effectiveFuelCost = state.fuelCostPerRocket * state.getEffectMultiplier('fuelCostMultiplier');
@@ -183,13 +177,10 @@ export const useGameStore = create<GameState>((set, get) => ({
 
      // Passive Spaceport Bonuses
      for (let i = 0; i < state.spaceports.length; i++) {
-       if (state.spaceports[i].type === "cargo") {
-         cargoProd += (i + 1) * PRODUCTION.PASSIVE_CARGO_BONUS_PER_SPACEPORT;
-      } else {
-        const spaceportLaunches = Math.floor(successfulCargoLaunches / state.spaceports.length);
-        sciProd += spaceportLaunches;
-      }
-    }
+       // All spaceports generate passive science and cargo
+       sciProd += PRODUCTION.PASSIVE_SCIENCE_PER_SPACEPORT;
+       cargoProd += (i + 1) * PRODUCTION.PASSIVE_CARGO_BONUS_PER_SPACEPORT;
+     }
 
     // Apply Orbital Station Benefits
     if (state.spaceStations) {
@@ -210,6 +201,56 @@ export const useGameStore = create<GameState>((set, get) => ({
           get().addNotification(`Contract Failed: ${newActiveContract.title} (Time limit reached)`);
         }
       }
+      
+      // When contract is active, redirect all resources to the contract
+      if (newActiveContract.status === 'active') {
+        // Deliver money to contract
+        const moneyToDeliver = Math.min(cargoProd, newActiveContract.requiredMoney - newActiveContract.deliveredMoney);
+        newActiveContract.deliveredMoney += moneyToDeliver;
+        cargoProd -= moneyToDeliver; // Remaining goes to player
+        
+        // Deliver science to contract
+        const scienceToDeliver = Math.min(sciProd, newActiveContract.requiredScience - newActiveContract.deliveredScience);
+        newActiveContract.deliveredScience += scienceToDeliver;
+        sciProd -= scienceToDeliver; // Remaining goes to player
+        
+        // Deliver cargo to contract
+        const cargoToDeliver = Math.min(cargoResourceProd, newActiveContract.requiredCargo - newActiveContract.deliveredCargo);
+        newActiveContract.deliveredCargo += cargoToDeliver;
+        cargoResourceProd -= cargoToDeliver; // Remaining goes to player
+        
+        // Check if contract is complete
+        if (newActiveContract.deliveredMoney >= newActiveContract.requiredMoney &&
+            newActiveContract.deliveredScience >= newActiveContract.requiredScience &&
+            newActiveContract.deliveredCargo >= newActiveContract.requiredCargo) {
+          // Complete the contract
+          const completedContract = newActiveContract;
+          completedContract.status = 'completed';
+          const company = state.companies.find(c => c.id === completedContract.companyId);
+          if (company) {
+            const newExperience = company.experience + completedContract.rewardExperience;
+            const experienceToLevel = company.level * 100;
+            let newLevel = company.level;
+            let finalExperience = newExperience;
+
+            if (finalExperience >= experienceToLevel) {
+              finalExperience -= experienceToLevel;
+              newLevel += 1;
+              get().addNotification(`${company.name} leveled up to ${newLevel}!`);
+            }
+
+            newCompanies = state.companies.map(c => 
+              c.id === company.id ? { ...c, level: newLevel, experience: finalExperience } : c
+            );
+            
+            // Add rewards
+            cargoProd += completedContract.rewardMoney * state.getEffectMultiplier('contractMoneyMultiplier');
+            sciProd += completedContract.rewardScience;
+          }
+          get().addNotification(`Contract Completed: ${completedContract.title}`);
+          newActiveContract = null;
+        }
+      }
     }
 
     const newScience = state.science + sciProd;
@@ -218,53 +259,65 @@ export const useGameStore = create<GameState>((set, get) => ({
     let finalMoney = state.money + cargoProd;
     let finalRockets = state.rockets;
     let finalNextId = state.nextRocketId;
+    let finalScience = newScience;
+    let finalExplodedRocketIds = newExplodedRocketIds;
 
+    // Auto-build logic: 1 rocket every 20 seconds (affected by build speed tech)
     const autoBuildEnabled = state.getEffectMultiplier('autoBuildEnabled') > 0;
     if (autoBuildEnabled && state.autoBuildActive) {
-      const effectiveCapacity = state.spaceportCapacity + state.getEffectMultiplier('spaceportCapacityBonus');
-      const maxRockets = state.spaceports.length * effectiveCapacity;
-      let currentTotalRockets = state.rockets.filter(r => r !== null).length;
+      // Base interval is 20 seconds, build speed multiplier reduces it
+      const buildMultiplier = state.getEffectMultiplier('buildRocketMultiplier') || 1;
+      const baseInterval = 20;
+      const effectiveInterval = Math.max(1, Math.floor(baseInterval / buildMultiplier));
+      
+      // Only build on the interval tick
+      if (state.tickCount % effectiveInterval === 0) {
+        const effectiveCapacity = state.spaceportCapacity + state.getEffectMultiplier('spaceportCapacityBonus');
+        const maxRockets = state.spaceports.length * effectiveCapacity;
+        const currentTotalRockets = finalRockets.filter(r => r !== null).length;
 
-      if (currentTotalRockets < maxRockets) {
-        const buildMultiplier = state.getEffectMultiplier('buildRocketMultiplier');
-        const batchBonus = state.getEffectMultiplier('buildRocketBatchBonus') || 0;
-        const actionSpeed = state.getEffectMultiplier('actionSpeedMultiplier') || 1;
-        const desiredCountFloat = 1 * buildMultiplier * actionSpeed + batchBonus;
-        let desiredCount = Math.max(1, Math.floor(desiredCountFloat));
-        desiredCount = Math.min(desiredCount, maxRockets - currentTotalRockets);
-
-        const constructionMultiplier = state.getEffectMultiplier('constructionCostMultiplier');
-
-        // Calculate how many rockets we can afford
-        let affordableCount = 0;
-        let totalBatchCost = 0;
-        for (let i = 0; i < desiredCount; i++) {
-          const idx = currentTotalRockets + i;
+        if (currentTotalRockets < maxRockets) {
+          const constructionMultiplier = state.getEffectMultiplier('constructionCostMultiplier');
+          const idx = currentTotalRockets;
           const baseCost = state.rocketCost * Math.pow(COST_SCALING.ROCKET_COST_EXPONENT, idx);
           const cost = Math.round(baseCost * constructionMultiplier);
-          if (finalMoney >= totalBatchCost + cost) {
-            totalBatchCost += cost;
-            affordableCount += 1;
-          } else {
-            break;
+          
+          if (finalMoney >= cost) {
+            const newRockets = [...finalRockets];
+            const newRocket = { id: finalNextId, type: 'cargo' as const };
+            const firstNullIndex = newRockets.findIndex(r => r === null);
+            if (firstNullIndex !== -1) {
+              newRockets[firstNullIndex] = newRocket;
+            } else {
+              newRockets.push(newRocket);
+            }
+            finalRockets = newRockets;
+            finalNextId += 1;
+            finalMoney -= cost;
           }
         }
+      }
+    }
 
-         if (affordableCount > 0) {
-           const newRockets = [...state.rockets];
-           for (let i = 0; i < affordableCount; i++) {
-             const newRocket = { id: finalNextId + i, type: 'cargo' as const };
-             const firstNullIndex = newRockets.findIndex(r => r === null);
-             if (firstNullIndex !== -1) {
-               newRockets[firstNullIndex] = newRocket;
-             } else {
-               newRockets.push(newRocket);
-             }
-           }
-           finalRockets = newRockets;
-           finalNextId += affordableCount;
-           finalMoney -= totalBatchCost;
-         }
+    // Auto-salvage logic: 1 explosion cleared every 20 seconds (affected by salvage speed tech)
+    const autoSalvageEnabled = state.getEffectMultiplier('autoSalvageEnabled') > 0;
+    if (autoSalvageEnabled && state.autoSalvageActive && finalExplodedRocketIds.length > 0) {
+      // Base interval is 20 seconds, salvage speed multiplier reduces it
+      const clearMultiplier = state.getEffectMultiplier('clearExplosionMultiplier') || 1;
+      const baseInterval = 20;
+      const effectiveInterval = Math.max(1, Math.floor(baseInterval / clearMultiplier));
+      
+      // Only salvage on the interval tick (offset by 10 to not compete with auto-build)
+      if ((state.tickCount + 10) % effectiveInterval === 0) {
+        const rocketId = finalExplodedRocketIds[0];
+        const newRockets = [...finalRockets];
+        const rocketIndex = newRockets.findIndex(r => r !== null && r.id === rocketId);
+        if (rocketIndex !== -1) {
+          newRockets[rocketIndex] = null;
+          finalRockets = newRockets;
+          finalExplodedRocketIds = finalExplodedRocketIds.filter(id => id !== rocketId);
+          finalScience += 1;
+        }
       }
     }
 
@@ -287,17 +340,19 @@ export const useGameStore = create<GameState>((set, get) => ({
 
      return {
        money: finalMoney,
-       science: newScience,
+       science: finalScience,
        fuel: fuelAvailable,
        cargo: state.cargo + cargoResourceProd,
        activeContract: newActiveContract,
-       explodedRocketIds: newExplodedRocketIds,
+       companies: newCompanies,
+       explodedRocketIds: finalExplodedRocketIds,
        rockets: finalRockets,
        nextRocketId: finalNextId,
        previouslyAvailableResearch: currentAvailableIds,
        notifications: updatedNotifications,
        recentlyLaunchedRocketIds: recentlyLaunchedIds,
        newlyAvailableResearchIds: newlyAvailable,
+       tickCount: state.tickCount + 1,
      }
   }),
   buildRocket: () =>
@@ -306,31 +361,51 @@ export const useGameStore = create<GameState>((set, get) => ({
       const maxRockets = state.spaceports.length * effectiveCapacity;
       const currentTotalRockets = state.rockets.filter(r => r !== null).length;
 
-       if (currentTotalRockets < maxRockets) {
-          const baseCost = state.rocketCost * Math.pow(COST_SCALING.ROCKET_COST_EXPONENT, currentTotalRockets);
-         const currentRocketCost = Math.round(baseCost * state.getEffectMultiplier('constructionCostMultiplier'));
-         if (state.money >= currentRocketCost) {
-           const newRockets = [...state.rockets];
-           const newRocket = { id: state.nextRocketId, type: 'cargo' as const };
+      // Calculate how many rockets to build based on research bonuses
+      const buildMultiplier = state.getEffectMultiplier('buildRocketMultiplier');
+      const batchBonus = state.getEffectMultiplier('buildRocketBatchBonus') || 0;
+      const desiredCountFloat = 1 * (buildMultiplier || 1) + batchBonus;
+      let desiredCount = Math.max(1, Math.floor(desiredCountFloat));
+      desiredCount = Math.min(desiredCount, maxRockets - currentTotalRockets);
 
-           // Find first null slot
-           const firstNullIndex = newRockets.findIndex(r => r === null);
-           if (firstNullIndex !== -1) {
-             newRockets[firstNullIndex] = newRocket;
-           } else {
-             // If no null slot, append
-             newRockets.push(newRocket);
-           }
+      if (desiredCount <= 0) return {};
 
-           return {
-             money: state.money - currentRocketCost,
-             rockets: newRockets,
-             nextRocketId: state.nextRocketId + 1,
-           }
-         }
-       }
-       return {}
-     }),
+      const constructionMultiplier = state.getEffectMultiplier('constructionCostMultiplier');
+
+      // Calculate how many rockets we can afford
+      let affordableCount = 0;
+      let totalBatchCost = 0;
+      for (let i = 0; i < desiredCount; i++) {
+        const idx = currentTotalRockets + i;
+        const baseCost = state.rocketCost * Math.pow(COST_SCALING.ROCKET_COST_EXPONENT, idx);
+        const cost = Math.round(baseCost * constructionMultiplier);
+        if (state.money >= totalBatchCost + cost) {
+          totalBatchCost += cost;
+          affordableCount += 1;
+        } else {
+          break;
+        }
+      }
+
+      if (affordableCount > 0) {
+        const newRockets = [...state.rockets];
+        for (let i = 0; i < affordableCount; i++) {
+          const newRocket = { id: state.nextRocketId + i, type: 'cargo' as const };
+          const firstNullIndex = newRockets.findIndex(r => r === null);
+          if (firstNullIndex !== -1) {
+            newRockets[firstNullIndex] = newRocket;
+          } else {
+            newRockets.push(newRocket);
+          }
+        }
+        return {
+          money: state.money - totalBatchCost,
+          rockets: newRockets,
+          nextRocketId: state.nextRocketId + affordableCount,
+        };
+      }
+      return {};
+    }),
    buildScienceRocket: () =>
      set(state => {
        // Check if science rockets are unlocked
@@ -342,30 +417,50 @@ export const useGameStore = create<GameState>((set, get) => ({
        const maxRockets = state.spaceports.length * effectiveCapacity;
        const currentTotalRockets = state.rockets.filter(r => r !== null).length;
 
-        if (currentTotalRockets < maxRockets) {
-         const baseCost = state.rocketCost * Math.pow(COST_SCALING.ROCKET_COST_EXPONENT, currentTotalRockets);
-          const currentRocketCost = Math.round(baseCost * state.getEffectMultiplier('constructionCostMultiplier'));
-          if (state.money >= currentRocketCost) {
-            const newRockets = [...state.rockets];
-            const newRocket = { id: state.nextRocketId, type: 'science' as const };
+       // Calculate how many rockets to build based on research bonuses
+       const buildMultiplier = state.getEffectMultiplier('buildRocketMultiplier');
+       const batchBonus = state.getEffectMultiplier('buildRocketBatchBonus') || 0;
+       const desiredCountFloat = 1 * (buildMultiplier || 1) + batchBonus;
+       let desiredCount = Math.max(1, Math.floor(desiredCountFloat));
+       desiredCount = Math.min(desiredCount, maxRockets - currentTotalRockets);
 
-            // Find first null slot
-            const firstNullIndex = newRockets.findIndex(r => r === null);
-            if (firstNullIndex !== -1) {
-              newRockets[firstNullIndex] = newRocket;
-            } else {
-              // If no null slot, append
-              newRockets.push(newRocket);
-            }
+       if (desiredCount <= 0) return {};
 
-            return {
-              money: state.money - currentRocketCost,
-              rockets: newRockets,
-              nextRocketId: state.nextRocketId + 1,
-            }
-          }
-        }
-       return {}
+       const constructionMultiplier = state.getEffectMultiplier('constructionCostMultiplier');
+
+       // Calculate how many rockets we can afford
+       let affordableCount = 0;
+       let totalBatchCost = 0;
+       for (let i = 0; i < desiredCount; i++) {
+         const idx = currentTotalRockets + i;
+         const baseCost = state.rocketCost * Math.pow(COST_SCALING.ROCKET_COST_EXPONENT, idx);
+         const cost = Math.round(baseCost * constructionMultiplier);
+         if (state.money >= totalBatchCost + cost) {
+           totalBatchCost += cost;
+           affordableCount += 1;
+         } else {
+           break;
+         }
+       }
+
+       if (affordableCount > 0) {
+         const newRockets = [...state.rockets];
+         for (let i = 0; i < affordableCount; i++) {
+           const newRocket = { id: state.nextRocketId + i, type: 'science' as const };
+           const firstNullIndex = newRockets.findIndex(r => r === null);
+           if (firstNullIndex !== -1) {
+             newRockets[firstNullIndex] = newRocket;
+           } else {
+             newRockets.push(newRocket);
+           }
+         }
+         return {
+           money: state.money - totalBatchCost,
+           rockets: newRockets,
+           nextRocketId: state.nextRocketId + affordableCount,
+         };
+       }
+       return {};
      }),
     buildSpaceport: () =>
       set(state => {
@@ -375,7 +470,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
         const currentSpaceportCost = get().getCurrentSpaceportCost()
         if (state.money >= currentSpaceportCost) {
-          return { money: state.money - currentSpaceportCost, spaceports: [...state.spaceports, { type: "cargo" }] }
+          const newId = state.spaceports.length > 0 ? Math.max(...state.spaceports.map(sp => sp.id)) + 1 : 1;
+          return { money: state.money - currentSpaceportCost, spaceports: [...state.spaceports, { id: newId }] }
         }
         return {}
       }),
@@ -413,10 +509,10 @@ export const useGameStore = create<GameState>((set, get) => ({
        }
        return {}
      }),
-  toggleSpaceport: (index: number) =>
-    set(state => {
-      const newSpaceports = state.spaceports.map((sp, i) => i === index ? ({ type: sp.type === "cargo" ? "science" : "cargo" } as Spaceport) : sp)
-      return { spaceports: newSpaceports }
+  toggleSpaceport: (_index: number) =>
+    set(_state => {
+      // Spaceport types removed - this function is deprecated
+      return {}
     }),
     clearExplosion: (rocketId: number) =>
       set(state => {
@@ -425,15 +521,40 @@ export const useGameStore = create<GameState>((set, get) => ({
           return {}; // Explosion clearing not unlocked
         }
         
-        const newRockets = [...state.rockets];
-        const rocketIndex = newRockets.findIndex(r => r !== null && r.id === rocketId);
-        if (rocketIndex !== -1) {
-          newRockets[rocketIndex] = null; // Set the slot to null
+        // Calculate how many explosions to clear based on research bonuses
+        const clearMultiplier = state.getEffectMultiplier('clearExplosionMultiplier');
+        const clearCountBonus = state.getEffectMultiplier('clearExplosionCountBonus') || 0;
+        const desiredCountFloat = 1 * (clearMultiplier || 1) + clearCountBonus;
+        let desiredCount = Math.max(1, Math.floor(desiredCountFloat));
+        
+        // Find exploded rockets to clear (starting with the one clicked)
+        const explodedToProcess = [rocketId];
+        for (const id of state.explodedRocketIds) {
+          if (id !== rocketId && explodedToProcess.length < desiredCount) {
+            explodedToProcess.push(id);
+          }
         }
+        
+        const newRockets = [...state.rockets];
+        let scienceGained = 0;
+        const clearedIds: number[] = [];
+        
+        for (const id of explodedToProcess) {
+          if (state.explodedRocketIds.includes(id)) {
+            const rocketIndex = newRockets.findIndex(r => r !== null && r.id === id);
+            if (rocketIndex !== -1) {
+              newRockets[rocketIndex] = null; // Set the slot to null
+              scienceGained += 1;
+              clearedIds.push(id);
+            }
+          }
+        }
+        
+        if (clearedIds.length === 0) return {};
 
         let newActiveContract = state.activeContract ? { ...state.activeContract } : null;
         if (newActiveContract && newActiveContract.status === 'active' && newActiveContract.maxExplosions !== -1) {
-          newActiveContract.currentExplosions += 1;
+          newActiveContract.currentExplosions += clearedIds.length;
           if (newActiveContract.currentExplosions > newActiveContract.maxExplosions) {
             newActiveContract.status = 'failed';
             get().addNotification(`Contract Failed: ${newActiveContract.title} (Too many explosions)`);
@@ -441,17 +562,17 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
 
         return {
-          explodedRocketIds: state.explodedRocketIds.filter(id => id !== rocketId),
+          explodedRocketIds: state.explodedRocketIds.filter(id => !clearedIds.includes(id)),
           rockets: newRockets,
-          science: state.science + 1,
-         activeContract: newActiveContract,
-       }
-     }),
+          science: state.science + scienceGained,
+          activeContract: newActiveContract,
+        }
+      }),
   getCurrentSpaceportCost: () => {
     const state = get();
     return Math.round(state.spaceportCost * Math.pow(COST_SCALING.SPACEPORT_COST_EXPONENT, state.spaceports.length) * state.getEffectMultiplier('constructionCostMultiplier'));
   },
-  getEffectMultiplier: (type: string) => {
+  getEffectMultiplier: (type: EffectType) => {
     const state = get();
     const multipliers = researchTree
       .filter((node: ResearchNode) => state.researchedNodes.includes(node.id) && node.effect.type === type)
@@ -487,6 +608,46 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newContracts: Contract[] = [...state.availableContracts];
     const companiesToPick = [...state.companies];
     
+    // Contract type definitions with different resource focuses
+    const contractTypes = [
+      {
+        type: 'logistics',
+        titles: ['Cargo Haul', 'Supply Run', 'Freight Contract'],
+        description: 'A cargo-heavy delivery contract.',
+        cargoMultiplier: 2.0,
+        scienceMultiplier: 0.2,
+        moneyMultiplier: 0.5,
+        rewardMoneyBonus: 1.3,
+      },
+      {
+        type: 'research',
+        titles: ['Research Grant', 'Science Initiative', 'Data Collection'],
+        description: 'A science-focused research contract.',
+        cargoMultiplier: 0.2,
+        scienceMultiplier: 3.0,
+        moneyMultiplier: 0.3,
+        rewardScienceBonus: 2.0,
+      },
+      {
+        type: 'commercial',
+        titles: ['Trade Deal', 'Commercial Venture', 'Investment Project'],
+        description: 'A money-focused commercial contract.',
+        cargoMultiplier: 0.3,
+        scienceMultiplier: 0.2,
+        moneyMultiplier: 2.0,
+        rewardMoneyBonus: 1.5,
+      },
+      {
+        type: 'balanced',
+        titles: ['Partnership', 'Joint Venture', 'Expansion Project'],
+        description: 'A balanced contract requiring all resources.',
+        cargoMultiplier: 1.0,
+        scienceMultiplier: 1.0,
+        moneyMultiplier: 1.0,
+        rewardMoneyBonus: 1.0,
+      },
+    ];
+    
     while (newContracts.length < 3 && companiesToPick.length > 0) {
       const companyIndex = Math.floor(Math.random() * companiesToPick.length);
       const company = companiesToPick.splice(companyIndex, 1)[0];
@@ -494,16 +655,33 @@ export const useGameStore = create<GameState>((set, get) => ({
       const levelScale = company.level;
       const isFragile = Math.random() > 0.7;
       const isTimed = Math.random() > 0.5;
+      
+      // Pick a random contract type
+      const contractType = contractTypes[Math.floor(Math.random() * contractTypes.length)];
+      const titleBase = contractType.titles[Math.floor(Math.random() * contractType.titles.length)];
+
+      // Base requirements scaled by level
+      const baseCargoReq = 50 * levelScale * (1 + Math.random());
+      const baseScienceReq = 100 * levelScale * (1 + Math.random());
+      const baseMoneyReq = 300 * levelScale * (1 + Math.random());
+      
+      // Base rewards scaled by level
+      const baseMoneyReward = 800 * levelScale * (1 + Math.random());
+      const baseScienceReward = 50 * levelScale * (1 + Math.random());
 
       newContracts.push({
         id: `contract-${Date.now()}-${Math.random()}`,
         companyId: company.id,
-        title: `${company.name} ${['Supply', 'Research', 'Delivery', 'Project'][Math.floor(Math.random() * 4)]} #${Math.floor(Math.random() * 1000)}`,
-        description: `Deliver resources to support ${company.name}'s expansion.`,
-        requiredCargo: Math.round(100 * levelScale * (1 + Math.random())),
-        requiredScience: Math.round(50 * levelScale * (1 + Math.random())),
-        rewardMoney: Math.round(1000 * levelScale * (1 + Math.random())),
-        rewardScience: Math.round(100 * levelScale * (Math.random())),
+        title: `${company.name} ${titleBase} #${Math.floor(Math.random() * 1000)}`,
+        description: `${contractType.description} Support ${company.name}'s operations.`,
+        requiredCargo: Math.round(baseCargoReq * contractType.cargoMultiplier),
+        requiredScience: Math.round(baseScienceReq * contractType.scienceMultiplier),
+        requiredMoney: Math.round(baseMoneyReq * contractType.moneyMultiplier),
+        deliveredCargo: 0,
+        deliveredScience: 0,
+        deliveredMoney: 0,
+        rewardMoney: Math.round(baseMoneyReward * (contractType.rewardMoneyBonus || 1)),
+        rewardScience: Math.round(baseScienceReward * (contractType.rewardScienceBonus || 1)),
         rewardExperience: 50 * levelScale,
         timeLimitSeconds: isTimed ? 60 + Math.floor(Math.random() * 120) : 0,
         elapsedSeconds: 0,
@@ -527,43 +705,30 @@ export const useGameStore = create<GameState>((set, get) => ({
       notifications: [`Contract Accepted: ${contract.title}`, ...state.notifications].slice(0, 5)
     };
   }),
-  deliverContractResources: () => set(state => {
+  forfeitContract: () => set(state => {
     const contract = state.activeContract;
     if (!contract || contract.status !== 'active') return {};
 
-    if (state.cargo >= contract.requiredCargo && state.science >= contract.requiredScience) {
-      // Complete Contract
-      const company = state.companies.find(c => c.id === contract.companyId);
-      if (!company) return {};
+    // Forfeit penalty: reduce company XP by 50% of the reward
+    const company = state.companies.find(c => c.id === contract.companyId);
+    if (!company) return { activeContract: null };
 
-      const newExperience = company.experience + contract.rewardExperience;
-      const experienceToLevel = company.level * 100;
-      let newLevel = company.level;
-      let finalExperience = newExperience;
+    const xpPenalty = Math.floor(contract.rewardExperience * 0.5);
+    const newExperience = Math.max(0, company.experience - xpPenalty);
+    
+    const newCompanies = state.companies.map(c => 
+      c.id === company.id ? { ...c, experience: newExperience } : c
+    );
 
-      if (finalExperience >= experienceToLevel) {
-        finalExperience -= experienceToLevel;
-        newLevel += 1;
-        get().addNotification(`${company.name} leveled up to ${newLevel}!`);
-      }
+    get().addNotification(`Contract Forfeited: ${contract.title} (-${xpPenalty} XP for ${company.name})`);
 
-      const newCompanies = state.companies.map(c => 
-        c.id === company.id ? { ...c, level: newLevel, experience: finalExperience } : c
-      );
-
-      get().addNotification(`Contract Completed: ${contract.title}`);
-
-      return {
-        cargo: state.cargo - contract.requiredCargo,
-        science: state.science - contract.requiredScience + contract.rewardScience,
-        money: state.money + contract.rewardMoney * state.getEffectMultiplier('contractMoneyMultiplier'),
-        companies: newCompanies,
-        activeContract: null, // Clear active contract
-      };
-    }
-     return {};
-   }),
+    return {
+      companies: newCompanies,
+      activeContract: null,
+    };
+  }),
    toggleAutoBuild: () => set(state => ({ autoBuildActive: !state.autoBuildActive })),
+   toggleAutoSalvage: () => set(state => ({ autoSalvageActive: !state.autoSalvageActive })),
    unlockNode: (nodeId: string) => set(state => {
     const node = researchTree.find(n => n.id === nodeId);
     if (!node) return {};

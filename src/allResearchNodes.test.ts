@@ -40,7 +40,7 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
       rocketCost: 10,
       profitPerRocket: 1,
       spaceportCapacity: 9,
-      spaceports: [{ type: 'cargo' }],
+      spaceports: [{ id: 1 }],
       spaceStations: [],
       spaceportCost: 1000,
       fuelRefineries: 0,
@@ -56,8 +56,9 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
   });
 
    describe('Node Structure and Validation', () => {
-      it('should have exactly 58 research nodes', () => {
-        expect(researchTree).toHaveLength(58);
+      it('should have exactly 139 research nodes', () => {
+        // 100 Safety Protocols + 10 Modular Spaceports + 5 Assembly + 5 Recovery + 19 others (includes u8 Auto-Salvage)
+        expect(researchTree).toHaveLength(139);
       });
 
     it('should have all required branches represented', () => {
@@ -150,6 +151,7 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
         'clearExplosionCountBonus',
         'uiTelemetryFlag',
         'autoBuildEnabled',
+        'autoSalvageEnabled',
       ];
 
       researchTree.forEach(node => {
@@ -173,13 +175,13 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
         });
       });
 
-    it('p2-1 should have maxLevel=20', () => {
+    it('p2-1 should have maxLevel=100', () => {
       const node = researchTree.find(n => n.id === 'p2-1');
-      expect(node?.maxLevel).toBe(20);
+      expect(node?.maxLevel).toBe(100);
     });
 
     it('single-level nodes should not have maxLevel', () => {
-      const singleLevelIds = ['p1', 'p3', 'i2', 'i3', 'c1', 'c2', 'c3', 'o1', 'o2', 'o3', 'o4', 'u3', 'u4', 'u6', 'u7'];
+      const singleLevelIds = ['p1', 'p3', 'i2', 'i3', 'c1', 'c2', 'c3', 'o1', 'o2', 'o3', 'o4', 'o5', 'o6', 'o7', 'u3', 'u4', 'u6', 'u7'];
       singleLevelIds.forEach(id => {
         const node = researchTree.find(n => n.id === id);
         expect(node?.maxLevel).toBeUndefined();
@@ -187,7 +189,7 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
     });
 
     it('single-level nodes should not have levelSuffix=true', () => {
-      const singleLevelIds = ['p1', 'p3', 'i2', 'i3', 'c1', 'c2', 'c3', 'o1', 'o2', 'o3', 'o4', 'u3', 'u4', 'u6', 'u7'];
+      const singleLevelIds = ['p1', 'p3', 'i2', 'i3', 'c1', 'c2', 'c3', 'o1', 'o2', 'o3', 'o4', 'o5', 'o6', 'o7', 'u3', 'u4', 'u6', 'u7'];
       singleLevelIds.forEach(id => {
         const node = researchTree.find(n => n.id === id);
         expect(node?.levelSuffix).not.toBe(true);
@@ -243,9 +245,9 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
         expect(node?.effect.value).toBe(0.95);
       });
 
-      it('should have maxLevel=20', () => {
+      it('should have maxLevel=100', () => {
         const node = researchTree.find(n => n.id === 'p2-1');
-        expect(node?.maxLevel).toBe(20);
+        expect(node?.maxLevel).toBe(100);
       });
     });
 
@@ -267,16 +269,16 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
        });
      });
 
-     describe('p2-3 through p2-10: Safety Protocols III-X', () => {
+     describe('p2-3 through p2-10: Safety Protocols 3-10', () => {
        const safetyLevels = [
-         { id: 'p2-3', name: 'Safety Protocols III' },
-         { id: 'p2-4', name: 'Safety Protocols IV' },
-         { id: 'p2-5', name: 'Safety Protocols V' },
-         { id: 'p2-6', name: 'Safety Protocols VI' },
-         { id: 'p2-7', name: 'Safety Protocols VII' },
-         { id: 'p2-8', name: 'Safety Protocols VIII' },
-         { id: 'p2-9', name: 'Safety Protocols IX' },
-         { id: 'p2-10', name: 'Safety Protocols X' },
+         { id: 'p2-3', name: 'Safety Protocols 3' },
+         { id: 'p2-4', name: 'Safety Protocols 4' },
+         { id: 'p2-5', name: 'Safety Protocols 5' },
+         { id: 'p2-6', name: 'Safety Protocols 6' },
+         { id: 'p2-7', name: 'Safety Protocols 7' },
+         { id: 'p2-8', name: 'Safety Protocols 8' },
+         { id: 'p2-9', name: 'Safety Protocols 9' },
+         { id: 'p2-10', name: 'Safety Protocols 10' },
        ];
 
        safetyLevels.forEach(({ id, name }) => {
@@ -297,16 +299,16 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
 
      describe('p2-11 through p2-20: Safety Protocols XI-XX', () => {
        const safetyLevels = [
-         { id: 'p2-11', name: 'Safety Protocols XI' },
-         { id: 'p2-12', name: 'Safety Protocols XII' },
-         { id: 'p2-13', name: 'Safety Protocols XIII' },
-         { id: 'p2-14', name: 'Safety Protocols XIV' },
-         { id: 'p2-15', name: 'Safety Protocols XV' },
-         { id: 'p2-16', name: 'Safety Protocols XVI' },
-         { id: 'p2-17', name: 'Safety Protocols XVII' },
-         { id: 'p2-18', name: 'Safety Protocols XVIII' },
-         { id: 'p2-19', name: 'Safety Protocols XIX' },
-         { id: 'p2-20', name: 'Safety Protocols XX' },
+         { id: 'p2-11', name: 'Safety Protocols 11' },
+         { id: 'p2-12', name: 'Safety Protocols 12' },
+         { id: 'p2-13', name: 'Safety Protocols 13' },
+         { id: 'p2-14', name: 'Safety Protocols 14' },
+         { id: 'p2-15', name: 'Safety Protocols 15' },
+         { id: 'p2-16', name: 'Safety Protocols 16' },
+         { id: 'p2-17', name: 'Safety Protocols 17' },
+         { id: 'p2-18', name: 'Safety Protocols 18' },
+         { id: 'p2-19', name: 'Safety Protocols 19' },
+         { id: 'p2-20', name: 'Safety Protocols 20' },
        ];
 
        safetyLevels.forEach(({ id, name }) => {
@@ -426,7 +428,7 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
         useGameStore.setState({
           science: 5000,
           researchedNodes: ['i1', 'i2', 'i3'],
-          spaceports: [{ type: 'cargo' }], // 1 spaceport already exists
+          spaceports: [{ id: 1 }], // 1 spaceport already exists
         } as unknown as GameState);
         const cost = useGameStore.getState().getCurrentSpaceportCost();
         // 1000 * 1.5^1 * 0.85 = 1000 * 1.5 * 0.85 = 1275

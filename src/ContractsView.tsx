@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { useGameStore, Contract, Company } from "./useGameStore.js"
-import { FaBuilding, FaBoxOpen, FaFlask, FaMoneyBillAlt, FaClock, FaBomb, FaCheckCircle, FaTimesCircle } from "react-icons/fa"
+import { useGameStore, Contract } from "./useGameStore.js"
+import { FaBuilding, FaBoxOpen, FaFlask, FaMoneyBillAlt, FaClock, FaBomb, FaCheckCircle, FaTimesCircle, FaBan } from "react-icons/fa"
 
 export function ContractsView() {
   const { 
@@ -9,17 +9,42 @@ export function ContractsView() {
     activeContract, 
     generateContracts, 
     acceptContract, 
-    deliverContractResources,
-    cargo,
-    science
+    forfeitContract,
   } = useGameStore()
 
   useEffect(() => {
     generateContracts();
   }, [generateContracts]);
 
+  const renderProgressBar = (delivered: number, required: number, color: string) => {
+    const progress = required === 0 ? 100 : Math.min(100, (delivered / required) * 100);
+    return (
+      <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
+        <div 
+          className={`h-full ${color} transition-all`}
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+    );
+  };
+
+  // Determine contract type based on dominant requirement
+  const getContractType = (contract: Contract) => {
+    const total = contract.requiredMoney + contract.requiredScience + contract.requiredCargo;
+    if (total === 0) return { type: 'Balanced', color: 'bg-purple-600', icon: <FaBuilding /> };
+    const moneyRatio = contract.requiredMoney / total;
+    const scienceRatio = contract.requiredScience / total;
+    const cargoRatio = contract.requiredCargo / total;
+    
+    if (cargoRatio > 0.5) return { type: 'Logistics', color: 'bg-yellow-600', icon: <FaBoxOpen /> };
+    if (scienceRatio > 0.5) return { type: 'Research', color: 'bg-blue-600', icon: <FaFlask /> };
+    if (moneyRatio > 0.5) return { type: 'Commercial', color: 'bg-green-600', icon: <FaMoneyBillAlt /> };
+    return { type: 'Balanced', color: 'bg-purple-600', icon: <FaBuilding /> };
+  };
+
   const renderContract = (contract: Contract, isAvailable: boolean) => {
-    const canAfford = cargo >= contract.requiredCargo && science >= contract.requiredScience;
+    const isActive = contract.status === 'active';
+    const contractType = getContractType(contract);
     
     return (
       <div key={contract.id} className={`border-2 p-4 rounded-lg flex flex-col gap-3 transition-colors ${contract.status === 'failed' ? 'border-red-500 bg-red-900/20' : 'border-gray-700 bg-gray-800'}`}>
@@ -28,27 +53,61 @@ export function ContractsView() {
             <h3 className="font-bold text-lg">{contract.title}</h3>
             <p className="text-xs text-gray-400">{contract.description}</p>
           </div>
-          {contract.status === 'active' && <span className="bg-blue-600 text-[10px] px-2 py-1 rounded uppercase font-bold">Active</span>}
-          {contract.status === 'failed' && <span className="bg-red-600 text-[10px] px-2 py-1 rounded uppercase font-bold">Failed</span>}
+          <div className="flex flex-col gap-1 items-end">
+            <span className={`${contractType.color} text-[10px] px-2 py-1 rounded uppercase font-bold flex items-center gap-1`}>
+              {contractType.icon} {contractType.type}
+            </span>
+            {contract.status === 'active' && <span className="bg-cyan-600 text-[10px] px-2 py-1 rounded uppercase font-bold">Active</span>}
+            {contract.status === 'failed' && <span className="bg-red-600 text-[10px] px-2 py-1 rounded uppercase font-bold">Failed</span>}
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="flex items-center gap-2">
-            <FaBoxOpen className="text-blue-400" /> {contract.requiredCargo} Cargo
-          </div>
-          <div className="flex items-center gap-2">
-            <FaFlask className="text-blue-400" /> {contract.requiredScience} Science
-          </div>
-          {contract.timeLimitSeconds > 0 && (
-            <div className={`flex items-center gap-2 ${contract.status === 'active' && contract.elapsedSeconds > contract.timeLimitSeconds * 0.8 ? 'text-red-400' : ''}`}>
-              <FaClock /> {contract.status === 'active' ? `${contract.timeLimitSeconds - contract.elapsedSeconds}s left` : `${contract.timeLimitSeconds}s limit`}
+        <div className="flex flex-col gap-2 text-sm">
+          {/* Money requirement */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FaMoneyBillAlt className="text-green-400" />
+                <span>{isActive ? `${Math.floor(contract.deliveredMoney)}/${contract.requiredMoney}` : contract.requiredMoney} Money</span>
+              </div>
             </div>
-          )}
-          {contract.maxExplosions !== -1 && (
-            <div className={`flex items-center gap-2 ${contract.status === 'active' && contract.currentExplosions >= contract.maxExplosions ? 'text-red-400' : ''}`}>
-              <FaBomb /> {contract.status === 'active' ? `${contract.currentExplosions}/${contract.maxExplosions} explosions` : `Max ${contract.maxExplosions} explosions`}
+            {isActive && renderProgressBar(contract.deliveredMoney, contract.requiredMoney, 'bg-green-500')}
+          </div>
+          
+          {/* Science requirement */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FaFlask className="text-blue-400" />
+                <span>{isActive ? `${Math.floor(contract.deliveredScience)}/${contract.requiredScience}` : contract.requiredScience} Science</span>
+              </div>
             </div>
-          )}
+            {isActive && renderProgressBar(contract.deliveredScience, contract.requiredScience, 'bg-blue-500')}
+          </div>
+          
+          {/* Cargo requirement */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FaBoxOpen className="text-yellow-400" />
+                <span>{isActive ? `${Math.floor(contract.deliveredCargo)}/${contract.requiredCargo}` : contract.requiredCargo} Cargo</span>
+              </div>
+            </div>
+            {isActive && renderProgressBar(contract.deliveredCargo, contract.requiredCargo, 'bg-yellow-500')}
+          </div>
+
+          <div className="flex gap-4 text-xs text-gray-400 mt-1">
+            {contract.timeLimitSeconds > 0 && (
+              <div className={`flex items-center gap-1 ${contract.status === 'active' && contract.elapsedSeconds > contract.timeLimitSeconds * 0.8 ? 'text-red-400' : ''}`}>
+                <FaClock /> {contract.status === 'active' ? `${contract.timeLimitSeconds - contract.elapsedSeconds}s left` : `${contract.timeLimitSeconds}s limit`}
+              </div>
+            )}
+            {contract.maxExplosions !== -1 && (
+              <div className={`flex items-center gap-1 ${contract.status === 'active' && contract.currentExplosions >= contract.maxExplosions ? 'text-red-400' : ''}`}>
+                <FaBomb /> {contract.status === 'active' ? `${contract.currentExplosions}/${contract.maxExplosions} explosions` : `Max ${contract.maxExplosions} explosions`}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="border-t border-gray-700 pt-2 flex justify-between items-center text-xs">
@@ -70,11 +129,10 @@ export function ContractsView() {
 
           {contract.status === 'active' && (
             <button 
-              onClick={deliverContractResources}
-              disabled={!canAfford}
-              className="bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1 rounded font-bold"
+              onClick={forfeitContract}
+              className="bg-red-600 hover:bg-red-500 px-3 py-1 rounded font-bold flex items-center gap-1"
             >
-              Deliver & Complete
+              <FaBan /> Forfeit (-{Math.floor(contract.rewardExperience * 0.5)} XP)
             </button>
           )}
 

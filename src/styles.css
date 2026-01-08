@@ -1,5 +1,91 @@
 @import "tailwindcss";
 
+/* Hide scrollbars but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Snap scroll containers */
+.snap-y-mandatory {
+  scroll-snap-type: y mandatory;
+}
+.snap-x-mandatory {
+  scroll-snap-type: x mandatory;
+}
+.snap-start {
+  scroll-snap-align: start;
+}
+.snap-center {
+  scroll-snap-align: center;
+}
+
+/* Layer backgrounds */
+.layer-orbit {
+  background: linear-gradient(180deg, #0a0a1a 0%, #1a1a3a 50%, #0d1b2a 100%);
+}
+.layer-surface {
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+.layer-research {
+  background: linear-gradient(180deg, #1a0a1a 0%, #2d1b36 30%, #1a0a20 70%, #0d0d0d 100%);
+}
+
+/* Star field effect for orbit */
+.stars {
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, white, transparent),
+    radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+    radial-gradient(1px 1px at 90px 40px, white, transparent),
+    radial-gradient(2px 2px at 160px 120px, rgba(255,255,255,0.9), transparent),
+    radial-gradient(1px 1px at 230px 80px, white, transparent),
+    radial-gradient(2px 2px at 300px 150px, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 350px 200px, white, transparent),
+    radial-gradient(2px 2px at 420px 60px, rgba(255,255,255,0.8), transparent),
+    radial-gradient(1px 1px at 500px 180px, white, transparent),
+    radial-gradient(2px 2px at 580px 90px, rgba(255,255,255,0.6), transparent);
+  background-size: 600px 300px;
+  animation: stars-twinkle 4s ease-in-out infinite alternate;
+}
+
+@keyframes stars-twinkle {
+  0% { opacity: 0.8; }
+  100% { opacity: 1; }
+}
+
+/* Underground lab effect for research */
+.underground-glow {
+  box-shadow: 
+    inset 0 0 100px rgba(139, 92, 246, 0.1),
+    inset 0 0 200px rgba(139, 92, 246, 0.05);
+}
+
+/* Animations */
+@keyframes rocket-ready {
+  0% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-3px);
+  }
+  50% {
+    transform: translateY(0);
+  }
+  75% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-rocket-ready {
+  animation: rocket-ready 1s ease-in-out;
+}
+
 @keyframes bounce-slow {
   0%, 100% {
     transform: translateY(-5%);
@@ -73,3 +159,76 @@
  .animate-float-up {
    animation: float-up-fade 1.5s ease-out forwards;
  }
+
+/* Floating particles for research lab */
+@keyframes float-particle {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-20px) translateX(10px);
+    opacity: 0.6;
+  }
+}
+
+.particle {
+  animation: float-particle 6s ease-in-out infinite;
+}
+
+/* Glow effects */
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
+}
+.glow-purple {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+.glow-orange {
+  box-shadow: 0 0 20px rgba(251, 146, 60, 0.3);
+}
+
+/* Scroll transition animations */
+.layer-transition {
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease-out;
+}
+
+/* Layer content fade-in animations */
+@keyframes layer-fade-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.layer-content-enter {
+  animation: layer-fade-in 0.4s ease-out forwards;
+}
+
+/* Parallax-style layer backgrounds */
+.layer-parallax {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Research button flash animation */
+@keyframes research-flash {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.9), 0 0 40px rgba(139, 92, 246, 0.5);
+  }
+}
+
+.animate-research-flash {
+  animation: research-flash 1.5s ease-in-out infinite;
+}
+
+/* Smooth scroll behavior for containers */
+.smooth-scroll {
+  scroll-behavior: smooth;
+}
