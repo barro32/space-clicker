@@ -21,59 +21,59 @@ export function SpaceportView() {
        {spaceports.map((sp, spIndex) => {
          return (
            <div key={spIndex} className={`grid grid-cols-3 gap-1 border ${sp.type === 'cargo' ? 'border-green-500' : 'border-blue-500'}`}>
-             {Array.from({ length: effectiveCapacity }).map((_, i) => {
-               const rocketIndex = spIndex * effectiveCapacity + i;
-               const rocket = rockets[rocketIndex];
-               if (rocket) {
-                 const isExploded = explodedRocketIds.includes(rocket.id);
-                 const isLaunching = recentlyLaunchedRocketIds.includes(rocket.id);
-                 if (isExploded) {
-                   return <FaBomb key={i} onClick={(e) => { e.stopPropagation(); clearExplosion(rocket.id); }} className="text-2xl cursor-pointer text-red-500 animate-pulse" title="Click to clear explosion" />;
-                 } else if (isLaunching) {
-                   return <FaRocket key={i} className="text-2xl text-yellow-400 animate-launch" title="Launching!" />;
-                 } else {
-                   return <FaRocket key={i} className={`text-2xl ${fuel >= fuelCostPerRocket ? 'text-blue-400 animate-bounce-slow' : 'text-gray-500'}`} title={fuel >= fuelCostPerRocket ? 'Ready to launch' : 'Waiting for fuel'} />;
-                 }
-               } else {
-                 return <div key={i} className="w-6 h-6 border border-gray-300"></div>;
-               }
-             })}
+              {Array.from({ length: effectiveCapacity }).map((_, i) => {
+                const rocketIndex = spIndex * effectiveCapacity + i;
+                const rocket = rockets[rocketIndex];
+                if (rocket) {
+                  const isExploded = explodedRocketIds.includes(rocket.id);
+                  const isLaunching = recentlyLaunchedRocketIds.includes(rocket.id);
+                  if (isExploded) {
+                    return <FaBomb key={i} onClick={(e) => { e.stopPropagation(); clearExplosion(rocket.id); }} className="text-xl cursor-pointer text-red-500 animate-pulse" title="Click to clear explosion" />;
+                  } else if (isLaunching) {
+                    return <FaRocket key={i} className="text-xl text-yellow-400 animate-launch" style={{ transform: 'rotate(-45deg)' }} title="Launching!" />;
+                  } else {
+                    return <FaRocket key={i} className={`text-xl ${fuel >= fuelCostPerRocket ? 'text-blue-400 animate-bounce-slow' : 'text-gray-500'}`} style={{ transform: 'rotate(-45deg)' }} title={fuel >= fuelCostPerRocket ? 'Ready to launch' : 'Waiting for fuel'} />;
+                  }
+                } else {
+                  return <div key={i} className="w-6 h-6 border border-gray-300"></div>;
+                }
+              })}
            </div>
          )
        })}
         <div className="grid grid-cols-3 gap-1 border border-gray-500 p-1">
-          <div onClick={buildRocket} className="cursor-pointer" title="Build a cargo rocket"><FaRocket className="text-2xl text-blue-400" /></div>
+          <div onClick={buildRocket} className="cursor-pointer" title="Build a cargo rocket"><FaRocket className="text-xl text-blue-400" style={{ transform: 'rotate(-45deg)' }} /></div>
           <div>${currentRocketCost}</div>
           <div className="text-xs text-gray-400">Fuel: {Math.floor(fuelCostPerRocket)}</div>
           {scienceRocketsUnlocked && (
             <>
-               <div onClick={buildScienceRocket} className="cursor-pointer" title="Science Rocket (o4): +1 science per successful launch"><FaFlask className="text-2xl text-purple-400" /></div>
+               <div onClick={buildScienceRocket} className="cursor-pointer" title="Science Rocket (o4): +1 science per successful launch"><FaFlask className="text-xl text-purple-400" /></div>
               <div>${currentRocketCost}</div>
               <div className="text-xs text-gray-400">Fuel: {Math.floor(fuelCostPerRocket)}</div>
             </>
           )}
-          {spaceportsUnlocked && (
-            <>
-               <div onClick={buildSpaceport} className="cursor-pointer" title="New Spaceport (o5): Expand rocket capacity"><FaRegBuilding className="text-2xl" /></div>
+           {spaceportsUnlocked && (
+             <>
+                <div onClick={buildSpaceport} className="cursor-pointer" title="New Spaceport (o5): Expand rocket capacity"><FaRegBuilding className="text-xl" /></div>
               <div>${currentSpaceportCost}</div>
               <div></div>
             </>
           )}
-          {refineriesUnlocked && (
-            <>
-               <div onClick={buildFuelRefinery} className="cursor-pointer" title="Fuel Refinery (o6): +1 fuel/sec"><FaGasPump className="text-2xl" /></div>
+           {refineriesUnlocked && (
+             <>
+                <div onClick={buildFuelRefinery} className="cursor-pointer" title="Fuel Refinery (o6): +1 fuel/sec"><FaGasPump className="text-xl" /></div>
               <div>${currentFuelRefineryCost}</div>
               <div className="text-xs">Refineries: {fuelRefineries}</div>
             </>
           )}
-          {explosionClearingUnlocked && (
-            <>
-              <div onClick={() => {
-                if (explodedRocketIds.length > 0) {
-                  const explosionToClear = explodedRocketIds[0];
-                  clearExplosion(explosionToClear);
-                }
-               }} className="cursor-pointer" title="Clear Explosion (o7): +1 science"><FaBomb className="text-2xl text-red-500" /></div>
+           {explosionClearingUnlocked && (
+             <>
+               <div onClick={() => {
+                 if (explodedRocketIds.length > 0) {
+                   const explosionToClear = explodedRocketIds[0];
+                   clearExplosion(explosionToClear);
+                 }
+                }} className="cursor-pointer" title="Clear Explosion (o7): +1 science"><FaBomb className="text-xl text-red-500" /></div>
                <div>+1 Sci</div>
               <div></div>
             </>
