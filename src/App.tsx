@@ -44,7 +44,7 @@ const loadInitialState = () => {
            if (parsed.nextRocketId === undefined) parsed.nextRocketId = 0;
            if (parsed.rocketCost === undefined) parsed.rocketCost = 1;
            if (parsed.profitPerRocket === undefined) parsed.profitPerRocket = 1;
-           if (parsed.spaceportCapacity === undefined) parsed.spaceportCapacity = 3;
+            if (parsed.spaceportCapacity === undefined) parsed.spaceportCapacity = 2;
            if (!parsed.spaceports) parsed.spaceports = [{ type: "cargo" }];
            if (parsed.spaceportCost === undefined) parsed.spaceportCost = 200;
           if (parsed.fuelRefineries === undefined) parsed.fuelRefineries = 0;
