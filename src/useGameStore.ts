@@ -70,6 +70,7 @@ export interface GameState {
    getCurrentSpaceportCost: () => number;
    getEffectMultiplier: (type: string) => number;
    getProductionRates: () => { moneyPerSec: number; sciencePerSec: number; fuelPerSec: number };
+   getFleetSummary: () => { totalRockets: number; cargoRockets: number; scienceRockets: number; fuelPerSecondConsumption: number };
   setView: (view: "surface" | "orbit" | "contracts" | "research") => void;
   addNotification: (message: string) => void;
   generateContracts: () => void;
@@ -513,9 +514,23 @@ export const useGameStore = create<GameState>((set, get) => ({
       // Science production
       const sciencePerSec = successfulScience + Math.round((state.rocketExplosionChance - state.rocketExplosionChance * state.getEffectMultiplier('explosionChanceMultiplier')) * maxRocketLaunches);
       
-      return { moneyPerSec, sciencePerSec, fuelPerSec };
-    },
-   setView: (view: "surface" | "orbit" | "contracts" | "research") => set({ currentView: view }),
+       return { moneyPerSec, sciencePerSec, fuelPerSec };
+     },
+    getFleetSummary: () => {
+      const state = get();
+      const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
+      
+      const cargoRockets = activeRockets.filter(r => r.type === 'cargo').length;
+      const scienceRockets = activeRockets.filter(r => r.type === 'science').length;
+      const totalRockets = activeRockets.length;
+      
+      // Calculate fuel consumption per second (all active rockets)
+      const effectiveFuelCost = state.fuelCostPerRocket * state.getEffectMultiplier('fuelCostMultiplier');
+      const fuelPerSecondConsumption = totalRockets * effectiveFuelCost;
+      
+       return { totalRockets, cargoRockets, scienceRockets, fuelPerSecondConsumption };
+     },
+    setView: (view: "surface" | "orbit" | "contracts" | "research") => set({ currentView: view }),
   addNotification: (message: string) => set(state => ({ notifications: [message, ...state.notifications].slice(0, 5) })),
   generateContracts: () => set(state => {
     if (state.availableContracts.length >= 3) return {};
