@@ -29,16 +29,32 @@
 }
 
 @keyframes launch {
-  0% {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-10px) scale(1.2);
-    opacity: 0.8;
-  }
-}
+   0% {
+     transform: translateY(0) scale(1);
+     opacity: 1;
+   }
+   100% {
+     transform: translateY(-10px) scale(1.2);
+     opacity: 0.8;
+   }
+ }
+ 
+ .animate-launch {
+   animation: launch 0.6s ease-out;
+ }
 
-.animate-launch {
-  animation: launch 0.6s ease-out;
-}
+ @keyframes new-research-highlight {
+   0% {
+     box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+   }
+   50% {
+     box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+   }
+   100% {
+     box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+   }
+ }
+
+ .animate-new-research {
+   animation: new-research-highlight 2s ease-out;
+ }

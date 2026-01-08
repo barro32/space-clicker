@@ -33,7 +33,7 @@ interface ExtendedResearchNode extends ResearchNode {
 }
 
 export function ResearchTreeView() {
-   const { researchedNodes, unlockNode, science, rocketExplosionChance, getEffectMultiplier } = useGameStore()
+   const { researchedNodes, unlockNode, science, rocketExplosionChance, getEffectMultiplier, newlyAvailableResearchIds } = useGameStore()
    const [expandedNode, setExpandedNode] = useState<string | null>(null)
 
    const branches: ResearchBranch[] = Array.from(new Set(researchTree.map(n => n.branch)));
@@ -200,13 +200,14 @@ export function ResearchTreeView() {
                      const insufficientScience = science < node.scienceCost && !isUnlocked(node.id);
 
                      const baseClasses = "relative rounded-lg p-3 cursor-pointer transition-all duration-200 border";
-                     
-                     let stateClasses = '';
-                     if (available) {
-                       stateClasses = 'border-blue-500/50 bg-blue-900/20 hover:bg-blue-900/30 hover:border-blue-400/70 animate-pulse-slow';
-                     } else {
-                       stateClasses = 'border-gray-700/50 bg-gray-800/30 opacity-60';
-                     }
+                      
+                      let stateClasses = '';
+                      const isNewlyAvailable = (newlyAvailableResearchIds || []).includes(node.id);
+                      if (available) {
+                        stateClasses = `border-blue-500/50 bg-blue-900/20 hover:bg-blue-900/30 hover:border-blue-400/70 animate-pulse-slow${isNewlyAvailable ? ' animate-new-research' : ''}`;
+                      } else {
+                        stateClasses = 'border-gray-700/50 bg-gray-800/30 opacity-60';
+                      }
 
                      return (
                        <div

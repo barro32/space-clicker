@@ -64,8 +64,9 @@ export interface GameState {
    fuelCostPerRocket: number;
    fuelRefineryCost: number;
    explodedRocketIds: number[];
-   rocketExplosionChance: number;
-   recentlyLaunchedRocketIds: number[]; // Rockets that launched this tick (for animation)
+    rocketExplosionChance: number;
+    recentlyLaunchedRocketIds: number[]; // Rockets that launched this tick (for animation)
+    newlyAvailableResearchIds: string[]; // Research nodes that just became available (for animation)
    getCurrentSpaceportCost: () => number;
    getEffectMultiplier: (type: string) => number;
    getProductionRates: () => { moneyPerSec: number; sciencePerSec: number; fuelPerSec: number };
@@ -125,9 +126,10 @@ export const useGameStore = create<GameState>((set, get) => ({
      fuelProductionPerRefinery: INITIAL_STATE.FUEL_PRODUCTION_PER_REFINERY,
      fuelCostPerRocket: INITIAL_STATE.FUEL_COST_PER_ROCKET,
      fuelRefineryCost: INITIAL_STATE.FUEL_REFINERY_COST,
-       explodedRocketIds: [],
-       rocketExplosionChance: INITIAL_STATE.ROCKET_EXPLOSION_CHANCE,
-       recentlyLaunchedRocketIds: [],
+        explodedRocketIds: [],
+        rocketExplosionChance: INITIAL_STATE.ROCKET_EXPLOSION_CHANCE,
+        recentlyLaunchedRocketIds: [],
+        newlyAvailableResearchIds: [],
       researchedNodes: [],
       previouslyAvailableResearch: [],
       autoBuildActive: false,
@@ -284,19 +286,20 @@ export const useGameStore = create<GameState>((set, get) => ({
       ? [...notificationsToAdd, ...state.notifications].slice(0, 5)
       : state.notifications;
 
-    return {
-      money: finalMoney,
-      science: newScience,
-      fuel: fuelAvailable,
-      cargo: state.cargo + cargoResourceProd,
-      activeContract: newActiveContract,
-      explodedRocketIds: newExplodedRocketIds,
-      rockets: finalRockets,
-      nextRocketId: finalNextId,
-      previouslyAvailableResearch: currentAvailableIds,
-      notifications: updatedNotifications,
-      recentlyLaunchedRocketIds: recentlyLaunchedIds,
-    }
+     return {
+       money: finalMoney,
+       science: newScience,
+       fuel: fuelAvailable,
+       cargo: state.cargo + cargoResourceProd,
+       activeContract: newActiveContract,
+       explodedRocketIds: newExplodedRocketIds,
+       rockets: finalRockets,
+       nextRocketId: finalNextId,
+       previouslyAvailableResearch: currentAvailableIds,
+       notifications: updatedNotifications,
+       recentlyLaunchedRocketIds: recentlyLaunchedIds,
+       newlyAvailableResearchIds: newlyAvailable,
+     }
   }),
   buildRocket: () =>
     set(state => {
