@@ -448,7 +448,7 @@ export const researchTree: ResearchNode[] = [
     {
       id: 'o7',
       name: 'Salvage Operations',
-      description: 'Unlocks the ability to clear exploded rockets (1 science cost each).',
+      description: 'Unlocks the ability to clear exploded rockets (+1 science each).',
       branch: 'orbital',
       scienceCost: 1,
       prerequisites: [],

@@ -61,10 +61,10 @@ describe('Control branch research effects', () => {
 
      useGameStore.getState().clearExplosion(1);
 
-     const s = useGameStore.getState();
-     // With ×1.2 multiplier, should clear at least 1 explosion
-     expect(s.explodedRocketIds.length).toBeLessThan(3);
-     expect(s.science).toBeLessThan(100);
+      const s = useGameStore.getState();
+      // With ×1.2 multiplier, should clear at least 1 explosion
+      expect(s.explodedRocketIds.length).toBeLessThan(3);
+      expect(s.science).toBeGreaterThan(100); // Clearing produces science
    });
 
    it('u7 Auto-Queue + toggled auto-build causes tick() to build rockets', () => {

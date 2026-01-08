@@ -408,36 +408,32 @@ export const useGameStore = create<GameState>((set, get) => ({
       const newSpaceports = state.spaceports.map((sp, i) => i === index ? ({ type: sp.type === "cargo" ? "science" : "cargo" } as Spaceport) : sp)
       return { spaceports: newSpaceports }
     }),
-   clearExplosion: (rocketId: number) =>
-     set(state => {
-       // Check if explosion clearing is unlocked via research
-       if (state.researchedNodes.indexOf('o7') === -1) {
-         return {}; // Explosion clearing not unlocked
-       }
-       // Check if we have science to spend
-       if (state.science < 1) {
-         return {}; // Not enough science
-       }
-       
-       const newRockets = [...state.rockets];
-       const rocketIndex = newRockets.findIndex(r => r !== null && r.id === rocketId);
-       if (rocketIndex !== -1) {
-         newRockets[rocketIndex] = null; // Set the slot to null
-       }
+    clearExplosion: (rocketId: number) =>
+      set(state => {
+        // Check if explosion clearing is unlocked via research
+        if (state.researchedNodes.indexOf('o7') === -1) {
+          return {}; // Explosion clearing not unlocked
+        }
+        
+        const newRockets = [...state.rockets];
+        const rocketIndex = newRockets.findIndex(r => r !== null && r.id === rocketId);
+        if (rocketIndex !== -1) {
+          newRockets[rocketIndex] = null; // Set the slot to null
+        }
 
-       let newActiveContract = state.activeContract ? { ...state.activeContract } : null;
-       if (newActiveContract && newActiveContract.status === 'active' && newActiveContract.maxExplosions !== -1) {
-         newActiveContract.currentExplosions += 1;
-         if (newActiveContract.currentExplosions > newActiveContract.maxExplosions) {
-           newActiveContract.status = 'failed';
-           get().addNotification(`Contract Failed: ${newActiveContract.title} (Too many explosions)`);
-         }
-       }
+        let newActiveContract = state.activeContract ? { ...state.activeContract } : null;
+        if (newActiveContract && newActiveContract.status === 'active' && newActiveContract.maxExplosions !== -1) {
+          newActiveContract.currentExplosions += 1;
+          if (newActiveContract.currentExplosions > newActiveContract.maxExplosions) {
+            newActiveContract.status = 'failed';
+            get().addNotification(`Contract Failed: ${newActiveContract.title} (Too many explosions)`);
+          }
+        }
 
-       return {
-         explodedRocketIds: state.explodedRocketIds.filter(id => id !== rocketId),
-         rockets: newRockets,
-         science: state.science - 1,
+        return {
+          explodedRocketIds: state.explodedRocketIds.filter(id => id !== rocketId),
+          rockets: newRockets,
+          science: state.science + 1,
          activeContract: newActiveContract,
        }
      }),
@@ -451,15 +447,15 @@ export const useGameStore = create<GameState>((set, get) => ({
       .filter((node: ResearchNode) => state.researchedNodes.includes(node.id) && node.effect.type === type)
       .map((node: ResearchNode) => node.effect.value);
     
-    if (multipliers.length === 0) return 1;
-    
     // Most effects are multiplicative, but some might be additive bonuses
     // We treat 'Multiplier' suffix as multiplicative, others as additive
     if (type.endsWith('Multiplier')) {
-      return multipliers.reduce((acc, val) => acc * val, 1);
+      // Multiplicative: default to 1 (no change when multiplied)
+      return multipliers.length === 0 ? 1 : multipliers.reduce((acc, val) => acc * val, 1);
     } else {
-       return multipliers.reduce((acc, val) => acc + val, 0); // Wait, base is usually different for additive
-     }
+      // Additive: default to 0 (no bonus when added)
+      return multipliers.length === 0 ? 0 : multipliers.reduce((acc, val) => acc + val, 0);
+    }
    },
    getAvailableNodes: () => {
      const state = get();

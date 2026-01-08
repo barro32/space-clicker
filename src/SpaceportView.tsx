@@ -69,8 +69,8 @@ export function SpaceportView() {
                   const explosionToClear = explodedRocketIds[0];
                   clearExplosion(explosionToClear);
                 }
-               }} className="cursor-pointer" title="Clear Explosion (o7): -1 science"><FaBomb className="text-2xl text-red-500" /></div>
-              <div>-1 Sci</div>
+               }} className="cursor-pointer" title="Clear Explosion (o7): +1 science"><FaBomb className="text-2xl text-red-500" /></div>
+               <div>+1 Sci</div>
               <div></div>
             </>
           )}
