@@ -65,6 +65,7 @@ export interface GameState {
    fuelRefineryCost: number;
    explodedRocketIds: number[];
    rocketExplosionChance: number;
+   recentlyLaunchedRocketIds: number[]; // Rockets that launched this tick (for animation)
   getCurrentSpaceportCost: () => number;
   getEffectMultiplier: (type: string) => number;
   setView: (view: "surface" | "orbit" | "contracts" | "research") => void;
@@ -123,51 +124,55 @@ export const useGameStore = create<GameState>((set, get) => ({
      fuelProductionPerRefinery: INITIAL_STATE.FUEL_PRODUCTION_PER_REFINERY,
      fuelCostPerRocket: INITIAL_STATE.FUEL_COST_PER_ROCKET,
      fuelRefineryCost: INITIAL_STATE.FUEL_REFINERY_COST,
-      explodedRocketIds: [],
-      rocketExplosionChance: INITIAL_STATE.ROCKET_EXPLOSION_CHANCE,
-     researchedNodes: [],
-     previouslyAvailableResearch: [],
-     autoBuildActive: false,
-    tick: () => set(state => {
-     const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
-    
-    const fuelProduction = state.fuelRefineries * state.fuelProductionPerRefinery * state.getEffectMultiplier('refineryOutputMultiplier');
-    let fuelAvailable = state.fuel + fuelProduction;
-    let successfulCargoLaunches = 0;
-    let successfulScienceLaunches = 0;
-    let explosionCount = 0;
-    let newExplodedRocketIds = [...state.explodedRocketIds];
-    let newActiveContract = state.activeContract ? { ...state.activeContract } : null;
+       explodedRocketIds: [],
+       rocketExplosionChance: INITIAL_STATE.ROCKET_EXPLOSION_CHANCE,
+       recentlyLaunchedRocketIds: [],
+      researchedNodes: [],
+      previouslyAvailableResearch: [],
+      autoBuildActive: false,
+     tick: () => set(state => {
+      const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
+     
+     const fuelProduction = state.fuelRefineries * state.fuelProductionPerRefinery * state.getEffectMultiplier('refineryOutputMultiplier');
+     let fuelAvailable = state.fuel + fuelProduction;
+     let successfulCargoLaunches = 0;
+     let successfulScienceLaunches = 0;
+     let explosionCount = 0;
+     let newExplodedRocketIds = [...state.explodedRocketIds];
+     let newActiveContract = state.activeContract ? { ...state.activeContract } : null;
+     let recentlyLaunchedIds: number[] = [];
 
-    const effectiveFuelCost = state.fuelCostPerRocket * state.getEffectMultiplier('fuelCostMultiplier');
-    const effectiveExplosionChance = state.rocketExplosionChance * state.getEffectMultiplier('explosionChanceMultiplier');
+     const effectiveFuelCost = state.fuelCostPerRocket * state.getEffectMultiplier('fuelCostMultiplier');
+     const effectiveExplosionChance = state.rocketExplosionChance * state.getEffectMultiplier('explosionChanceMultiplier');
 
-    // Process each rocket launch
-    for (const rocket of activeRockets) {
-      if (fuelAvailable >= effectiveFuelCost) {
-        fuelAvailable -= effectiveFuelCost;
-        
-        // Roll for explosion
-        if (Math.random() < effectiveExplosionChance) {
-          newExplodedRocketIds.push(rocket.id);
-          explosionCount += 1;
-          // Handle contract fragility
-          if (newActiveContract && newActiveContract.status === 'active' && newActiveContract.maxExplosions !== -1) {
-            newActiveContract.currentExplosions += 1;
-            if (newActiveContract.currentExplosions > newActiveContract.maxExplosions) {
-              newActiveContract.status = 'failed';
-              get().addNotification(`Contract Failed: ${newActiveContract.title} (Too many explosions)`);
-            }
-          }
-        } else {
-          if (rocket.type === 'cargo') {
-            successfulCargoLaunches += 1;
-          } else {
-            successfulScienceLaunches += 1;
-          }
-        }
-      }
-    }
+     // Process each rocket launch
+     for (const rocket of activeRockets) {
+       if (fuelAvailable >= effectiveFuelCost) {
+         fuelAvailable -= effectiveFuelCost;
+         
+         // Roll for explosion
+         if (Math.random() < effectiveExplosionChance) {
+           newExplodedRocketIds.push(rocket.id);
+           explosionCount += 1;
+           // Handle contract fragility
+           if (newActiveContract && newActiveContract.status === 'active' && newActiveContract.maxExplosions !== -1) {
+             newActiveContract.currentExplosions += 1;
+             if (newActiveContract.currentExplosions > newActiveContract.maxExplosions) {
+               newActiveContract.status = 'failed';
+               get().addNotification(`Contract Failed: ${newActiveContract.title} (Too many explosions)`);
+             }
+           }
+         } else {
+           // Track successful launches for animation
+           recentlyLaunchedIds.push(rocket.id);
+           if (rocket.type === 'cargo') {
+             successfulCargoLaunches += 1;
+           } else {
+             successfulScienceLaunches += 1;
+           }
+         }
+       }
+     }
 
     let cargoProd = successfulCargoLaunches * state.profitPerRocket * state.getEffectMultiplier('profitMultiplier');
     let sciProd = successfulScienceLaunches * PRODUCTION.SCIENCE_PER_SCIENCE_ROCKET + explosionCount * PRODUCTION.SCIENCE_PER_EXPLOSION;
@@ -288,6 +293,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       nextRocketId: finalNextId,
       previouslyAvailableResearch: currentAvailableIds,
       notifications: updatedNotifications,
+      recentlyLaunchedRocketIds: recentlyLaunchedIds,
     }
   }),
   buildRocket: () =>
