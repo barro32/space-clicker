@@ -68,10 +68,8 @@ export interface GameState {
     recentlyLaunchedRocketIds: number[]; // Rockets that launched this tick (for animation)
     newlyAvailableResearchIds: string[]; // Research nodes that just became available (for animation)
    getCurrentSpaceportCost: () => number;
-   getEffectMultiplier: (type: string) => number;
-   getProductionRates: () => { moneyPerSec: number; sciencePerSec: number; fuelPerSec: number };
-   getFleetSummary: () => { totalRockets: number; cargoRockets: number; scienceRockets: number; fuelPerSecondConsumption: number };
-  setView: (view: "surface" | "orbit" | "contracts" | "research") => void;
+    getEffectMultiplier: (type: string) => number;
+   setView: (view: "surface" | "orbit" | "contracts" | "research") => void;
   addNotification: (message: string) => void;
   generateContracts: () => void;
   acceptContract: (contractId: string) => void;
@@ -470,65 +468,16 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
    },
     getAvailableNodes: () => {
-      const state = get();
-      return researchTree.filter((node: ResearchNode) => {
-        // Not already researched
-        if (state.researchedNodes.includes(node.id)) return false;
-        // Has enough science
-        if (state.science < node.scienceCost) return false;
-        // Prerequisites are met
-        if (!node.prerequisites.every(p => state.researchedNodes.includes(p))) return false;
-        return true;
-      });
-    },
-    getProductionRates: () => {
-      const state = get();
-      
-      // Fuel production from refineries
-      const fuelPerSec = state.fuelRefineries * state.fuelProductionPerRefinery * state.getEffectMultiplier('refineryOutputMultiplier');
-      
-      // Count active rockets (non-exploded)
-      const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
-      const cargoRockets = activeRockets.filter(r => r.type === 'cargo').length;
-      const scienceRockets = activeRockets.filter(r => r.type === 'science').length;
-      
-      // Calculate fuel cost per rocket
-      const effectiveFuelCost = state.fuelCostPerRocket * state.getEffectMultiplier('fuelCostMultiplier');
-      
-      // Estimate launches per tick based on available fuel
-      // This is an average - actual depends on refinery output and current fuel
-      const estimatedRocketsPerTick = Math.floor((state.fuel + fuelPerSec) / effectiveFuelCost);
-      const maxRocketLaunches = Math.min(estimatedRocketsPerTick, cargoRockets + scienceRockets);
-      
-      // Calculate success rate (1 - explosion chance)
-      const effectiveExplosionChance = state.rocketExplosionChance * state.getEffectMultiplier('explosionChanceMultiplier');
-      const successRate = Math.max(0, 1 - effectiveExplosionChance);
-      
-      // Estimate successful launches
-      const successfulCargo = Math.floor(cargoRockets * maxRocketLaunches * successRate / Math.max(1, cargoRockets + scienceRockets));
-      const successfulScience = Math.floor(scienceRockets * maxRocketLaunches * successRate / Math.max(1, cargoRockets + scienceRockets));
-      
-      // Money production
-      const moneyPerSec = successfulCargo * state.profitPerRocket * state.getEffectMultiplier('profitMultiplier');
-      
-      // Science production
-      const sciencePerSec = successfulScience + Math.round((state.rocketExplosionChance - state.rocketExplosionChance * state.getEffectMultiplier('explosionChanceMultiplier')) * maxRocketLaunches);
-      
-       return { moneyPerSec, sciencePerSec, fuelPerSec };
-     },
-    getFleetSummary: () => {
-      const state = get();
-      const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
-      
-      const cargoRockets = activeRockets.filter(r => r.type === 'cargo').length;
-      const scienceRockets = activeRockets.filter(r => r.type === 'science').length;
-      const totalRockets = activeRockets.length;
-      
-      // Calculate fuel consumption per second (all active rockets)
-      const effectiveFuelCost = state.fuelCostPerRocket * state.getEffectMultiplier('fuelCostMultiplier');
-      const fuelPerSecondConsumption = totalRockets * effectiveFuelCost;
-      
-       return { totalRockets, cargoRockets, scienceRockets, fuelPerSecondConsumption };
+       const state = get();
+       return researchTree.filter((node: ResearchNode) => {
+         // Not already researched
+         if (state.researchedNodes.includes(node.id)) return false;
+         // Has enough science
+         if (state.science < node.scienceCost) return false;
+         // Prerequisites are met
+         if (!node.prerequisites.every(p => state.researchedNodes.includes(p))) return false;
+         return true;
+       });
      },
     setView: (view: "surface" | "orbit" | "contracts" | "research") => set({ currentView: view }),
   addNotification: (message: string) => set(state => ({ notifications: [message, ...state.notifications].slice(0, 5) })),

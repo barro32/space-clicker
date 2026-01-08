@@ -29,6 +29,21 @@ describe('App navigation & persistence', () => {
 
   it('calls setView("research") when Research button clicked', () => {
     const setView = vi.fn();
+    const mockState = {
+      currentView: 'surface',
+      setView,
+      money: 0,
+      science: 0,
+      fuel: 0,
+      cargo: 0,
+      tick: vi.fn(),
+      notifications: [],
+      researchedNodes: [],
+      rockets: [],
+      explodedRocketIds: [],
+      fuelRefineries: 0,
+    };
+    
     (useGameStore as any).mockReturnValue({
       currentView: 'surface',
       setView,
@@ -37,8 +52,15 @@ describe('App navigation & persistence', () => {
       fuel: 0,
       cargo: 0,
       tick: vi.fn(),
-      notifications: []
+      notifications: [],
+      researchedNodes: [],
+      rockets: [],
+      explodedRocketIds: [],
+      fuelRefineries: 0,
     });
+    
+    // Provide getState for the useMemo calls
+    (useGameStore as any).getState = () => mockState;
 
     render(<App />);
     const btn = screen.getByRole('button', { name: /research/i });

@@ -1,12 +1,13 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useGameStore, GameState } from "./useGameStore.js"
-import { FaMoneyBillAlt, FaFlask, FaGasPump, FaBoxOpen } from 'react-icons/fa' // Added FaGasPump
+import { FaMoneyBillAlt, FaFlask, FaGasPump, FaBoxOpen } from 'react-icons/fa'
 import { SpaceportView } from "./SpaceportView.js"
 import { OrbitView } from "./OrbitView.js"
 import { ContractsView } from "./ContractsView.js"
 import { ResearchTreeView } from "./ResearchTreeView.js"
 import { DevConsole } from './DevConsole.js'
-import { INITIAL_STATE, TIME } from './gameConstants.js'
+import { INITIAL_STATE, TIME, PRODUCTION } from './gameConstants.js'
+import { researchTree, ResearchNode } from './researchTree.js'
 
 
 // Default companies - used as fallback when loading state
@@ -22,6 +23,81 @@ const DEFAULT_COMPANIES = [
   { id: 'aegis', name: 'Aegis Security', level: 1, experience: 0 },
   { id: 'dse', name: 'Deep Space Exploration', level: 1, experience: 0 },
 ];
+
+// Helper function to calculate effect multiplier - extracted from store
+function getEffectMultiplier(type: string, researchedNodes: string[]): number {
+  const multipliers = researchTree
+    .filter((node: ResearchNode) => researchedNodes.includes(node.id) && node.effect.type === type)
+    .map((node: ResearchNode) => node.effect.value);
+  
+  if (type.endsWith('Multiplier')) {
+    return multipliers.length === 0 ? 1 : multipliers.reduce((acc, val) => acc * val, 1);
+  } else {
+    return multipliers.length === 0 ? 0 : multipliers.reduce((acc, val) => acc + val, 0);
+  }
+}
+
+// Helper functions to calculate production rates and fleet summary
+// These avoid the Zustand infinite loop issue by being pure functions
+interface ProductionRates {
+  moneyPerSec: number;
+  sciencePerSec: number;
+  fuelPerSec: number;
+}
+
+interface FleetSummary {
+  totalRockets: number;
+  cargoRockets: number;
+  scienceRockets: number;
+  fuelPerSecondConsumption: number;
+}
+
+function calculateProductionRates(state: GameState): ProductionRates {
+  // Fuel production from refineries
+  const fuelPerSec = state.fuelRefineries * state.fuelProductionPerRefinery * getEffectMultiplier('refineryOutputMultiplier', state.researchedNodes);
+  
+  // Count active rockets (non-exploded)
+  const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
+  const cargoRockets = activeRockets.filter(r => r.type === 'cargo').length;
+  const scienceRockets = activeRockets.filter(r => r.type === 'science').length;
+  
+  // Calculate fuel cost per rocket
+  const effectiveFuelCost = state.fuelCostPerRocket * getEffectMultiplier('fuelCostMultiplier', state.researchedNodes);
+  
+  // Estimate launches per tick based on available fuel
+  const estimatedRocketsPerTick = Math.floor((state.fuel + fuelPerSec) / effectiveFuelCost);
+  const maxRocketLaunches = Math.min(estimatedRocketsPerTick, cargoRockets + scienceRockets);
+  
+  // Calculate success rate (1 - explosion chance)
+  const effectiveExplosionChance = state.rocketExplosionChance * getEffectMultiplier('explosionChanceMultiplier', state.researchedNodes);
+  const successRate = Math.max(0, 1 - effectiveExplosionChance);
+  
+  // Estimate successful launches
+  const successfulCargo = Math.floor(cargoRockets * maxRocketLaunches * successRate / Math.max(1, cargoRockets + scienceRockets));
+  const successfulScience = Math.floor(scienceRockets * maxRocketLaunches * successRate / Math.max(1, cargoRockets + scienceRockets));
+  
+  // Money production
+  const moneyPerSec = successfulCargo * state.profitPerRocket * getEffectMultiplier('profitMultiplier', state.researchedNodes);
+  
+  // Science production
+  const sciencePerSec = successfulScience + Math.round((state.rocketExplosionChance - state.rocketExplosionChance * getEffectMultiplier('explosionChanceMultiplier', state.researchedNodes)) * maxRocketLaunches);
+  
+  return { moneyPerSec, sciencePerSec, fuelPerSec };
+}
+
+function calculateFleetSummary(state: GameState): FleetSummary {
+  const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
+  
+  const cargoRockets = activeRockets.filter(r => r.type === 'cargo').length;
+  const scienceRockets = activeRockets.filter(r => r.type === 'science').length;
+  const totalRockets = activeRockets.length;
+  
+  // Calculate fuel consumption per second (all active rockets)
+  const effectiveFuelCost = state.fuelCostPerRocket * getEffectMultiplier('fuelCostMultiplier', state.researchedNodes);
+  const fuelPerSecondConsumption = totalRockets * effectiveFuelCost;
+  
+   return { totalRockets, cargoRockets, scienceRockets, fuelPerSecondConsumption };
+}
 
 // Load persisted state immediately on app load (synchronously before any render)
 const loadInitialState = () => {
@@ -78,9 +154,24 @@ export function App() {
   const hasLoadedRef = useRef(false);
 
    const { money, science, fuel, cargo, tick, currentView, setView, notifications } = useGameStore()
-   const productionRates = useGameStore(state => state.getProductionRates())
    const activeContract = useGameStore(state => state.activeContract)
-   const fleetSummary = useGameStore(state => state.getFleetSummary())
+   
+    // Get computed values using our helper functions
+    // These pure functions avoid the Zustand infinite loop issue
+    const researchedNodes = useGameStore(state => state.researchedNodes);
+    const rockets = useGameStore(state => state.rockets);
+    const explodedRocketIds = useGameStore(state => state.explodedRocketIds);
+    const fuelRefineries = useGameStore(state => state.fuelRefineries);
+    
+    const productionRates = useMemo(() => {
+      const state = useGameStore.getState();
+      return calculateProductionRates(state);
+    }, [researchedNodes, rockets, explodedRocketIds, fuelRefineries, fuel]);
+    
+    const fleetSummary = useMemo(() => {
+      const state = useGameStore.getState();
+      return calculateFleetSummary(state);
+    }, [researchedNodes, rockets, explodedRocketIds]);
    const [lastSaveTime, setLastSaveTime] = useState<number>(Date.now())
    const [displayTime, setDisplayTime] = useState<string>('just now')
    
