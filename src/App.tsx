@@ -79,6 +79,7 @@ export function App() {
 
    const { money, science, fuel, cargo, tick, currentView, setView, notifications } = useGameStore()
    const productionRates = useGameStore(state => state.getProductionRates())
+   const activeContract = useGameStore(state => state.activeContract)
   const [lastSaveTime, setLastSaveTime] = useState<number>(Date.now())
   const [displayTime, setDisplayTime] = useState<string>('just now')
 
@@ -190,11 +191,34 @@ export function App() {
        <div className="fixed bottom-4 right-4 z-40 w-96 max-w-full">
          <div className="bg-black/40 backdrop-blur-sm border border-gray-700 p-2 rounded-lg shadow-lg">
            <div className="flex flex-col gap-2 pointer-events-auto">
-             {/* Autosave Indicator */}
-             <div className="text-xs text-gray-400 px-2 py-1 border-b border-gray-600">
-               Saved: {displayTime}
-             </div>
-             {notifications.length === 0 ? (
+            {/* Autosave Indicator */}
+              <div className="text-xs text-gray-400 px-2 py-1 border-b border-gray-600">
+                Saved: {displayTime}
+              </div>
+              {/* Active Contract Display */}
+              {activeContract && activeContract.status === 'active' && (
+                <div className="bg-blue-900/40 border border-blue-600 px-3 py-2 rounded text-sm">
+                  <div className="font-semibold text-blue-300">{activeContract.title}</div>
+                  <div className="text-xs text-gray-300 mt-1">
+                    {activeContract.timeLimitSeconds > 0 ? (
+                      <div>
+                        Time: {Math.floor((activeContract.timeLimitSeconds - activeContract.elapsedSeconds))}s remaining
+                      </div>
+                    ) : (
+                      <div>No time limit</div>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-300">
+                    Cargo: {Math.floor(activeContract.requiredCargo)} | Science: {Math.floor(activeContract.requiredScience)}
+                  </div>
+                  {activeContract.maxExplosions > -1 && (
+                    <div className="text-xs text-yellow-300">
+                      Explosions: {activeContract.currentExplosions}/{activeContract.maxExplosions}
+                    </div>
+                  )}
+                </div>
+              )}
+              {notifications.length === 0 ? (
                <div className="text-xs text-gray-400 px-2 py-1">No notifications</div>
              ) : (
                notifications.map((msg: string, i: number) => (
