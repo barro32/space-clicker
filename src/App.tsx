@@ -80,13 +80,87 @@ export function App() {
    const { money, science, fuel, cargo, tick, currentView, setView, notifications } = useGameStore()
    const productionRates = useGameStore(state => state.getProductionRates())
    const activeContract = useGameStore(state => state.activeContract)
-  const [lastSaveTime, setLastSaveTime] = useState<number>(Date.now())
-  const [displayTime, setDisplayTime] = useState<string>('just now')
+   const [lastSaveTime, setLastSaveTime] = useState<number>(Date.now())
+   const [displayTime, setDisplayTime] = useState<string>('just now')
+   
+   // Track resource changes for animations
+   interface ResourceChange {
+     id: number;
+     type: 'money' | 'science' | 'fuel' | 'cargo';
+     amount: number;
+     timestamp: number;
+   }
+   const [resourceChanges, setResourceChanges] = useState<ResourceChange[]>([])
+   const prevMoneyRef = useRef(0)
+   const prevScienceRef = useRef(0)
+   const prevFuelRef = useRef(0)
+   const prevCargoRef = useRef(0)
+   const changeIdRef = useRef(0)
 
    useEffect(() => {
-     const interval = setInterval(tick, TIME.TICK_INTERVAL_MS)
-     return () => clearInterval(interval)
-   }, [tick])
+      const interval = setInterval(tick, TIME.TICK_INTERVAL_MS)
+      return () => clearInterval(interval)
+    }, [tick])
+
+    // Track resource changes for floating number animations
+    useEffect(() => {
+      const now = Date.now();
+      const newChanges: ResourceChange[] = [];
+      
+      // Check for money changes
+      if (Math.floor(money) > Math.floor(prevMoneyRef.current)) {
+        newChanges.push({
+          id: changeIdRef.current++,
+          type: 'money',
+          amount: Math.floor(money) - Math.floor(prevMoneyRef.current),
+          timestamp: now
+        });
+      }
+      
+      // Check for science changes
+      if (Math.floor(science) > Math.floor(prevScienceRef.current)) {
+        newChanges.push({
+          id: changeIdRef.current++,
+          type: 'science',
+          amount: Math.floor(science) - Math.floor(prevScienceRef.current),
+          timestamp: now
+        });
+      }
+      
+      // Check for fuel changes
+      if (Math.floor(fuel) > Math.floor(prevFuelRef.current)) {
+        newChanges.push({
+          id: changeIdRef.current++,
+          type: 'fuel',
+          amount: Math.floor(fuel) - Math.floor(prevFuelRef.current),
+          timestamp: now
+        });
+      }
+      
+      // Check for cargo changes
+      if (Math.floor(cargo) > Math.floor(prevCargoRef.current)) {
+        newChanges.push({
+          id: changeIdRef.current++,
+          type: 'cargo',
+          amount: Math.floor(cargo) - Math.floor(prevCargoRef.current),
+          timestamp: now
+        });
+      }
+      
+      // Update refs
+      prevMoneyRef.current = money;
+      prevScienceRef.current = science;
+      prevFuelRef.current = fuel;
+      prevCargoRef.current = cargo;
+      
+      // Add new changes and remove old ones (after 1.5 seconds)
+      if (newChanges.length > 0) {
+        setResourceChanges(prev => {
+          const filtered = prev.filter(c => now - c.timestamp < 1500);
+          return [...filtered, ...newChanges];
+        });
+      }
+    }, [money, science, fuel, cargo])
 
    // Update display time every second
    useEffect(() => {
@@ -231,17 +305,35 @@ export function App() {
          </div>
        </div>
 
-         <div className="z-10">
-           <p className="flex justify-center items-center text-2xl">
-             <FaMoneyBillAlt className="mr-2"/> {Math.floor(money)} <span className="text-xs text-gray-400 ml-1">(+{Math.floor(productionRates.moneyPerSec)}/s)</span>
-           </p>
-           <p className="flex justify-center items-center text-2xl">
-             <FaFlask className="mr-2"/> {Math.floor(science)} <span className="text-xs text-gray-400 ml-1">(+{Math.floor(productionRates.sciencePerSec)}/s)</span>
-           </p>
-           <div className="flex flex-col items-center gap-1">
-             <p className="flex justify-center items-center text-2xl">
-               <FaGasPump className="mr-2"/> {Math.floor(fuel)} <span className="text-xs text-gray-400 ml-1">(+{Math.floor(productionRates.fuelPerSec)}/s)</span>
-             </p>
+          <div className="z-10 relative">
+            <p className="flex justify-center items-center text-2xl relative">
+              <FaMoneyBillAlt className="mr-2"/> {Math.floor(money)} <span className="text-xs text-gray-400 ml-1">(+{Math.floor(productionRates.moneyPerSec)}/s)</span>
+              {/* Money change indicators */}
+              {resourceChanges.filter(c => c.type === 'money').map(change => (
+                <div key={change.id} className="absolute animate-float-up text-green-400 font-bold pointer-events-none">
+                  +{change.amount}
+                </div>
+              ))}
+            </p>
+            <p className="flex justify-center items-center text-2xl relative">
+              <FaFlask className="mr-2"/> {Math.floor(science)} <span className="text-xs text-gray-400 ml-1">(+{Math.floor(productionRates.sciencePerSec)}/s)</span>
+              {/* Science change indicators */}
+              {resourceChanges.filter(c => c.type === 'science').map(change => (
+                <div key={change.id} className="absolute animate-float-up text-blue-400 font-bold pointer-events-none">
+                  +{change.amount}
+                </div>
+              ))}
+            </p>
+            <div className="flex flex-col items-center gap-1">
+              <p className="flex justify-center items-center text-2xl relative">
+                <FaGasPump className="mr-2"/> {Math.floor(fuel)} <span className="text-xs text-gray-400 ml-1">(+{Math.floor(productionRates.fuelPerSec)}/s)</span>
+                {/* Fuel change indicators */}
+                {resourceChanges.filter(c => c.type === 'fuel').map(change => (
+                  <div key={change.id} className="absolute animate-float-up text-orange-400 font-bold pointer-events-none">
+                    +{change.amount}
+                  </div>
+                ))}
+              </p>
              {/* Fuel Status Gauge */}
              <div className="w-48 h-6 bg-gray-800 border border-gray-600 rounded overflow-hidden">
                {(() => {
@@ -257,11 +349,17 @@ export function App() {
                  );
                })()}
              </div>
-           </div>
-           <p className="flex justify-center items-center text-2xl">
-             <FaBoxOpen className="mr-2"/> {Math.floor(cargo)}
-           </p>
-         </div>
+            </div>
+            <p className="flex justify-center items-center text-2xl relative">
+              <FaBoxOpen className="mr-2"/> {Math.floor(cargo)}
+              {/* Cargo change indicators */}
+              {resourceChanges.filter(c => c.type === 'cargo').map(change => (
+                <div key={change.id} className="absolute animate-float-up text-purple-400 font-bold pointer-events-none">
+                  +{change.amount}
+                </div>
+              ))}
+            </p>
+          </div>
       <DevConsole />
 
     </div>

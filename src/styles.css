@@ -58,3 +58,18 @@
  .animate-new-research {
    animation: new-research-highlight 2s ease-out;
  }
+
+ @keyframes float-up-fade {
+   0% {
+     opacity: 1;
+     transform: translateY(0);
+   }
+   100% {
+     opacity: 0;
+     transform: translateY(-40px);
+   }
+ }
+
+ .animate-float-up {
+   animation: float-up-fade 1.5s ease-out forwards;
+ }
