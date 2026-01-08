@@ -77,7 +77,8 @@ export function App() {
   // The useRef below is kept as a safety measure for edge cases, but it shouldn't be needed
   const hasLoadedRef = useRef(false);
 
-  const { money, science, fuel, cargo, tick, currentView, setView, notifications } = useGameStore()
+   const { money, science, fuel, cargo, tick, currentView, setView, notifications } = useGameStore()
+   const productionRates = useGameStore(state => state.getProductionRates())
   const [lastSaveTime, setLastSaveTime] = useState<number>(Date.now())
   const [displayTime, setDisplayTime] = useState<string>('just now')
 
@@ -206,20 +207,20 @@ export function App() {
          </div>
        </div>
 
-       <div className="z-10">
-         <p className="flex justify-center items-center text-2xl">
-           <FaMoneyBillAlt className="mr-2"/> {Math.floor(money)}
-         </p>
-         <p className="flex justify-center items-center text-2xl">
-           <FaFlask className="mr-2"/> {Math.floor(science)}
-         </p>
-         <p className="flex justify-center items-center text-2xl">
-           <FaGasPump className="mr-2"/> {Math.floor(fuel)}
-         </p>
-         <p className="flex justify-center items-center text-2xl">
-           <FaBoxOpen className="mr-2"/> {Math.floor(cargo)}
-         </p>
-       </div>
+        <div className="z-10">
+          <p className="flex justify-center items-center text-2xl">
+            <FaMoneyBillAlt className="mr-2"/> {Math.floor(money)} <span className="text-xs text-gray-400 ml-1">(+{Math.floor(productionRates.moneyPerSec)}/s)</span>
+          </p>
+          <p className="flex justify-center items-center text-2xl">
+            <FaFlask className="mr-2"/> {Math.floor(science)} <span className="text-xs text-gray-400 ml-1">(+{Math.floor(productionRates.sciencePerSec)}/s)</span>
+          </p>
+          <p className="flex justify-center items-center text-2xl">
+            <FaGasPump className="mr-2"/> {Math.floor(fuel)} <span className="text-xs text-gray-400 ml-1">(+{Math.floor(productionRates.fuelPerSec)}/s)</span>
+          </p>
+          <p className="flex justify-center items-center text-2xl">
+            <FaBoxOpen className="mr-2"/> {Math.floor(cargo)}
+          </p>
+        </div>
       <DevConsole />
 
     </div>
