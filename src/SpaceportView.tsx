@@ -15,6 +15,22 @@ export function SpaceportView() {
      const spaceportsUnlocked = useGameStore(state => state.researchedNodes.includes('o5'));
      const refineriesUnlocked = useGameStore(state => state.researchedNodes.includes('o6'));
      const explosionClearingUnlocked = useGameStore(state => state.researchedNodes.includes('o7'));
+     
+     // Auto-build progress calculation
+     const autoBuildEnabled = useGameStore(state => state.getEffectMultiplier('autoBuildEnabled') > 0);
+     const buildMultiplier = useGameStore(state => state.getEffectMultiplier('buildRocketMultiplier') || 1);
+     const autoBuildInterval = Math.max(1, Math.floor(20 / buildMultiplier));
+     const autoBuildProgress = autoBuildEnabled && autoBuildActive 
+       ? ((tickCount % autoBuildInterval) / autoBuildInterval) * 100
+       : 0;
+     
+     // Auto-salvage progress calculation
+     const autoSalvageEnabled = useGameStore(state => state.getEffectMultiplier('autoSalvageEnabled') > 0);
+     const clearMultiplier = useGameStore(state => state.getEffectMultiplier('clearExplosionMultiplier') || 1);
+     const autoSalvageInterval = Math.max(1, Math.floor(20 / clearMultiplier));
+     const autoSalvageProgress = autoSalvageEnabled && autoSalvageActive && explodedRocketIds.length > 0
+       ? (((tickCount + 10) % autoSalvageInterval) / autoSalvageInterval) * 100
+       : 0;
 
    return (
      <div className="w-full h-full flex flex-col items-center justify-center px-8 overflow-auto">
@@ -174,47 +190,75 @@ export function SpaceportView() {
              </div>
            )}
 
-           {/* Auto Build Toggle */}
-           <div className="bg-black/30 border-2 border-cyan-500/50 rounded p-4 flex flex-col items-center justify-center">
-             <input
-               type="checkbox"
-               checked={autoBuildActive}
-               onChange={() => toggleAutoBuild()}
-               className="w-5 h-5 mb-2 cursor-pointer"
-               aria-label="auto-build-toggle"
-               disabled={useGameStore.getState().getEffectMultiplier('autoBuildEnabled') === 0}
-               title={useGameStore.getState().getEffectMultiplier('autoBuildEnabled') === 0 ? 'Requires Auto-Queue tech (u7)' : 'Toggle auto-build (1 rocket/20s)'}
-             />
-             <div className="text-xs font-mono text-center">
-               <div className={useGameStore.getState().getEffectMultiplier('autoBuildEnabled') === 0 ? 'text-gray-500' : 'text-cyan-400 font-bold'}>
-                 AUTO-BUILD
-               </div>
-               <div className={useGameStore.getState().getEffectMultiplier('autoBuildEnabled') === 0 ? 'text-gray-600 text-xs' : 'text-gray-400 text-xs'}>
-                 {autoBuildActive ? 'ACTIVE' : 'INACTIVE'}
-               </div>
-             </div>
-           </div>
+            {/* Auto Build Toggle */}
+            <div className="bg-black/30 border-2 border-cyan-500/50 rounded p-4 flex flex-col items-center justify-center">
+              <input
+                type="checkbox"
+                checked={autoBuildActive}
+                onChange={() => toggleAutoBuild()}
+                className="w-5 h-5 mb-2 cursor-pointer"
+                aria-label="auto-build-toggle"
+                disabled={!autoBuildEnabled}
+                title={!autoBuildEnabled ? 'Requires Auto-Queue tech (u7)' : `Toggle auto-build (1 rocket/${autoBuildInterval}s)`}
+              />
+              <div className="text-xs font-mono text-center">
+                <div className={!autoBuildEnabled ? 'text-gray-500' : 'text-cyan-400 font-bold'}>
+                  AUTO-BUILD
+                </div>
+                <div className={!autoBuildEnabled ? 'text-gray-600 text-xs' : 'text-gray-400 text-xs'}>
+                  {autoBuildActive ? 'ACTIVE' : 'INACTIVE'}
+                </div>
+              </div>
+              {/* Progress Bar */}
+              {autoBuildEnabled && autoBuildActive && (
+                <div className="w-full mt-2">
+                  <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-cyan-500 transition-all duration-200 rounded-full"
+                      style={{ width: `${autoBuildProgress}%` }}
+                    />
+                  </div>
+                  <div className="text-[10px] text-gray-500 font-mono text-center mt-1">
+                    {Math.ceil(autoBuildInterval - (tickCount % autoBuildInterval))}s
+                  </div>
+                </div>
+              )}
+            </div>
 
-           {/* Auto Salvage Toggle */}
-           <div className="bg-black/30 border-2 border-orange-500/50 rounded p-4 flex flex-col items-center justify-center">
-             <input
-               type="checkbox"
-               checked={autoSalvageActive}
-               onChange={() => toggleAutoSalvage()}
-               className="w-5 h-5 mb-2 cursor-pointer"
-               aria-label="auto-salvage-toggle"
-               disabled={useGameStore.getState().getEffectMultiplier('autoSalvageEnabled') === 0}
-               title={useGameStore.getState().getEffectMultiplier('autoSalvageEnabled') === 0 ? 'Requires Auto-Salvage tech (u8)' : 'Toggle auto-salvage (1 clear/20s)'}
-             />
-             <div className="text-xs font-mono text-center">
-               <div className={useGameStore.getState().getEffectMultiplier('autoSalvageEnabled') === 0 ? 'text-gray-500' : 'text-orange-400 font-bold'}>
-                 AUTO-SALVAGE
-               </div>
-               <div className={useGameStore.getState().getEffectMultiplier('autoSalvageEnabled') === 0 ? 'text-gray-600 text-xs' : 'text-gray-400 text-xs'}>
-                 {autoSalvageActive ? 'ACTIVE' : 'INACTIVE'}
-               </div>
-             </div>
-           </div>
+            {/* Auto Salvage Toggle */}
+            <div className="bg-black/30 border-2 border-orange-500/50 rounded p-4 flex flex-col items-center justify-center">
+              <input
+                type="checkbox"
+                checked={autoSalvageActive}
+                onChange={() => toggleAutoSalvage()}
+                className="w-5 h-5 mb-2 cursor-pointer"
+                aria-label="auto-salvage-toggle"
+                disabled={!autoSalvageEnabled}
+                title={!autoSalvageEnabled ? 'Requires Auto-Salvage tech (u8)' : `Toggle auto-salvage (1 clear/${autoSalvageInterval}s)`}
+              />
+              <div className="text-xs font-mono text-center">
+                <div className={!autoSalvageEnabled ? 'text-gray-500' : 'text-orange-400 font-bold'}>
+                  AUTO-SALVAGE
+                </div>
+                <div className={!autoSalvageEnabled ? 'text-gray-600 text-xs' : 'text-gray-400 text-xs'}>
+                  {autoSalvageActive ? 'ACTIVE' : 'INACTIVE'}
+                </div>
+              </div>
+              {/* Progress Bar */}
+              {autoSalvageEnabled && autoSalvageActive && explodedRocketIds.length > 0 && (
+                <div className="w-full mt-2">
+                  <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-orange-500 transition-all duration-200 rounded-full"
+                      style={{ width: `${autoSalvageProgress}%` }}
+                    />
+                  </div>
+                  <div className="text-[10px] text-gray-500 font-mono text-center mt-1">
+                    {Math.ceil(autoSalvageInterval - ((tickCount + 10) % autoSalvageInterval))}s
+                  </div>
+                </div>
+              )}
+            </div>
          </div>
        </div>
      </div>
