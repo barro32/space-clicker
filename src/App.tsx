@@ -324,145 +324,221 @@ export function App() {
       };
     }, []);
 
-  return (
-    <div className="relative min-h-screen flex flex-col gap-4 items-center justify-center bg-gray-900 text-white overflow-hidden">
-      <div className="absolute top-4 right-4 flex gap-2 z-20">
-        <button 
-          onClick={() => setView("surface")} 
-          className={`px-4 py-2 rounded ${currentView === "surface" ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}
-        >
-          Surface
-        </button>
-        <button 
-          onClick={() => setView("orbit")} 
-          className={`px-4 py-2 rounded ${currentView === "orbit" ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}
-        >
-          Orbit
-        </button>
-        <button 
-          onClick={() => setView("contracts")} 
-          className={`px-4 py-2 rounded ${currentView === "contracts" ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}
-        >
-          Contracts
-        </button>
-        <button 
-          onClick={() => setView("research")} 
-          className={`px-4 py-2 rounded ${currentView === "research" ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}
-        >
-          Research
-        </button>
-      </div>
-       {currentView === "surface" ? <SpaceportView /> : currentView === "orbit" ? <OrbitView /> : currentView === "contracts" ? <ContractsView /> : <ResearchTreeView />}
-                               {/* Status Box (bottom-right) */}
-       <div className="fixed bottom-4 right-4 z-40 w-96 max-w-full">
-         <div className="bg-black/40 backdrop-blur-sm border border-gray-700 p-2 rounded-lg shadow-lg">
-           <div className="flex flex-col gap-2 pointer-events-auto">
-            {/* Autosave Indicator */}
-              <div className="text-xs text-gray-400 px-2 py-1 border-b border-gray-600">
-                Saved: {displayTime}
-              </div>
-              {/* Active Contract Display */}
-              {activeContract && activeContract.status === 'active' && (
-                <div className="bg-blue-900/40 border border-blue-600 px-3 py-2 rounded text-sm">
-                  <div className="font-semibold text-blue-300">{activeContract.title}</div>
-                  <div className="text-xs text-gray-300 mt-1">
-                    {activeContract.timeLimitSeconds > 0 ? (
-                      <div>
-                        Time: {Math.floor((activeContract.timeLimitSeconds - activeContract.elapsedSeconds))}s remaining
-                      </div>
-                    ) : (
-                      <div>No time limit</div>
-                    )}
-                  </div>
-                  <div className="text-xs text-gray-300">
-                    Cargo: {Math.floor(activeContract.requiredCargo)} | Science: {Math.floor(activeContract.requiredScience)}
-                  </div>
-                  {activeContract.maxExplosions > -1 && (
-                    <div className="text-xs text-yellow-300">
-                       Explosions: {activeContract.currentExplosions}/{activeContract.maxExplosions}
-                     </div>
-                   )}
+   return (
+     <div className="relative min-h-screen flex flex-col gap-4 items-center justify-center bg-gray-900 text-white overflow-hidden">
+       {/* Navigation Buttons - top-right */}
+       <div className="absolute top-4 right-4 flex gap-2 z-20">
+         <button 
+           onClick={() => setView("surface")} 
+           className={`px-4 py-2 rounded border-2 transition-all ${currentView === "surface" ? "bg-cyan-600 border-cyan-400 shadow-lg shadow-cyan-400/50" : "bg-gray-700 border-gray-600 hover:bg-gray-600"}`}
+         >
+           Surface
+         </button>
+         <button 
+           onClick={() => setView("orbit")} 
+           className={`px-4 py-2 rounded border-2 transition-all ${currentView === "orbit" ? "bg-cyan-600 border-cyan-400 shadow-lg shadow-cyan-400/50" : "bg-gray-700 border-gray-600 hover:bg-gray-600"}`}
+         >
+           Orbit
+         </button>
+         <button 
+           onClick={() => setView("contracts")} 
+           className={`px-4 py-2 rounded border-2 transition-all ${currentView === "contracts" ? "bg-cyan-600 border-cyan-400 shadow-lg shadow-cyan-400/50" : "bg-gray-700 border-gray-600 hover:bg-gray-600"}`}
+         >
+           Contracts
+         </button>
+         <button 
+           onClick={() => setView("research")} 
+           className={`px-4 py-2 rounded border-2 transition-all ${currentView === "research" ? "bg-cyan-600 border-cyan-400 shadow-lg shadow-cyan-400/50" : "bg-gray-700 border-gray-600 hover:bg-gray-600"}`}
+         >
+           Research
+         </button>
+       </div>
+
+       {/* HUD Panel - top-left with Resources */}
+       <div className="absolute top-4 left-4 z-30 w-96">
+         <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-cyan-500/50 rounded-lg shadow-lg shadow-cyan-500/20 backdrop-blur-sm p-4">
+           {/* HUD Header */}
+           <div className="text-cyan-400 font-mono text-sm font-bold mb-3 pb-2 border-b border-cyan-500/30">
+             ⚙ RESOURCE STATUS
+           </div>
+
+           {/* Resources Grid */}
+           <div className="space-y-3">
+             {/* Money */}
+             <div className="bg-black/30 border border-green-600/50 rounded px-3 py-2">
+               <div className="flex justify-between items-center">
+                 <div className="flex items-center gap-2">
+                   <FaMoneyBillAlt className="text-green-400 text-lg" />
+                   <span className="font-mono text-sm text-gray-300">CREDITS</span>
                  </div>
-               )}
-              {/* Rocket Fleet Summary */}
-              <div className="bg-gray-800/40 border border-gray-700 px-3 py-2 rounded text-sm">
-                <div className="text-xs font-semibold text-gray-300 mb-1">Fleet Status</div>
-                <div className="text-xs text-gray-400 space-y-1">
-                  <div>Total Rockets: {fleetSummary.totalRockets}</div>
-                  <div>Cargo: {fleetSummary.cargoRockets} | Science: {fleetSummary.scienceRockets}</div>
-                  <div className="text-orange-400">Fuel Consumption: {Math.ceil(fleetSummary.fuelPerSecondConsumption)}/s</div>
-                </div>
-              </div>
-              {notifications.length === 0 ? (
-               <div className="text-xs text-gray-400 px-2 py-1">No notifications</div>
-             ) : (
-               notifications.map((msg: string, i: number) => (
-                 <div key={i} className="bg-gray-800 border border-gray-600 px-3 py-2 rounded text-sm opacity-95">
-                   {msg}
+                 <div className="text-right">
+                   <div className="text-green-400 font-bold font-mono text-lg">{Math.floor(money).toLocaleString()}</div>
+                   <div className="text-green-600 text-xs font-mono">+{Math.floor(productionRates.moneyPerSec)}/s</div>
                  </div>
-               ))
-             )}
+               </div>
+               {/* Money change indicators */}
+               <div className="relative h-1">
+                 {resourceChanges.filter(c => c.type === 'money').map(change => (
+                   <div key={change.id} className="absolute animate-float-up text-green-400 font-bold pointer-events-none text-xs">
+                     +{change.amount}
+                   </div>
+                 ))}
+               </div>
+             </div>
+
+             {/* Science */}
+             <div className="bg-black/30 border border-blue-600/50 rounded px-3 py-2">
+               <div className="flex justify-between items-center">
+                 <div className="flex items-center gap-2">
+                   <FaFlask className="text-blue-400 text-lg" />
+                   <span className="font-mono text-sm text-gray-300">SCIENCE</span>
+                 </div>
+                 <div className="text-right">
+                   <div className="text-blue-400 font-bold font-mono text-lg">{Math.floor(science).toLocaleString()}</div>
+                   <div className="text-blue-600 text-xs font-mono">+{Math.floor(productionRates.sciencePerSec)}/s</div>
+                 </div>
+               </div>
+               {/* Science change indicators */}
+               <div className="relative h-1">
+                 {resourceChanges.filter(c => c.type === 'science').map(change => (
+                   <div key={change.id} className="absolute animate-float-up text-blue-400 font-bold pointer-events-none text-xs">
+                     +{change.amount}
+                   </div>
+                 ))}
+               </div>
+             </div>
+
+             {/* Fuel */}
+             <div className="bg-black/30 border border-orange-600/50 rounded px-3 py-2">
+               <div className="flex justify-between items-center mb-2">
+                 <div className="flex items-center gap-2">
+                   <FaGasPump className="text-orange-400 text-lg" />
+                   <span className="font-mono text-sm text-gray-300">FUEL</span>
+                 </div>
+                 <div className="text-right">
+                   <div className="text-orange-400 font-bold font-mono text-lg">{Math.floor(fuel).toLocaleString()}</div>
+                   <div className="text-orange-600 text-xs font-mono">+{Math.floor(productionRates.fuelPerSec)}/s</div>
+                 </div>
+               </div>
+               {/* Fuel Gauge */}
+               <div className="w-full h-3 bg-gray-900 border border-orange-600/50 rounded overflow-hidden">
+                 {(() => {
+                   const fuelPercent = Math.min(100, (fuel / 200) * 100);
+                   const getGaugeColor = () => {
+                     if (fuelPercent >= 75) return 'bg-green-500';
+                     if (fuelPercent >= 50) return 'bg-cyan-500';
+                     if (fuelPercent >= 25) return 'bg-yellow-500';
+                     return 'bg-red-500';
+                   };
+                   return (
+                     <div className={`h-full transition-all duration-100 ${getGaugeColor()} shadow-lg`} style={{ width: `${fuelPercent}%` }} />
+                   );
+                 })()}
+               </div>
+               {/* Fuel change indicators */}
+               <div className="relative h-1">
+                 {resourceChanges.filter(c => c.type === 'fuel').map(change => (
+                   <div key={change.id} className="absolute animate-float-up text-orange-400 font-bold pointer-events-none text-xs">
+                     +{change.amount}
+                   </div>
+                 ))}
+               </div>
+             </div>
+
+             {/* Cargo */}
+             <div className="bg-black/30 border border-purple-600/50 rounded px-3 py-2">
+               <div className="flex justify-between items-center">
+                 <div className="flex items-center gap-2">
+                   <FaBoxOpen className="text-purple-400 text-lg" />
+                   <span className="font-mono text-sm text-gray-300">CARGO</span>
+                 </div>
+                 <div className="text-right">
+                   <div className="text-purple-400 font-bold font-mono text-lg">{Math.floor(cargo).toLocaleString()}</div>
+                 </div>
+               </div>
+               {/* Cargo change indicators */}
+               <div className="relative h-1">
+                 {resourceChanges.filter(c => c.type === 'cargo').map(change => (
+                   <div key={change.id} className="absolute animate-float-up text-purple-400 font-bold pointer-events-none text-xs">
+                     +{change.amount}
+                   </div>
+                 ))}
+               </div>
+             </div>
+           </div>
+
+           {/* Autosave Indicator */}
+           <div className="text-center text-xs text-gray-500 font-mono mt-3 pt-2 border-t border-cyan-500/20">
+             Last saved: {displayTime}
            </div>
          </div>
        </div>
 
-          <div className="z-10 relative">
-            <p className="flex justify-center items-center text-2xl relative">
-              <FaMoneyBillAlt className="mr-2"/> {Math.floor(money)} <span className="text-xs text-gray-400 ml-1">(+{Math.floor(productionRates.moneyPerSec)}/s)</span>
-              {/* Money change indicators */}
-              {resourceChanges.filter(c => c.type === 'money').map(change => (
-                <div key={change.id} className="absolute animate-float-up text-green-400 font-bold pointer-events-none">
-                  +{change.amount}
-                </div>
-              ))}
-            </p>
-            <p className="flex justify-center items-center text-2xl relative">
-              <FaFlask className="mr-2"/> {Math.floor(science)} <span className="text-xs text-gray-400 ml-1">(+{Math.floor(productionRates.sciencePerSec)}/s)</span>
-              {/* Science change indicators */}
-              {resourceChanges.filter(c => c.type === 'science').map(change => (
-                <div key={change.id} className="absolute animate-float-up text-blue-400 font-bold pointer-events-none">
-                  +{change.amount}
-                </div>
-              ))}
-            </p>
-            <div className="flex flex-col items-center gap-1">
-              <p className="flex justify-center items-center text-2xl relative">
-                <FaGasPump className="mr-2"/> {Math.floor(fuel)} <span className="text-xs text-gray-400 ml-1">(+{Math.floor(productionRates.fuelPerSec)}/s)</span>
-                {/* Fuel change indicators */}
-                {resourceChanges.filter(c => c.type === 'fuel').map(change => (
-                  <div key={change.id} className="absolute animate-float-up text-orange-400 font-bold pointer-events-none">
-                    +{change.amount}
-                  </div>
-                ))}
-              </p>
-             {/* Fuel Status Gauge */}
-             <div className="w-48 h-6 bg-gray-800 border border-gray-600 rounded overflow-hidden">
-               {(() => {
-                 const fuelPercent = Math.min(100, (fuel / 200) * 100);
-                 const getGaugeColor = () => {
-                   if (fuelPercent >= 75) return 'bg-green-500';
-                   if (fuelPercent >= 50) return 'bg-blue-500';
-                   if (fuelPercent >= 25) return 'bg-yellow-500';
-                   return 'bg-red-500';
-                 };
-                 return (
-                   <div className={`h-full transition-all duration-100 ${getGaugeColor()}`} style={{ width: `${fuelPercent}%` }} />
-                 );
-               })()}
-             </div>
-            </div>
-            <p className="flex justify-center items-center text-2xl relative">
-              <FaBoxOpen className="mr-2"/> {Math.floor(cargo)}
-              {/* Cargo change indicators */}
-              {resourceChanges.filter(c => c.type === 'cargo').map(change => (
-                <div key={change.id} className="absolute animate-float-up text-purple-400 font-bold pointer-events-none">
-                  +{change.amount}
-                </div>
-              ))}
-            </p>
-          </div>
-      <DevConsole />
+       {/* Main Content Area */}
+       <div className="relative z-10 w-full h-full flex items-center justify-center">
+         {currentView === "surface" ? <SpaceportView /> : currentView === "orbit" ? <OrbitView /> : currentView === "contracts" ? <ContractsView /> : <ResearchTreeView />}
+       </div>
 
-    </div>
-  )
+       {/* Status Box - bottom-right with Fleet & Contract Info */}
+       <div className="fixed bottom-4 right-4 z-40 w-96 max-w-full">
+         <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-cyan-500/50 rounded-lg shadow-lg shadow-cyan-500/20 backdrop-blur-sm p-4">
+           {/* Fleet Status Header */}
+           <div className="text-cyan-400 font-mono text-sm font-bold mb-3 pb-2 border-b border-cyan-500/30">
+             ▶ FLEET STATUS
+           </div>
+
+           {/* Active Contract Display */}
+           {activeContract && activeContract.status === 'active' && (
+             <div className="bg-blue-900/40 border-2 border-blue-500/50 px-3 py-2 rounded mb-3">
+               <div className="font-semibold text-blue-300 font-mono text-sm">{activeContract.title}</div>
+               <div className="text-xs text-gray-300 mt-1 space-y-1">
+                 {activeContract.timeLimitSeconds > 0 ? (
+                   <div>
+                     ⏱ Time: {Math.floor((activeContract.timeLimitSeconds - activeContract.elapsedSeconds))}s
+                   </div>
+                 ) : (
+                   <div>⏱ No time limit</div>
+                 )}
+                 <div>
+                   📦 Cargo: {Math.floor(activeContract.requiredCargo)} | 📚 Science: {Math.floor(activeContract.requiredScience)}
+                 </div>
+               </div>
+               {activeContract.maxExplosions > -1 && (
+                 <div className="text-xs text-yellow-300 mt-1">
+                    💥 Explosions: {activeContract.currentExplosions}/{activeContract.maxExplosions}
+                 </div>
+               )}
+             </div>
+           )}
+
+           {/* Rocket Fleet Summary */}
+           <div className="bg-black/30 border-2 border-cyan-500/50 px-3 py-2 rounded mb-3">
+             <div className="text-cyan-400 font-mono text-xs font-bold mb-2">FLEET COMPOSITION</div>
+             <div className="text-xs text-gray-300 space-y-1 font-mono">
+               <div>🚀 Total: <span className="text-cyan-400 font-bold">{fleetSummary.totalRockets}</span></div>
+               <div>📦 Cargo: <span className="text-green-400">{fleetSummary.cargoRockets}</span> | 📚 Science: <span className="text-purple-400">{fleetSummary.scienceRockets}</span></div>
+               <div>⛽ Consumption: <span className="text-orange-400 font-bold">{Math.ceil(fleetSummary.fuelPerSecondConsumption)}/s</span></div>
+             </div>
+           </div>
+
+           {/* Notifications */}
+           <div className="text-cyan-400 font-mono text-xs font-bold mb-2 pb-2 border-b border-cyan-500/30">
+             📡 NOTIFICATIONS
+           </div>
+           {notifications.length === 0 ? (
+             <div className="text-xs text-gray-500 px-2 py-1 font-mono">No notifications</div>
+           ) : (
+             notifications.map((msg: string, i: number) => (
+               <div key={i} className="bg-black/40 border border-cyan-500/30 px-2 py-1 rounded text-xs text-gray-300 mb-1 font-mono">
+                 ▪ {msg}
+               </div>
+             ))
+           )}
+         </div>
+       </div>
+
+       <DevConsole />
+
+     </div>
+   )
 }
