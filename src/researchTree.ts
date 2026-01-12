@@ -39,16 +39,26 @@ export type EffectType =
   | 'dockingBonusMultiplier'
   | 'stationDocksBonus'
   | 'satelliteBonusMultiplier'
-  // Lunar/Moon layer effects
-  | 'lunarProductionMultiplier'
-  | 'unlockLunarManufacturing'
-  | 'missionDurationMultiplier'
-  | 'extractorOutputMultiplier'
-  | 'moonRefineryOutputMultiplier'
-  | 'moonStorageMultiplier'
-  | 'hazardDurationMultiplier'
-  | 'massDriverEfficiency'
-  | 'unlockPlanetaryExpansion';
+   // Lunar/Moon layer effects
+   | 'lunarProductionMultiplier'
+   | 'unlockLunarManufacturing'
+   | 'missionDurationMultiplier'
+   | 'extractorOutputMultiplier'
+   | 'moonRefineryOutputMultiplier'
+   | 'moonStorageMultiplier'
+   | 'hazardDurationMultiplier'
+   | 'massDriverEfficiency'
+   | 'unlockPlanetaryExpansion'
+   // Moon Power System effects
+   | 'solarArrayEfficiency'
+   | 'nuclearReactorEfficiency'
+   | 'batteryCapacityMultiplier'
+   | 'powerGenerationMultiplier'
+   | 'sectorScanCostReduction'
+   | 'buildingSlotsPerSectorBonus'
+   | 'massDriverChargeTimeMultiplier'
+   | 'massDriverCapacityBonus'
+   | 'bountyRewardMultiplier';
 
 // Layer assignment for research sidebar filtering
 export type ResearchLayer = 'surface' | 'orbit' | 'contracts' | 'moon';
@@ -710,16 +720,102 @@ export const researchTree: ResearchNode[] = [
     effect: { type: 'massDriverEfficiency', value: 2 },
     assignedLayer: 'moon'
   },
-  {
-    id: 'm7',
-    name: 'Planetary Trajectory',
-    description: 'Unlock the ability to expand to other planets. Requires 500 Helium-3 on Earth.',
-    branch: 'lunar',
-    scienceCost: 15000,
-    cargoCost: 5000,
-    helium3Cost: 500,
-    prerequisites: ['m3', 'm6'],
-    effect: { type: 'unlockPlanetaryExpansion', value: 1 },
-    assignedLayer: 'moon'
-  },
+   {
+     id: 'm7',
+     name: 'Planetary Trajectory',
+     description: 'Unlock the ability to expand to other planets. Requires 500 Helium-3 on Earth.',
+     branch: 'lunar',
+     scienceCost: 15000,
+     cargoCost: 5000,
+     helium3Cost: 500,
+     prerequisites: ['m3', 'm6'],
+     effect: { type: 'unlockPlanetaryExpansion', value: 1 },
+     assignedLayer: 'moon'
+   },
+
+   // POWER SYSTEM RESEARCH
+   {
+     id: 'm8',
+     name: 'Efficient Solar Arrays',
+     description: 'Solar Array output increased by 30%.',
+     branch: 'lunar',
+     scienceCost: 4000,
+     prerequisites: ['o14'],
+     effect: { type: 'solarArrayEfficiency', value: 1.3 },
+     assignedLayer: 'moon'
+   },
+   {
+     id: 'm9',
+     name: 'Enhanced Nuclear Reactors',
+     description: 'Nuclear Reactor output increased by 25%. He-3 consumption reduced by 20%.',
+     branch: 'lunar',
+     scienceCost: 5000,
+     prerequisites: ['o14'],
+     effect: { type: 'nuclearReactorEfficiency', value: 1.25 },
+     assignedLayer: 'moon'
+   },
+   {
+     id: 'm10',
+     name: 'Advanced Battery Tech',
+     description: 'Battery storage capacity doubled.',
+     branch: 'lunar',
+     scienceCost: 3500,
+     prerequisites: ['o14'],
+     effect: { type: 'batteryCapacityMultiplier', value: 2 },
+     assignedLayer: 'moon'
+   },
+   
+   // GRID SYSTEM RESEARCH
+   {
+     id: 'm11',
+     name: 'Efficient Terraforming',
+     description: 'Reduces the cost to scan new sectors by 40%.',
+     branch: 'lunar',
+     scienceCost: 2500,
+     prerequisites: ['o14'],
+     effect: { type: 'sectorScanCostReduction', value: 0.6 },
+     assignedLayer: 'moon'
+   },
+   {
+     id: 'm12',
+     name: 'Expanded Habitats',
+     description: 'Each sector gains +2 building slots.',
+     branch: 'lunar',
+     scienceCost: 4500,
+     prerequisites: ['m11'],
+     effect: { type: 'buildingSlotsPerSectorBonus', value: 2 },
+     assignedLayer: 'moon'
+   },
+   
+   // MASS DRIVER LOGISTICS RESEARCH
+   {
+     id: 'm13',
+     name: 'Rapid Launch Protocol',
+     description: 'Mass Driver charge time reduced by 50%.',
+     branch: 'lunar',
+     scienceCost: 3000,
+     prerequisites: ['m6'],
+     effect: { type: 'massDriverChargeTimeMultiplier', value: 0.5 },
+     assignedLayer: 'moon'
+   },
+   {
+     id: 'm14',
+     name: 'Expanded Payload Bays',
+     description: 'Mass Driver payload capacity doubled.',
+     branch: 'lunar',
+     scienceCost: 4000,
+     prerequisites: ['m6'],
+     effect: { type: 'massDriverCapacityBonus', value: 2 },
+     assignedLayer: 'moon'
+   },
+   {
+     id: 'm15',
+     name: 'Corporate Partnerships',
+     description: 'Bounty rewards increased by 50%.',
+     branch: 'lunar',
+     scienceCost: 5500,
+     prerequisites: ['m13', 'm14'],
+     effect: { type: 'bountyRewardMultiplier', value: 1.5 },
+     assignedLayer: 'moon'
+   },
 ];

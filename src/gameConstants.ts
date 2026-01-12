@@ -282,7 +282,54 @@ export const MOON = {
   },
   MISSION_DURATION_BASE: 120, // Ticks (2 minutes at 1 tick/sec)
   
-  // Local Moon Storage (can be increased by Silos)
+  // === LUNAR GRID SYSTEM ===
+  // Sector mechanics
+  SECTOR_SCAN_COST: { science: 500, cargo: 200 },
+  BUILDING_SLOTS_PER_SECTOR: 4,
+  MAX_SECTORS: 25, // Max number of sectors players can unlock
+  
+  // Sector Traits (applied as multipliers)
+  SECTOR_TRAITS: {
+    regolithRich: { name: 'Regolith Rich', extractorMultiplier: 1.5 },
+    regolithPoor: { name: 'Regolith Poor', extractorMultiplier: 0.7 },
+    solarRich: { name: 'Solar Rich', solarMultiplier: 1.6 },
+    solarPoor: { name: 'Solar Poor', solarMultiplier: 0.6 },
+    stable: { name: 'Geologically Stable', hazardChanceMultiplier: 0.5 },
+    unstable: { name: 'Unstable Ground', hazardChanceMultiplier: 2.0 },
+  },
+  
+  // === POWER MANAGEMENT SYSTEM ===
+  // Day/Night cycle (in ticks)
+  DAY_DURATION: 60, // 60 ticks of daylight
+  NIGHT_DURATION: 60, // 60 ticks of darkness
+  
+  // Power generation/consumption
+  SOLAR_ARRAY_OUTPUT: 50, // Per tick per array (day only)
+  NUCLEAR_REACTOR_OUTPUT: 40, // Per tick per reactor (24/7)
+  NUCLEAR_REACTOR_HELIUM3_COST: 0.5, // He-3 consumed per tick
+  BATTERY_CAPACITY_PER_UNIT: 100, // Energy stored per battery
+  
+  // Power demand
+  EXTRACTOR_POWER_DEMAND: 10,
+  REFINERY_POWER_DEMAND: 15,
+  SILO_POWER_DEMAND: 5,
+  MAINTENANCE_POWER_DEMAND: 8,
+  MASS_DRIVER_POWER_DEMAND: 20,
+  
+  // === MASS DRIVER LOGISTICS ===
+  // Mass Driver mechanics
+  MASS_DRIVER_CHARGE_TIME: 30, // Ticks to charge before launch
+  MASS_DRIVER_CAPACITY: 100, // He-3 per payload
+  MASS_DRIVER_LAUNCH_COOLDOWN: 10, // Ticks between launches
+  
+  // === BOUNTY SYSTEM ===
+  // Earth company bounties (generated dynamically)
+  BOUNTY_GENERATION_INTERVAL: 120, // Ticks between bounty refreshes
+  BOUNTY_REWARD_MULTIPLIER: 2.5, // 2.5x normal export value
+  BOUNTY_TIME_LIMITS: [30, 45, 60, 90], // Possible time limits
+  BOUNTY_AMOUNTS: [250, 500, 750, 1000], // He-3 amounts
+  
+  // Legacy local storage (can be increased by Silos)
   STORAGE_BASE: {
     regolith: 1000,
     helium3: 100,
@@ -292,12 +339,11 @@ export const MOON = {
     helium3: 50,
   },
   
-  // Building Production Rates
+  // Building Production Rates (apply sector traits)
   EXTRACTOR_REGOLITH_RATE: 5, // Per tick per extractor
   REFINERY_HELIUM3_RATE: 0.1, // Per tick per refinery (consumes regolith)
   REFINERY_REGOLITH_COST: 10, // Regolith consumed per Helium-3 produced
-  // Note: Mass drivers only auto-transport Helium-3; regolith requires manual transport
-  MASS_DRIVER_HELIUM3_RATE: 5, // Helium-3 transported to Earth per tick
+  MASS_DRIVER_HELIUM3_RATE: 5, // Helium-3 transported to Earth per tick (legacy)
   
   // Building Costs
   BUILDING_COSTS: {
@@ -306,6 +352,9 @@ export const MOON = {
     silo: { cargo: 300, science: 100 },
     maintenance: { cargo: 800, science: 400 },
     massDriver: { cargo: 2000, science: 1000, regolith: 500 },
+    solarArray: { cargo: 600, science: 300 },
+    nuclearReactor: { cargo: 1200, science: 800 },
+    battery: { cargo: 400, science: 150 },
   },
   
   // Building Cost Scaling

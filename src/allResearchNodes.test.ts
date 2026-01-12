@@ -57,10 +57,10 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
   });
 
    describe('Node Structure and Validation', () => {
-      it('should have exactly 199 research nodes', () => {
-        // 5 Efficient Engines + 100 Safety Protocols + 1 High-Energy Fuel + 9 Modular Spaceports + 5 Advanced Refineries + 1 Automated Construction + 5 Fuel Tanks + 1 Combustion Injection + 5 Market Analysis + 2 (c2, c3) + 4 (c4-c7) + 10 Cargo Optimization + 3 (l2-l4) + 15 Orbital + 10 Assembly Optimization + 10 Recovery Protocols + 6 Control singles + 7 Lunar = 199
-        expect(researchTree).toHaveLength(199);
-      });
+    it('should have exactly 207 research nodes', () => {
+         // 5 Efficient Engines + 100 Safety Protocols + 1 High-Energy Fuel + 9 Modular Spaceports + 5 Advanced Refineries + 1 Automated Construction + 5 Fuel Tanks + 1 Combustion Injection + 5 Market Analysis + 2 (c2, c3) + 4 (c4-c7) + 10 Cargo Optimization + 3 (l2-l4) + 15 Orbital + 10 Assembly Optimization + 10 Recovery Protocols + 6 Control singles + 7 + 8 new Moon research nodes = 207
+         expect(researchTree).toHaveLength(207);
+       });
 
     it('should have all required branches represented', () => {
       const branches = new Set(researchTree.map(n => n.branch));
@@ -179,6 +179,15 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
         'hazardDurationMultiplier',
         'massDriverEfficiency',
         'unlockPlanetaryExpansion',
+        'solarArrayEfficiency',
+        'nuclearReactorEfficiency',
+        'batteryCapacityMultiplier',
+        'powerGenerationMultiplier',
+        'sectorScanCostReduction',
+        'buildingSlotsPerSectorBonus',
+        'massDriverChargeTimeMultiplier',
+        'massDriverCapacityBonus',
+        'bountyRewardMultiplier',
       ];
 
       researchTree.forEach(node => {

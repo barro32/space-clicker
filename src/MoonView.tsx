@@ -1,28 +1,35 @@
-import { useGameStore, MoonBuildingType } from './useGameStore.js'
+import { useGameStore, MoonBuildingType, MoonSector } from './useGameStore.js'
 import { MOON } from './gameConstants.js'
-import { FaMoon, FaRocket, FaWarehouse, FaWrench, FaBolt, FaExclamationTriangle, FaArrowRight, FaIndustry } from 'react-icons/fa'
+import { FaMoon, FaRocket, FaWarehouse, FaWrench, FaBolt, FaExclamationTriangle, FaArrowRight, FaIndustry, FaSun, FaAtom, FaBatteryFull, FaGripHorizontal } from 'react-icons/fa'
+import { useState } from 'react'
 
 export function MoonView() {
   const {
     moonStatus,
     moonMissionTicksRemaining,
-    moonBuildings,
+    moonSectors,
     moonResources,
     earthResources,
     activeHazard,
     moonLog,
+    moonPowerSystem,
     fuel,
     cargo,
     science,
     lunarComponents,
     researchedNodes,
     startMoonMission,
-    buildMoonStructure,
-    transportResources,
+    scanSector,
+    constructBuildingOnMoon,
+    launchMassDriverPayload,
     clearHazard,
     getMoonStorageCapacity,
     getMoonBuildingCost,
+    getEffectMultiplier,
   } = useGameStore()
+
+  const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null)
+  const [buildingHoverType, setBuildingHoverType] = useState<string | null>(null)
 
   const storage = getMoonStorageCapacity()
   const hasLunarManufacturing = researchedNodes.includes('o14')
@@ -31,15 +38,6 @@ export function MoonView() {
   const cost = MOON.MISSION_COST
   const canAffordMission = fuel >= cost.fuel && cargo >= cost.cargo && 
                           science >= cost.science && lunarComponents >= cost.lunarComponents
-
-  // Building definitions
-  const buildings: { type: MoonBuildingType; name: string; icon: typeof FaIndustry; description: string }[] = [
-    { type: 'extractor', name: 'Regolith Extractor', icon: FaIndustry, description: `Produces ${MOON.EXTRACTOR_REGOLITH_RATE} regolith/tick` },
-    { type: 'refinery', name: 'Helium-3 Refinery', icon: FaBolt, description: `Converts regolith to He-3` },
-    { type: 'silo', name: 'Storage Silo', icon: FaWarehouse, description: `+${MOON.STORAGE_PER_SILO.regolith} regolith, +${MOON.STORAGE_PER_SILO.helium3} He-3 capacity` },
-    { type: 'maintenance', name: 'Maintenance Bay', icon: FaWrench, description: `Reduces hazard duration by ${MOON.MAINTENANCE_DURATION_REDUCTION * 100}%` },
-    { type: 'massDriver', name: 'Mass Driver', icon: FaArrowRight, description: `Auto-transports resources to Earth` },
-  ]
 
   // Locked state - show requirements
   if (!hasLunarManufacturing) {
@@ -63,7 +61,6 @@ export function MoonView() {
   if (moonStatus === 'locked' || moonStatus === 'ready') {
     return (
       <div className="terminal-container h-full flex flex-col">
-        {/* Terminal Header */}
         <div className="terminal-header border-b border-green-500/30 pb-4 mb-6">
           <h1 className="terminal-title text-2xl flex items-center gap-3">
             <FaMoon className="text-green-400" />
@@ -72,7 +69,6 @@ export function MoonView() {
           <p className="terminal-text text-green-500/60 text-sm mt-1">STATUS: AWAITING LAUNCH AUTHORIZATION</p>
         </div>
 
-        {/* Mission Brief */}
         <div className="flex-1 flex flex-col items-center justify-center space-y-8">
           <div className="terminal-panel max-w-lg w-full p-6 space-y-6">
             <h2 className="terminal-text text-lg border-b border-green-500/30 pb-2">MISSION BRIEF: LUNAR LANDING</h2>
@@ -135,7 +131,6 @@ export function MoonView() {
     
     return (
       <div className="terminal-container h-full flex flex-col">
-        {/* Terminal Header */}
         <div className="terminal-header border-b border-green-500/30 pb-4 mb-6">
           <h1 className="terminal-title text-2xl flex items-center gap-3">
             <FaMoon className="text-green-400" />
@@ -144,12 +139,10 @@ export function MoonView() {
           <p className="terminal-text text-amber-400 text-sm mt-1 animate-pulse">STATUS: MISSION IN PROGRESS</p>
         </div>
 
-        {/* Transit Display */}
         <div className="flex-1 flex flex-col items-center justify-center space-y-8">
           <div className="terminal-panel max-w-lg w-full p-6 space-y-6">
             <h2 className="terminal-text text-lg text-center">LUNAR LANDER EN ROUTE</h2>
             
-            {/* ASCII Progress */}
             <div className="font-mono text-xs text-center space-y-2">
               <div className="text-green-400">
                 {'[' + '='.repeat(Math.floor(progress / 5)) + '>'.padEnd(20 - Math.floor(progress / 5), ' ') + ']'}
@@ -159,7 +152,6 @@ export function MoonView() {
               </div>
             </div>
             
-            {/* Stats */}
             <div className="grid grid-cols-2 gap-4 text-sm border-t border-green-500/20 pt-4">
               <div>
                 <span className="text-green-500/60">ETA:</span>
@@ -171,7 +163,6 @@ export function MoonView() {
               </div>
             </div>
 
-            {/* Telemetry Feed */}
             <div className="border-t border-green-500/20 pt-4">
               <h3 className="text-green-500/60 text-xs mb-2">TELEMETRY FEED:</h3>
               <div className="h-24 overflow-hidden text-xs font-mono">
@@ -186,29 +177,31 @@ export function MoonView() {
     )
   }
 
-  // Unlocked state - full mission control interface
+  // Unlocked state - full moon base interface with grid
+  const selectedSector = selectedSectorId ? moonSectors.find(s => s.id === selectedSectorId) : moonSectors[0]
+
   return (
     <div className="terminal-container h-full flex flex-col">
       {/* Terminal Header */}
-      <div className="terminal-header border-b border-green-500/30 pb-4 mb-4">
+      <div className="terminal-header border-b border-green-500/30 pb-3 mb-3">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="terminal-title text-xl flex items-center gap-3">
+            <h1 className="terminal-title text-lg flex items-center gap-2">
               <FaMoon className="text-green-400" />
               LUNAR BASE CONTROL
             </h1>
-            <p className="terminal-text text-green-500/60 text-xs mt-1">STATUS: OPERATIONAL</p>
+            <p className="terminal-text text-green-500/60 text-xs mt-0.5">STATUS: OPERATIONAL</p>
           </div>
           
           {/* Hazard Alert */}
           {activeHazard && (
-            <div className="terminal-alert bg-red-900/30 border border-red-500/50 px-4 py-2 rounded animate-pulse">
+            <div className="terminal-alert bg-red-900/30 border border-red-500/50 px-3 py-2 rounded animate-pulse text-xs">
               <div className="flex items-center gap-2 text-red-400">
-                <FaExclamationTriangle />
-                <span className="text-sm font-bold">{activeHazard.name}</span>
+                <FaExclamationTriangle className="flex-shrink-0" />
+                <span className="font-bold">{activeHazard.name}</span>
               </div>
-              <div className="text-xs text-red-400/70">
-                -{(activeHazard.debuff * 100).toFixed(0)}% production | {activeHazard.ticksRemaining}s remaining
+              <div className="text-xs text-red-400/70 mt-1">
+                -{(activeHazard.debuff * 100).toFixed(0)}% prod | {activeHazard.ticksRemaining}s left
               </div>
               <button
                 onClick={clearHazard}
@@ -221,101 +214,176 @@ export function MoonView() {
         </div>
       </div>
 
-      {/* Main Grid */}
-      <div className="flex-1 grid grid-cols-3 gap-4 overflow-hidden">
-        {/* Left Panel: Resources */}
-        <div className="terminal-panel p-4 space-y-4">
-          <h2 className="terminal-text text-sm border-b border-green-500/30 pb-2">MOON STORAGE</h2>
+      {/* Main Grid Layout */}
+      <div className="flex-1 grid grid-cols-4 gap-3 overflow-hidden">
+        
+        {/* Left Column: Sector Grid */}
+        <div className="col-span-1 terminal-panel p-3 space-y-2 overflow-y-auto">
+          <h2 className="terminal-text text-xs border-b border-green-500/30 pb-1 mb-2">SECTORS ({moonSectors.length}/{MOON.MAX_SECTORS})</h2>
           
-          <div className="space-y-3">
-            <div>
-              <div className="flex justify-between text-xs text-green-500/60 mb-1">
-                <span>Regolith</span>
-                <span>{Math.floor(moonResources.regolith)} / {storage.regolith}</span>
+          <div className="space-y-1">
+            {moonSectors.map(sector => (
+              <div
+                key={sector.id}
+                onClick={() => setSelectedSectorId(sector.id)}
+                className={`p-2 rounded text-xs cursor-pointer border transition ${
+                  selectedSectorId === sector.id
+                    ? 'bg-green-900/50 border-green-400'
+                    : 'bg-gray-900/30 border-green-500/20 hover:border-green-500/40'
+                }`}
+              >
+                <div className="font-bold text-green-400">{sector.name}</div>
+                <div className="text-green-500/60 text-xs">
+                  Slots: {sector.slotsUsed}/{sector.slots}
+                </div>
+                {Object.keys(sector.traits).length > 0 && (
+                  <div className="text-green-400/70 text-xs mt-1">
+                    {Object.keys(sector.traits)[0]}
+                  </div>
+                )}
               </div>
-              <div className="h-2 bg-gray-800 rounded overflow-hidden">
-                <div 
-                  className="h-full bg-amber-600 transition-all"
-                  style={{ width: `${(moonResources.regolith / storage.regolith) * 100}%` }}
-                />
+            ))}
+          </div>
+
+          {moonSectors.length < MOON.MAX_SECTORS && (
+            <button
+              onClick={scanSector}
+              disabled={science < MOON.SECTOR_SCAN_COST.science || cargo < MOON.SECTOR_SCAN_COST.cargo}
+              className="terminal-button w-full py-1 text-xs mt-2"
+            >
+              SCAN SECTOR
+            </button>
+          )}
+        </div>
+
+        {/* Center Column: Sector Details & Building Selection */}
+        <div className="col-span-1 terminal-panel p-3 space-y-2 overflow-y-auto">
+          <h2 className="terminal-text text-xs border-b border-green-500/30 pb-1">
+            {selectedSector?.name || 'Select Sector'}
+          </h2>
+          
+          {selectedSector && (
+            <div className="space-y-2 text-xs">
+              {/* Sector Traits */}
+              {Object.keys(selectedSector.traits).length > 0 && (
+                <div className="border border-green-500/20 rounded p-2 bg-green-900/10">
+                  <div className="text-green-400 font-bold mb-1">Traits:</div>
+                  {Object.entries(selectedSector.traits).map(([traitName, trait]) => (
+                    <div key={traitName} className="text-green-400/70 text-xs">
+                      {traitName}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Available Building Types */}
+              <div className="border border-green-500/20 rounded p-2">
+                <div className="text-green-400 font-bold mb-1">Build:</div>
+                <div className="space-y-1">
+                  {['extractor', 'refinery', 'silo', 'maintenance', 'massDriver', 'solarArray', 'nuclearReactor', 'battery'].map(type => {
+                    const cost = getMoonBuildingCost(type as any)
+                    const canBuild = cargo >= cost.cargo && science >= cost.science && (!cost.regolith || moonResources.regolith >= cost.regolith) && selectedSector.slotsUsed < selectedSector.slots
+                    const buildingNames: Record<string, string> = {
+                      extractor: 'Extractor',
+                      refinery: 'Refinery',
+                      silo: 'Silo',
+                      maintenance: 'Maintenance',
+                      massDriver: 'Mass Driver',
+                      solarArray: 'Solar',
+                      nuclearReactor: 'Nuclear',
+                      battery: 'Battery',
+                    }
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => constructBuildingOnMoon(selectedSector.id, type as any)}
+                        disabled={!canBuild}
+                        onMouseEnter={() => setBuildingHoverType(type)}
+                        onMouseLeave={() => setBuildingHoverType(null)}
+                        className={`w-full py-1 px-1 text-xs rounded border text-left truncate ${
+                          canBuild
+                            ? 'bg-green-900/20 border-green-500/40 text-green-400 hover:bg-green-900/40'
+                            : 'bg-gray-900/20 border-gray-600/40 text-gray-500'
+                        }`}
+                      >
+                        {buildingNames[type]}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             </div>
-            
-            <div>
-               <div className="flex justify-between text-xs text-green-500/60 mb-1">
-                 <span>Helium-3</span>
-                 <span>{Math.floor(moonResources.helium3).toLocaleString()} / {storage.helium3.toLocaleString()}</span>
-               </div>
-              <div className="h-2 bg-gray-800 rounded overflow-hidden">
-                <div 
-                  className="h-full bg-cyan-500 transition-all"
-                  style={{ width: `${(moonResources.helium3 / storage.helium3) * 100}%` }}
-                />
+          )}
+        </div>
+
+        {/* Right-Center Column: Resources & Power */}
+        <div className="col-span-1 terminal-panel p-3 space-y-2 overflow-y-auto">
+          <h2 className="terminal-text text-xs border-b border-green-500/30 pb-1">RESOURCES & POWER</h2>
+          
+          {/* Storage */}
+          <div className="space-y-1">
+            <div className="text-xs text-green-500/60">Moon Regolith</div>
+            <div className="flex justify-between text-xs text-green-400 mb-1">
+              <span>{Math.floor(moonResources.regolith).toLocaleString()}</span>
+              <span>/ {storage.regolith.toLocaleString()}</span>
+            </div>
+            <div className="h-1 bg-gray-800 rounded overflow-hidden">
+              <div className="h-full bg-amber-600" style={{ width: `${(moonResources.regolith / storage.regolith) * 100}%` }} />
+            </div>
+
+            <div className="text-xs text-green-500/60 mt-2">Moon Helium-3</div>
+            <div className="flex justify-between text-xs text-green-400 mb-1">
+              <span>{Math.floor(moonResources.helium3).toLocaleString()}</span>
+              <span>/ {storage.helium3.toLocaleString()}</span>
+            </div>
+            <div className="h-1 bg-gray-800 rounded overflow-hidden">
+              <div className="h-full bg-cyan-500" style={{ width: `${(moonResources.helium3 / storage.helium3) * 100}%` }} />
+            </div>
+          </div>
+
+          {/* Power System */}
+          <div className="border-t border-green-500/20 pt-2 mt-2">
+            <div className="text-xs text-green-400 font-bold mb-1">
+              {moonPowerSystem.isDay ? '☀️ DAY' : '🌙 NIGHT'}
+            </div>
+            <div className="flex justify-between text-xs text-green-400 mb-1">
+              <span>Energy:</span>
+              <span>{Math.floor(moonPowerSystem.currentEnergy).toLocaleString()} / {Math.floor(moonPowerSystem.maxEnergy).toLocaleString()}</span>
+            </div>
+            <div className="h-1 bg-gray-800 rounded overflow-hidden">
+              <div 
+                className="h-full bg-yellow-500 transition-all" 
+                style={{ width: `${(moonPowerSystem.currentEnergy / Math.max(1, moonPowerSystem.maxEnergy)) * 100}%` }} 
+              />
+            </div>
+            <div className="text-xs text-green-500/60 mt-1">
+              Gen: {moonPowerSystem.energyGeneration.toLocaleString()} | Demand: {moonPowerSystem.energyDemand.toLocaleString()}
+            </div>
+          </div>
+
+          {/* Earth Resources */}
+          <div className="border-t border-green-500/20 pt-2 mt-2">
+            <div className="text-xs text-green-400 font-bold mb-1">Earth Reserves</div>
+            <div className="text-xs">
+              <div className="text-green-400">
+                He-3: {Math.floor(earthResources.helium3).toLocaleString()}
               </div>
             </div>
           </div>
-          
-          <div className="border-t border-green-500/20 pt-3">
-            <h3 className="text-xs text-green-500/60 mb-2">EARTH RESERVES</h3>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-               <div className="text-amber-400">
-                 <span className="text-green-500/60">Regolith:</span> {Math.floor(earthResources.regolith).toLocaleString()}
-               </div>
-               <div className="text-cyan-400">
-                 <span className="text-green-500/60">He-3:</span> {Math.floor(earthResources.helium3).toLocaleString()}
-               </div>
-            </div>
-          </div>
-          
+
+          {/* Manual Launch */}
           <button
-            onClick={transportResources}
-            disabled={moonResources.regolith === 0 && moonResources.helium3 === 0}
-            className="terminal-button w-full py-2 text-xs"
+            onClick={() => launchMassDriverPayload(Math.floor(moonResources.helium3))}
+            disabled={moonResources.helium3 === 0}
+            className="terminal-button w-full py-1 text-xs mt-2"
           >
-            MANUAL TRANSPORT TO EARTH
+            LAUNCH MAX He-3
           </button>
         </div>
 
-        {/* Center Panel: Buildings */}
-        <div className="terminal-panel p-4 space-y-3 overflow-y-auto">
-          <h2 className="terminal-text text-sm border-b border-green-500/30 pb-2">INFRASTRUCTURE</h2>
-          
-          {buildings.map(({ type, name, icon: Icon, description }) => {
-            const cost = getMoonBuildingCost(type)
-            const count = moonBuildings[type === 'massDriver' ? 'massDrivers' : `${type}s` as keyof typeof moonBuildings]
-            const canAfford = cargo >= cost.cargo && science >= cost.science && 
-                            (!cost.regolith || moonResources.regolith >= cost.regolith)
-            
-            return (
-              <div key={type} className="border border-green-500/20 rounded p-3">
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center gap-2">
-                    <Icon className="text-green-400" />
-                    <span className="text-green-400 text-sm">{name}</span>
-                  </div>
-                  <span className="text-green-500/60 text-xs">x{count}</span>
-                </div>
-                <p className="text-xs text-green-500/50 mb-2">{description}</p>
-                <div className="flex justify-between items-center">
-                  <div className="text-xs text-green-500/60">
-                    {cost.cargo.toLocaleString()}C {cost.science.toLocaleString()}S {cost.regolith > 0 && `${cost.regolith.toLocaleString()}R`}
-                  </div>
-                  <button
-                    onClick={() => buildMoonStructure(type)}
-                    disabled={!canAfford}
-                    className={`terminal-button-sm px-3 py-1 text-xs ${canAfford ? '' : 'opacity-50 cursor-not-allowed'}`}
-                  >
-                    BUILD
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Right Panel: Log */}
-        <div className="terminal-panel p-4 flex flex-col">
-          <h2 className="terminal-text text-sm border-b border-green-500/30 pb-2 mb-3">SYSTEM LOG</h2>
+        {/* Right Column: Log */}
+        <div className="col-span-1 terminal-panel p-3 flex flex-col">
+          <h2 className="terminal-text text-xs border-b border-green-500/30 pb-1 mb-2">SYSTEM LOG</h2>
           
           <div className="flex-1 overflow-y-auto text-xs font-mono space-y-1">
             {moonLog.length === 0 ? (

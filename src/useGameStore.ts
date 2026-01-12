@@ -36,6 +36,42 @@ export interface EarthResources {
   helium3: number;
 }
 
+// Moon Sector Types
+export interface MoonSectorTrait {
+  extractorMultiplier?: number;
+  solarMultiplier?: number;
+  hazardChanceMultiplier?: number;
+}
+
+export interface MoonSector {
+  id: string;
+  name: string;
+  traits: Record<string, MoonSectorTrait>;
+  buildings: Partial<Record<MoonBuildingType | 'solarArray' | 'nuclearReactor' | 'battery', number>>;
+  slots: number; // Total building slots
+  slotsUsed: number; // Slots currently occupied
+}
+
+export interface MoonLunarBounty {
+  id: string;
+  companyId: string;
+  helium3Amount: number;
+  timeLimit: number; // seconds
+  elapsedTime: number; // seconds
+  rewardMoney: number;
+  rewardScience: number;
+  status: 'active' | 'completed' | 'failed';
+}
+
+export interface MoonPowerSystem {
+  dayNightTick: number; // Current position in day/night cycle (0 = start of day)
+  isDay: boolean; // True if currently day
+  currentEnergy: number; // Current stored energy
+  maxEnergy: number; // Max energy from batteries
+  energyGeneration: number; // Per tick
+  energyDemand: number; // Per tick
+}
+
 export interface SpaceStation {
   id: string;
   type: "research" | "logistics";
@@ -130,14 +166,18 @@ export interface GameState {
    spaceDebris: SpaceDebris[];
    transitRockets: TransitRocket[]; // Rockets traveling from surface to orbit
    dockedRockets: DockedRocket[]; // Rockets currently docked at stations
-   // Moon layer state
-   moonStatus: MoonStatus;
-   moonMissionTicksRemaining: number;
-   moonBuildings: MoonBuildings;
-   moonResources: MoonResources; // Local Moon storage (limited)
-   earthResources: EarthResources; // Global unlimited storage
-   activeHazard: MoonHazard | null;
-   moonLog: string[]; // Terminal log messages
+    // Moon layer state
+    moonStatus: MoonStatus;
+    moonMissionTicksRemaining: number;
+    moonBuildings: MoonBuildings;
+    moonResources: MoonResources; // Local Moon storage (limited)
+    earthResources: EarthResources; // Global unlimited storage
+    activeHazard: MoonHazard | null;
+    moonLog: string[]; // Terminal log messages
+    moonSectors: MoonSector[];
+    moonPowerSystem: MoonPowerSystem;
+    moonBounties: MoonLunarBounty[];
+    moonBountyRefreshTimer: number;
    getCurrentSpaceportCost: () => number;
    getCurrentRocketCost: () => number;
    getEffectMultiplier: (type: EffectType) => number;
@@ -180,8 +220,13 @@ export interface GameState {
    toggleAutoBuild: () => void;
    toggleAutoSalvage: () => void;
    toggleAfterburner: () => void;
-   unlockNode: (nodeId: string) => void;
-   getAvailableNodes: () => ResearchNode[];
+    unlockNode: (nodeId: string) => void;
+    getAvailableNodes: () => ResearchNode[];
+    scanSector: () => void;
+    constructBuildingOnMoon: (sectorId: string, buildingType: MoonBuildingType | 'solarArray' | 'nuclearReactor' | 'battery') => void;
+    launchMassDriverPayload: (amount: number) => void;
+    acceptMoonBounty: (bountyId: string) => void;
+    completeMoonBounty: (bountyId: string) => void;
 }
 
 
@@ -226,14 +271,32 @@ export const useGameStore = create<GameState>((set, get) => ({
   spaceDebris: [],
   transitRockets: [],
   dockedRockets: [],
-  // Moon layer state
-  moonStatus: 'locked',
-  moonMissionTicksRemaining: 0,
-  moonBuildings: { extractors: 0, refineries: 0, silos: 0, maintenance: 0, massDrivers: 0 },
-  moonResources: { regolith: 0, helium3: 0 },
-  earthResources: { regolith: 0, helium3: 0 },
-  activeHazard: null,
-  moonLog: [],
+   // Moon layer state
+   moonStatus: 'locked',
+   moonMissionTicksRemaining: 0,
+   moonBuildings: { extractors: 0, refineries: 0, silos: 0, maintenance: 0, massDrivers: 0 },
+   moonResources: { regolith: 0, helium3: 0 },
+   earthResources: { regolith: 0, helium3: 0 },
+   activeHazard: null,
+   moonLog: [],
+   moonSectors: [{ 
+     id: 'starting-sector', 
+     name: 'Landing Zone', 
+     traits: {}, 
+     buildings: {}, 
+     slots: MOON.BUILDING_SLOTS_PER_SECTOR, 
+     slotsUsed: 0 
+   }],
+   moonPowerSystem: { 
+     dayNightTick: 0, 
+     isDay: true, 
+     currentEnergy: 200, 
+     maxEnergy: 200, 
+     energyGeneration: 0, 
+     energyDemand: 0 
+   },
+   moonBounties: [],
+   moonBountyRefreshTimer: MOON.BOUNTY_GENERATION_INTERVAL,
   researchedNodes: [],
   previouslyAvailableResearch: [],
   autoBuildActive: false,
@@ -745,14 +808,15 @@ export const useGameStore = create<GameState>((set, get) => ({
       ? [...notificationsToAdd, ...state.notifications].slice(0, 5)
       : state.notifications;
 
-    // === MOON LAYER MECHANICS ===
-    let newMoonStatus = state.moonStatus;
-    let newMoonMissionTicks = state.moonMissionTicksRemaining;
-    let newMoonResources = { ...state.moonResources };
-    let newEarthResources = { ...state.earthResources };
-    let newActiveHazard = state.activeHazard;
-    let newMoonLog = [...state.moonLog];
-    
+     // === MOON LAYER MECHANICS ===
+     let newMoonStatus = state.moonStatus;
+     let newMoonMissionTicks = state.moonMissionTicksRemaining;
+     let newMoonResources = { ...state.moonResources };
+     let newEarthResources = { ...state.earthResources };
+     let newActiveHazard = state.activeHazard;
+     let newMoonLog = [...state.moonLog];
+     let newMoonPowerSystem = { ...state.moonPowerSystem };
+     
     // Check if o14 (Lunar Manufacturing) is researched to show "ready" status
     if (state.moonStatus === 'locked' && state.researchedNodes.includes('o14')) {
       newMoonStatus = 'ready';
@@ -772,12 +836,69 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
     
-    // Process Moon production (only when unlocked)
-    if (state.moonStatus === 'unlocked') {
-      const storage = state.getMoonStorageCapacity();
-      
-      // Calculate hazard debuff
-      let hazardDebuff = 1;
+     // Process Moon production (only when unlocked)
+     if (state.moonStatus === 'unlocked') {
+        const storage = state.getMoonStorageCapacity();
+        
+        // Update day/night cycle
+        newMoonPowerSystem = { ...state.moonPowerSystem };
+        newMoonPowerSystem.dayNightTick = (newMoonPowerSystem.dayNightTick + 1) % (MOON.DAY_DURATION + MOON.NIGHT_DURATION);
+       const cycleDuration = MOON.DAY_DURATION + MOON.NIGHT_DURATION;
+       newMoonPowerSystem.isDay = newMoonPowerSystem.dayNightTick < MOON.DAY_DURATION;
+       
+       // Calculate power generation and demand
+       let totalEnergyGen = 0;
+       let totalEnergyDemand = 0;
+       
+       // Count buildings across all sectors
+       let solarCount = 0, nuclearCount = 0, batteryCount = 0;
+       let extractorCount = 0, refineryCount = 0, siloCount = 0, maintenanceCount = 0, massDriverCount = 0;
+       
+       for (const sector of state.moonSectors) {
+         solarCount += sector.buildings.solarArray || 0;
+         nuclearCount += sector.buildings.nuclearReactor || 0;
+         batteryCount += sector.buildings.battery || 0;
+         extractorCount += sector.buildings.extractor || 0;
+         refineryCount += sector.buildings.refinery || 0;
+         siloCount += sector.buildings.silo || 0;
+         maintenanceCount += sector.buildings.maintenance || 0;
+         massDriverCount += sector.buildings.massDriver || 0;
+       }
+       
+       // Solar only generates during day
+       if (newMoonPowerSystem.isDay) {
+         totalEnergyGen += solarCount * MOON.SOLAR_ARRAY_OUTPUT;
+       }
+       
+       // Nuclear generates 24/7 but consumes He-3
+       if (nuclearCount > 0) {
+         totalEnergyGen += nuclearCount * MOON.NUCLEAR_REACTOR_OUTPUT;
+         newEarthResources.helium3 -= nuclearCount * MOON.NUCLEAR_REACTOR_HELIUM3_COST;
+       }
+       
+       // Power demand
+       totalEnergyDemand += extractorCount * MOON.EXTRACTOR_POWER_DEMAND;
+       totalEnergyDemand += refineryCount * MOON.REFINERY_POWER_DEMAND;
+       totalEnergyDemand += siloCount * MOON.SILO_POWER_DEMAND;
+       totalEnergyDemand += maintenanceCount * MOON.MAINTENANCE_POWER_DEMAND;
+       totalEnergyDemand += massDriverCount * MOON.MASS_DRIVER_POWER_DEMAND;
+       
+       // Battery storage (can charge or discharge)
+       newMoonPowerSystem.maxEnergy = batteryCount * MOON.BATTERY_CAPACITY_PER_UNIT;
+       const netEnergy = totalEnergyGen - totalEnergyDemand;
+       newMoonPowerSystem.currentEnergy = Math.min(
+         newMoonPowerSystem.maxEnergy,
+         Math.max(0, newMoonPowerSystem.currentEnergy + netEnergy)
+       );
+       
+       newMoonPowerSystem.energyGeneration = totalEnergyGen;
+       newMoonPowerSystem.energyDemand = totalEnergyDemand;
+       
+       // Check if power is sufficient for production
+       const hasPower = newMoonPowerSystem.currentEnergy >= totalEnergyDemand;
+       
+       // Calculate hazard debuff
+       let hazardDebuff = 1;
       if (newActiveHazard) {
         hazardDebuff = 1 - newActiveHazard.debuff;
         
@@ -822,14 +943,15 @@ export const useGameStore = create<GameState>((set, get) => ({
         hazardDebuff = 1 - hazardDef.debuff;
       }
       
-      // Extractor production (Regolith)
-      const extractorMultiplier = state.getEffectMultiplier('extractorOutputMultiplier' as EffectType) || 1;
-      const regolithProduction = state.moonBuildings.extractors * MOON.EXTRACTOR_REGOLITH_RATE * hazardDebuff * extractorMultiplier;
+       // Extractor production (Regolith) - only if powered
+       const extractorMultiplier = state.getEffectMultiplier('extractorOutputMultiplier' as EffectType) || 1;
+       const powerEfficiency = hasPower ? 1 : 0; // No production if no power
+       const regolithProduction = state.moonBuildings.extractors * MOON.EXTRACTOR_REGOLITH_RATE * hazardDebuff * extractorMultiplier * powerEfficiency;
       newMoonResources.regolith = Math.min(storage.regolith, newMoonResources.regolith + regolithProduction);
       
-      // Refinery production (Helium-3 from Regolith)
-      const refineryMultiplier = state.getEffectMultiplier('moonRefineryOutputMultiplier' as EffectType) || 1;
-      const potentialHelium3 = state.moonBuildings.refineries * MOON.REFINERY_HELIUM3_RATE * hazardDebuff * refineryMultiplier;
+       // Refinery production (Helium-3 from Regolith) - only if powered
+       const refineryMultiplier = state.getEffectMultiplier('moonRefineryOutputMultiplier' as EffectType) || 1;
+       const potentialHelium3 = state.moonBuildings.refineries * MOON.REFINERY_HELIUM3_RATE * hazardDebuff * refineryMultiplier * powerEfficiency;
       const regolithNeeded = potentialHelium3 * MOON.REFINERY_REGOLITH_COST;
       const actualRegolithUsed = Math.min(regolithNeeded, newMoonResources.regolith);
       const actualHelium3 = (actualRegolithUsed / MOON.REFINERY_REGOLITH_COST);
@@ -871,13 +993,17 @@ export const useGameStore = create<GameState>((set, get) => ({
       dockedRockets: newDockedRockets,
       spaceStations: newSpaceStations,
       spaceDebris: newDebris,
-      // Moon state updates
-      moonStatus: newMoonStatus,
-      moonMissionTicksRemaining: newMoonMissionTicks,
-      moonResources: newMoonResources,
-      earthResources: newEarthResources,
-      activeHazard: newActiveHazard,
-      moonLog: newMoonLog,
+       // Moon state updates
+       moonStatus: newMoonStatus,
+       moonMissionTicksRemaining: newMoonMissionTicks,
+       moonResources: newMoonResources,
+       earthResources: newEarthResources,
+       activeHazard: newActiveHazard,
+       moonLog: newMoonLog,
+       moonSectors: state.moonSectors, // TODO: will update this in next step
+       moonPowerSystem: newMoonPowerSystem,
+       moonBounties: state.moonBounties, // TODO: will update bounties in next step
+       moonBountyRefreshTimer: state.moonBountyRefreshTimer,
       tickCount: state.tickCount + 1,
     }
   }),
@@ -1590,38 +1716,179 @@ export const useGameStore = create<GameState>((set, get) => ({
     };
   }),
   
-  unlockNode: (nodeId: string) => set(state => {
-    const node = researchTree.find(n => n.id === nodeId);
-    if (!node) return {};
-    
-    if (state.researchedNodes.includes(nodeId)) return {};
-    
-    const metPrereqs = node.prerequisites.every(p => state.researchedNodes.includes(p));
-    if (!metPrereqs) return {};
-    
-    // Apply research cost multiplier from company perks
-    const researchCostMultiplier = state.getCompanyPerkValue('researchCostMultiplier') || 1;
-    const effectiveScienceCost = Math.round(node.scienceCost * researchCostMultiplier);
-    const effectiveCargoCost = node.cargoCost ? Math.round(node.cargoCost * researchCostMultiplier) : 0;
-    const lunarCost = node.lunarComponentCost || 0;
-    const helium3Cost = node.helium3Cost || 0;
-    
-    // Check all resource requirements
-    if (state.science < effectiveScienceCost) return {};
-    if (effectiveCargoCost > 0 && state.cargo < effectiveCargoCost) return {};
-    if (lunarCost > 0 && state.lunarComponents < lunarCost) return {};
-    if (helium3Cost > 0 && state.earthResources.helium3 < helium3Cost) return {};
-    
-    get().addNotification(`Technology Unlocked: ${node.name}`);
-    
-    return {
-      science: state.science - effectiveScienceCost,
-      cargo: state.cargo - effectiveCargoCost,
-      lunarComponents: state.lunarComponents - lunarCost,
-      earthResources: helium3Cost > 0 
-        ? { ...state.earthResources, helium3: state.earthResources.helium3 - helium3Cost }
-        : state.earthResources,
-      researchedNodes: [...state.researchedNodes, nodeId]
-    };
-  }),
+   unlockNode: (nodeId: string) => set(state => {
+     const node = researchTree.find(n => n.id === nodeId);
+     if (!node) return {};
+     
+     if (state.researchedNodes.includes(nodeId)) return {};
+     
+     const metPrereqs = node.prerequisites.every(p => state.researchedNodes.includes(p));
+     if (!metPrereqs) return {};
+     
+     // Apply research cost multiplier from company perks
+     const researchCostMultiplier = state.getCompanyPerkValue('researchCostMultiplier') || 1;
+     const effectiveScienceCost = Math.round(node.scienceCost * researchCostMultiplier);
+     const effectiveCargoCost = node.cargoCost ? Math.round(node.cargoCost * researchCostMultiplier) : 0;
+     const lunarCost = node.lunarComponentCost || 0;
+     const helium3Cost = node.helium3Cost || 0;
+     
+     // Check all resource requirements
+     if (state.science < effectiveScienceCost) return {};
+     if (effectiveCargoCost > 0 && state.cargo < effectiveCargoCost) return {};
+     if (lunarCost > 0 && state.lunarComponents < lunarCost) return {};
+     if (helium3Cost > 0 && state.earthResources.helium3 < helium3Cost) return {};
+     
+     get().addNotification(`Technology Unlocked: ${node.name}`);
+     
+     return {
+       science: state.science - effectiveScienceCost,
+       cargo: state.cargo - effectiveCargoCost,
+       lunarComponents: state.lunarComponents - lunarCost,
+       earthResources: helium3Cost > 0 
+         ? { ...state.earthResources, helium3: state.earthResources.helium3 - helium3Cost }
+         : state.earthResources,
+       researchedNodes: [...state.researchedNodes, nodeId]
+     };
+   }),
+
+    scanSector: () => set(state => {
+      if (state.moonStatus !== 'unlocked') return {};
+      
+      // Calculate scan cost with research reduction
+      const costReduction = state.getEffectMultiplier('sectorScanCostReduction') || 1;
+      const costScience = Math.round(MOON.SECTOR_SCAN_COST.science * costReduction);
+      const costCargo = Math.round(MOON.SECTOR_SCAN_COST.cargo * costReduction);
+      
+      if (state.science < costScience || state.cargo < costCargo) return {};
+      if (state.moonSectors.length >= MOON.MAX_SECTORS) return {};
+      
+      // Generate random sector with traits
+      const traitTypes = ['regolithRich', 'regolithPoor', 'solarRich', 'solarPoor', 'stable', 'unstable'];
+      const randomTrait = traitTypes[Math.floor(Math.random() * traitTypes.length)];
+      const traitDef = MOON.SECTOR_TRAITS[randomTrait as keyof typeof MOON.SECTOR_TRAITS];
+      
+      const newSector: MoonSector = {
+        id: `sector-${Date.now()}-${Math.random()}`,
+        name: `Sector ${state.moonSectors.length}`,
+        traits: { [randomTrait]: traitDef },
+        buildings: {},
+        slots: MOON.BUILDING_SLOTS_PER_SECTOR + state.getEffectMultiplier('buildingSlotsPerSectorBonus'),
+        slotsUsed: 0,
+      };
+      
+      get().addMoonLog(`SECTOR SCANNED: ${newSector.name} discovered - ${randomTrait}`);
+      
+      return {
+        science: state.science - costScience,
+        cargo: state.cargo - costCargo,
+        moonSectors: [...state.moonSectors, newSector],
+        notifications: [`New sector discovered: ${newSector.name}!`, ...state.notifications].slice(0, 5),
+      };
+    }),
+
+    constructBuildingOnMoon: (sectorId: string, buildingType: MoonBuildingType | 'solarArray' | 'nuclearReactor' | 'battery') => set(state => {
+      if (state.moonStatus !== 'unlocked') return {};
+      
+      const sector = state.moonSectors.find(s => s.id === sectorId);
+      if (!sector) return {};
+      
+      // Check if sector has available slots
+      if (sector.slotsUsed >= sector.slots) {
+        get().addNotification('Sector slots full!');
+        return {};
+      }
+      
+      const cost = state.getMoonBuildingCost(buildingType as MoonBuildingType);
+      if (state.cargo < cost.cargo || state.science < cost.science) return {};
+      if (cost.regolith && state.moonResources.regolith < cost.regolith) return {};
+      
+      // Update sector buildings and slots
+      const newSectors = state.moonSectors.map(s => {
+        if (s.id === sectorId) {
+          const buildingKey = buildingType === 'solarArray' || buildingType === 'nuclearReactor' || buildingType === 'battery' 
+            ? buildingType 
+            : buildingType + 's';
+          return {
+            ...s,
+            buildings: {
+              ...s.buildings,
+              [buildingKey]: (s.buildings[buildingKey as keyof typeof s.buildings] || 0) + 1,
+            },
+            slotsUsed: s.slotsUsed + 1,
+          };
+        }
+        return s;
+      });
+      
+      const buildingNames: Record<string, string> = {
+        extractor: 'Regolith Extractor',
+        refinery: 'Helium-3 Refinery',
+        silo: 'Storage Silo',
+        maintenance: 'Maintenance Bay',
+        massDriver: 'Mass Driver',
+        solarArray: 'Solar Array',
+        nuclearReactor: 'Nuclear Reactor',
+        battery: 'Battery Bank',
+      };
+      
+      get().addMoonLog(`CONSTRUCTION: ${buildingNames[buildingType]} built in ${sector.name}`);
+      
+      return {
+        cargo: state.cargo - cost.cargo,
+        science: state.science - cost.science,
+        moonResources: cost.regolith ? { ...state.moonResources, regolith: state.moonResources.regolith - cost.regolith } : state.moonResources,
+        moonSectors: newSectors,
+        notifications: [`Built ${buildingNames[buildingType]}!`, ...state.notifications].slice(0, 5),
+      };
+    }),
+
+    launchMassDriverPayload: (amount: number) => set(state => {
+      if (state.moonStatus !== 'unlocked') return {};
+      
+      // Check if enough He-3 available
+      const helium3ToSend = Math.min(amount, state.moonResources.helium3);
+      if (helium3ToSend === 0) return {};
+      
+      // Check for Mass Driver buildings
+      let massDriverCount = 0;
+      for (const sector of state.moonSectors) {
+        massDriverCount += sector.buildings.massDriver || 0;
+      }
+      if (massDriverCount === 0) return {};
+      
+      // Check payload capacity with research bonus
+      const capacityMultiplier = state.getEffectMultiplier('massDriverCapacityBonus') || 1;
+      const maxCapacity = MOON.MASS_DRIVER_CAPACITY * capacityMultiplier * massDriverCount;
+      const actualAmount = Math.min(helium3ToSend, maxCapacity);
+      
+      if (actualAmount === 0) return {};
+      
+      get().addMoonLog(`LAUNCH: ${actualAmount.toFixed(1)} He-3 sent to Earth`);
+      
+      return {
+        moonResources: {
+          ...state.moonResources,
+          helium3: state.moonResources.helium3 - actualAmount,
+        },
+        earthResources: {
+          ...state.earthResources,
+          helium3: state.earthResources.helium3 + actualAmount,
+        },
+        notifications: [`Launched ${Math.floor(actualAmount)} He-3 to Earth!`, ...state.notifications].slice(0, 5),
+      };
+    }),
+
+    acceptMoonBounty: (bountyId: string) => set(state => {
+      const bounty = state.moonBounties.find(b => b.id === bountyId);
+      if (!bounty || bounty.status !== 'active') return {};
+      
+      return {};  // Bounties are managed via tick; this is a no-op for now
+    }),
+
+    completeMoonBounty: (bountyId: string) => set(state => {
+      const bounty = state.moonBounties.find(b => b.id === bountyId);
+      if (!bounty) return {};
+      
+      return {};  // Bounty completion is checked in tick logic
+    }),
 }))
