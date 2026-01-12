@@ -43,14 +43,14 @@ export function OrbitView() {
     prevDockedRocketsRef.current = dockedRockets
   }, [dockedRockets])
   
-  // Clean up old docking animations
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now()
-      setRecentDockings(prev => prev.filter(d => now - d.timestamp < 1500))
-    }, 500)
-    return () => clearInterval(interval)
-  }, [])
+   // Clean up old docking animations
+   useEffect(() => {
+     const interval = setInterval(() => {
+       const now = Date.now()
+       setRecentDockings(prev => prev.filter(d => now - d.timestamp < 1500))
+     }, 500)
+     return () => clearInterval(interval)
+   }, [recentDockings])
   
   // Get fresh station data from store
   const selectedStation = selectedStationId ? spaceStations.find(s => s.id === selectedStationId) || null : null

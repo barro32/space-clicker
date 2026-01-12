@@ -12,7 +12,8 @@ import { INITIAL_STATE, TIME, DEFAULT_COMPANIES } from './gameConstants.js'
 import { researchTree, ResearchNode, EffectType } from './researchTree.js'
 
 
-// Helper function to calculate effect multiplier - extracted from store
+// Helper function to calculate effect multiplier (duplicated from store for use in metrics calculation)
+// TODO: Consider moving all metrics calculations to store selectors to avoid duplication
 function getEffectMultiplier(type: EffectType, researchedNodes: string[]): number {
   const multipliers = researchTree
     .filter((node: ResearchNode) => researchedNodes.includes(node.id) && node.effect.type === type)

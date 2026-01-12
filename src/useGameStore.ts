@@ -1042,10 +1042,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       return {}
     }),
     
-  // toggleSpaceport removed - was dead code with no implementation
-    
-    
-  clearExplosion: (rocketId: number) =>
+   clearExplosion: (rocketId: number) =>
     set(state => {
       if (state.researchedNodes.indexOf('o7') === -1) {
         return {};
@@ -1119,6 +1116,14 @@ export const useGameStore = create<GameState>((set, get) => ({
   
   getEffectMultiplier: (type: EffectType) => {
     const state = get();
+    
+    if (!researchTree || !Array.isArray(researchTree)) {
+      return 1;
+    }
+    if (!state.researchedNodes || !Array.isArray(state.researchedNodes)) {
+      return 1;
+    }
+    
     const multipliers = researchTree
       .filter((node: ResearchNode) => state.researchedNodes.includes(node.id) && node.effect.type === type)
       .map((node: ResearchNode) => node.effect.value);
@@ -1132,6 +1137,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   
   getCompanyPerkValue: (perkEffect: CompanyPerkEffect) => {
     const state = get();
+    
+    if (!state.companies || !Array.isArray(state.companies)) {
+      return 0;
+    }
+    
     let totalValue = 0;
     let isMultiplier = perkEffect.endsWith('Multiplier');
     if (isMultiplier) totalValue = 1;

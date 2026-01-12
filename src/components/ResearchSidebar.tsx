@@ -127,7 +127,8 @@ export function ResearchSidebar({ layer }: ResearchSidebarProps) {
     const group = getMultiLevelGroup(baseId);
     let maxLevel = 0;
     for (const node of group) {
-      const level = parseInt(node.id.split('-')[1]);
+      const parts = node.id.split('-');
+      const level = parts.length > 1 ? parseInt(parts[1]) : 0;
       if (isUnlocked(node.id)) {
         maxLevel = Math.max(maxLevel, level);
       }
