@@ -588,7 +588,7 @@ export function OrbitView() {
             <FaMoon className="text-sm" />
             <span className="font-mono">+{currentLunarProduction.toFixed(2)}/tick</span>
             <span className="text-gray-500">|</span>
-            <span className="font-bold">{Math.floor(lunarComponents)}</span>
+            <span className="font-bold">{Math.floor(lunarComponents).toLocaleString()}</span>
             <span className="text-gray-500 text-xs">components</span>
           </div>
         )}

@@ -139,8 +139,8 @@ export function SpaceportView() {
                <FaRocket className="text-2xl text-blue-400" style={{ transform: 'rotate(-45deg)' }} />
              </div>
              <div className="text-xs text-gray-400 font-mono text-center mb-1">CARGO ROCKET</div>
-             <div className="text-lg font-bold text-green-400 font-mono text-center">${currentRocketCost}</div>
-             <div className="text-xs text-orange-400 font-mono text-center">Fuel: {Math.floor(fuelCostPerRocket)}</div>
+              <div className="text-lg font-bold text-green-400 font-mono text-center">${currentRocketCost.toLocaleString()}</div>
+              <div className="text-xs text-orange-400 font-mono text-center">Fuel: {Math.floor(fuelCostPerRocket).toLocaleString()}</div>
              {/* Auto-build checkbox integrated into button */}
              {autoBuildEnabled && (
                <div className="mt-2 pt-2 border-t border-blue-500/30">
@@ -175,8 +175,8 @@ export function SpaceportView() {
                  <FaFlask className="text-2xl text-purple-400" />
                </div>
                <div className="text-xs text-gray-400 font-mono text-center mb-1">SCIENCE ROCKET</div>
-               <div className="text-lg font-bold text-green-400 font-mono text-center">${currentRocketCost}</div>
-               <div className="text-xs text-orange-400 font-mono text-center">Fuel: {Math.floor(fuelCostPerRocket)}</div>
+                <div className="text-lg font-bold text-green-400 font-mono text-center">${currentRocketCost.toLocaleString()}</div>
+                <div className="text-xs text-orange-400 font-mono text-center">Fuel: {Math.floor(fuelCostPerRocket).toLocaleString()}</div>
              </div>
            )}
 
@@ -228,7 +228,7 @@ export function SpaceportView() {
                  <FaRegBuilding className="text-2xl text-green-400" />
                </div>
                <div className="text-xs text-gray-400 font-mono text-center mb-1">NEW SPACEPORT</div>
-               <div className="text-lg font-bold text-green-400 font-mono text-center">${currentSpaceportCost}</div>
+               <div className="text-lg font-bold text-green-400 font-mono text-center">${currentSpaceportCost.toLocaleString()}</div>
                <div className="text-xs text-gray-500 font-mono text-center">Capacity +{effectiveCapacity}</div>
              </div>
            )}
@@ -240,7 +240,7 @@ export function SpaceportView() {
                   <FaGasPump className="text-2xl text-orange-400" />
                 </div>
                 <div className="text-xs text-gray-400 font-mono text-center mb-1">FUEL REFINERY</div>
-                <div className="text-lg font-bold text-green-400 font-mono text-center">${currentFuelRefineryCost}</div>
+                <div className="text-lg font-bold text-green-400 font-mono text-center">${currentFuelRefineryCost.toLocaleString()}</div>
                 <div className="text-xs text-cyan-400 font-mono text-center">Total: {fuelRefineries}</div>
               </div>
             )}

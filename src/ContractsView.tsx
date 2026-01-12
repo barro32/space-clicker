@@ -63,7 +63,7 @@ export function ContractsView() {
             {/* Money */}
             <div className="flex items-center gap-1 text-green-400 flex-1">
               <FaMoneyBillAlt className="text-[9px]" />
-              <span className="font-medium">{isActive ? `${Math.floor(contract.deliveredMoney)}/${contract.requiredMoney}` : contract.requiredMoney}</span>
+              <span className="font-medium">{isActive ? `${Math.floor(contract.deliveredMoney).toLocaleString()}/${contract.requiredMoney.toLocaleString()}` : contract.requiredMoney.toLocaleString()}</span>
               {isActive && (
                 <div className="flex-1 bg-gray-700 h-1 rounded-full overflow-hidden">
                   <div className="h-full bg-green-500 transition-all" style={{ width: `${Math.min(100, (contract.deliveredMoney / contract.requiredMoney) * 100)}%` }} />
@@ -74,7 +74,7 @@ export function ContractsView() {
             {/* Science */}
             <div className="flex items-center gap-1 text-blue-400 flex-1">
               <FaFlask className="text-[9px]" />
-              <span className="font-medium">{isActive ? `${Math.floor(contract.deliveredScience)}/${contract.requiredScience}` : contract.requiredScience}</span>
+              <span className="font-medium">{isActive ? `${Math.floor(contract.deliveredScience).toLocaleString()}/${contract.requiredScience.toLocaleString()}` : contract.requiredScience.toLocaleString()}</span>
               {isActive && (
                 <div className="flex-1 bg-gray-700 h-1 rounded-full overflow-hidden">
                   <div className="h-full bg-blue-500 transition-all" style={{ width: `${Math.min(100, (contract.deliveredScience / contract.requiredScience) * 100)}%` }} />
@@ -85,7 +85,7 @@ export function ContractsView() {
             {/* Cargo */}
             <div className="flex items-center gap-1 text-yellow-400 flex-1">
               <FaBoxOpen className="text-[9px]" />
-              <span className="font-medium">{isActive ? `${Math.floor(contract.deliveredCargo)}/${contract.requiredCargo}` : contract.requiredCargo}</span>
+              <span className="font-medium">{isActive ? `${Math.floor(contract.deliveredCargo).toLocaleString()}/${contract.requiredCargo.toLocaleString()}` : contract.requiredCargo.toLocaleString()}</span>
               {isActive && (
                 <div className="flex-1 bg-gray-700 h-1 rounded-full overflow-hidden">
                   <div className="h-full bg-yellow-500 transition-all" style={{ width: `${Math.min(100, (contract.deliveredCargo / contract.requiredCargo) * 100)}%` }} />

@@ -229,7 +229,7 @@ export function ResearchTreeView() {
                         <h3 className="font-semibold text-sm text-white">{node.name}</h3>
                         <div className="flex items-center gap-2">
                           <span className={`text-sm font-mono font-bold ${canAfford ? 'text-blue-400' : 'text-red-400'}`}>
-                            {node.scienceCost}
+                            {node.scienceCost.toLocaleString()}
                           </span>
                           {!available && <FaLock className="text-gray-500 text-xs" />}
                         </div>
@@ -288,7 +288,7 @@ export function ResearchTreeView() {
                       <div className="flex items-center gap-2">
                         {nextNode && (
                           <span className={`text-sm font-mono font-bold ${canAffordNext ? 'text-blue-400' : 'text-red-400'}`}>
-                            {nextNode.scienceCost}
+                            {nextNode.scienceCost.toLocaleString()}
                           </span>
                         )}
                         {!canUnlockNext && currentLevel === 0 && (

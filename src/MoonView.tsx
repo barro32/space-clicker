@@ -298,7 +298,7 @@ export function MoonView() {
                 <p className="text-xs text-green-500/50 mb-2">{description}</p>
                 <div className="flex justify-between items-center">
                   <div className="text-xs text-green-500/60">
-                    {cost.cargo}C {cost.science}S {cost.regolith > 0 && `${cost.regolith}R`}
+                    {cost.cargo.toLocaleString()}C {cost.science.toLocaleString()}S {cost.regolith > 0 && `${cost.regolith.toLocaleString()}R`}
                   </div>
                   <button
                     onClick={() => buildMoonStructure(type)}
