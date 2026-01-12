@@ -265,7 +265,7 @@ export function ResearchSidebar({ layer }: ResearchSidebarProps) {
                         )}
                         {node.helium3Cost && (
                           <span className={`text-[10px] ${earthResources.helium3 >= node.helium3Cost ? 'text-cyan-400' : 'text-red-400'}`}>
-                            {node.helium3Cost} He-3
+                            {node.helium3Cost.toLocaleString()} He-3
                           </span>
                         )}
                       </div>

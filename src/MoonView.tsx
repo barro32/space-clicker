@@ -242,10 +242,10 @@ export function MoonView() {
             </div>
             
             <div>
-              <div className="flex justify-between text-xs text-green-500/60 mb-1">
-                <span>Helium-3</span>
-                <span>{moonResources.helium3.toFixed(1)} / {storage.helium3}</span>
-              </div>
+               <div className="flex justify-between text-xs text-green-500/60 mb-1">
+                 <span>Helium-3</span>
+                 <span>{Math.floor(moonResources.helium3).toLocaleString()} / {storage.helium3.toLocaleString()}</span>
+               </div>
               <div className="h-2 bg-gray-800 rounded overflow-hidden">
                 <div 
                   className="h-full bg-cyan-500 transition-all"
@@ -258,12 +258,12 @@ export function MoonView() {
           <div className="border-t border-green-500/20 pt-3">
             <h3 className="text-xs text-green-500/60 mb-2">EARTH RESERVES</h3>
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="text-amber-400">
-                <span className="text-green-500/60">Regolith:</span> {Math.floor(earthResources.regolith)}
-              </div>
-              <div className="text-cyan-400">
-                <span className="text-green-500/60">He-3:</span> {earthResources.helium3.toFixed(1)}
-              </div>
+               <div className="text-amber-400">
+                 <span className="text-green-500/60">Regolith:</span> {Math.floor(earthResources.regolith).toLocaleString()}
+               </div>
+               <div className="text-cyan-400">
+                 <span className="text-green-500/60">He-3:</span> {Math.floor(earthResources.helium3).toLocaleString()}
+               </div>
             </div>
           </div>
           

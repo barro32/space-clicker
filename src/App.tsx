@@ -731,7 +731,7 @@ export function App() {
             {metrics.earthHelium3 > 0 && (
               <div className="flex items-center gap-2 bg-black/40 border border-cyan-400/30 rounded px-2.5 py-1 relative" title="Helium-3 on Earth - Gateway to Planetary expansion">
                 <FaGem className="text-cyan-300 text-sm" />
-                <span className="text-cyan-300 font-bold font-mono">{metrics.earthHelium3.toFixed(1)}</span>
+                <span className="text-cyan-300 font-bold font-mono">{Math.floor(metrics.earthHelium3).toLocaleString()}</span>
               </div>
             )}
           </div>
