@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* Prevent text selection on interactive elements */
+button, [role="button"], .no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
 /* Hide scrollbars but keep functionality */
 .scrollbar-hide {
   -ms-overflow-style: none;
@@ -32,6 +40,9 @@
 }
 .layer-research {
   background: linear-gradient(180deg, #1a0a1a 0%, #2d1b36 30%, #1a0a20 70%, #0d0d0d 100%);
+}
+.layer-contracts {
+  background: linear-gradient(180deg, #0d1b2a 0%, #1a1a2e 30%, #2d1b36 70%, #1a1a2e 100%);
 }
 
 /* Star field effect for orbit */
@@ -83,7 +94,7 @@
 }
 
 .animate-rocket-ready {
-  animation: rocket-ready 1s ease-in-out;
+  animation: rocket-ready 1s ease-in-out infinite;
 }
 
 @keyframes bounce-slow {
@@ -114,19 +125,36 @@
   animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-@keyframes launch {
-   0% {
-     transform: translateY(0) scale(1);
-     opacity: 1;
+/* Cargo rocket launch animation - maintains -45deg rotation, moves up */
+ @keyframes cargo-launch {
+   0%, 100% {
+     transform: rotate(-45deg) translate(0, 0);
+     filter: brightness(1);
    }
-   100% {
-     transform: translateY(-10px) scale(1.2);
-     opacity: 0.8;
+   50% {
+     transform: rotate(-45deg) translate(2px, -2px);
+     filter: brightness(1.3);
    }
  }
- 
- .animate-launch {
-   animation: launch 0.6s ease-out;
+
+ .animate-cargo-launch {
+   animation: cargo-launch 1s ease-in-out infinite;
+ }
+
+ /* Science rocket launch animation - no rotation, moves up */
+ @keyframes science-launch {
+   0%, 100% {
+     transform: translateY(0);
+     filter: brightness(1);
+   }
+   50% {
+     transform: translateY(-3px);
+     filter: brightness(1.3);
+   }
+ }
+
+ .animate-science-launch {
+   animation: science-launch 1s ease-in-out infinite;
  }
 
  @keyframes new-research-highlight {
@@ -231,4 +259,200 @@
 /* Smooth scroll behavior for containers */
 .smooth-scroll {
   scroll-behavior: smooth;
+}
+
+/* Orbital layer animations */
+@keyframes spin-slow {
+  from {
+    transform: rotate(45deg);
+  }
+  to {
+    transform: rotate(405deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+@keyframes orbit-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-orbit {
+  animation: orbit-rotate 20s linear infinite;
+}
+
+/* === MOON TERMINAL THEME === */
+
+/* Terminal container */
+.terminal-container {
+  font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+  color: #22c55e;
+  text-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
+}
+
+/* Terminal title */
+.terminal-title {
+  font-family: 'Courier New', monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* Terminal text */
+.terminal-text {
+  font-family: 'Courier New', monospace;
+}
+
+/* Terminal panel */
+.terminal-panel {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 4px;
+  box-shadow: 
+    0 0 10px rgba(34, 197, 94, 0.1),
+    inset 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Terminal button */
+.terminal-button {
+  font-family: 'Courier New', monospace;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(34, 197, 94, 0.5);
+  color: #22c55e;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.2s ease;
+}
+
+.terminal-button:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.2);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+}
+
+.terminal-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Small terminal button */
+.terminal-button-sm {
+  font-family: 'Courier New', monospace;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #22c55e;
+  transition: all 0.2s ease;
+}
+
+.terminal-button-sm:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.3);
+}
+
+/* Terminal flicker animation */
+@keyframes terminal-flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.98; }
+  52% { opacity: 0.9; }
+  54% { opacity: 1; }
+}
+
+.terminal-flicker {
+  animation: terminal-flicker 0.15s infinite;
+}
+
+/* Scanline effect */
+.scanlines::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 0, 0.03) 2px,
+    rgba(0, 255, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* Moon layer background */
+.layer-moon {
+  background: linear-gradient(180deg, #0a0a0a 0%, #0d0d0d 30%, #111111 70%, #0a0a0a 100%);
+}
+
+/* Terminal alert styling */
+.terminal-alert {
+  animation: terminal-alert-pulse 2s ease-in-out infinite;
+}
+
+@keyframes terminal-alert-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.8), 0 0 40px rgba(239, 68, 68, 0.4);
+  }
+}
+
+/* Hazard overlay effects */
+.hazard-dust {
+  position: relative;
+}
+
+.hazard-dust::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(251, 191, 36, 0.05) 10px,
+    rgba(251, 191, 36, 0.05) 20px
+  );
+  animation: dust-drift 3s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes dust-drift {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(20px); }
+}
+
+.hazard-flare {
+  position: relative;
+}
+
+.hazard-flare::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(251, 146, 60, 0.1) 0%,
+    transparent 70%
+  );
+  animation: flare-pulse 1s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes flare-pulse {
+  0% { opacity: 0.3; }
+  100% { opacity: 0.6; }
+}
+
+/* CRT glow effect */
+.crt-glow {
+  box-shadow: 
+    0 0 50px rgba(34, 197, 94, 0.1),
+    inset 0 0 80px rgba(34, 197, 94, 0.05);
 }

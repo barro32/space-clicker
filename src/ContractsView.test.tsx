@@ -12,21 +12,23 @@ vi.mock('./useGameStore', () => ({
 describe('ContractsView Component', () => {
   it('renders companies and titles', () => {
     (useGameStore as any).mockReturnValue({
-      companies: [{ id: 'titan', name: 'Titan Mining', level: 1, experience: 0 }],
+      companies: [{ id: 'titan', name: 'Titan Mining', level: 1, experience: 0, contractsCompleted: 0 }],
       availableContracts: [],
-      activeContract: null,
+      activeContracts: [],
+      contractRefreshTimer: 300,
       generateContracts: vi.fn(),
       acceptContract: vi.fn(),
-      deliverContractResources: vi.fn(),
-      cargo: 0,
-      science: 0,
+      forfeitContract: vi.fn(),
+      getMaxActiveContracts: () => 1,
     });
 
     render(<ContractsView />);
     
+    // Two-column layout - company reputation on left, contracts on right
     expect(screen.getByText(/Titan Mining/i)).toBeDefined();
-    expect(screen.getAllByText(/Active Contract/i)).toBeDefined();
-    expect(screen.getByText(/Available Offers/i)).toBeDefined();
+    expect(screen.getByText(/COMPANY REPUTATION/i)).toBeDefined();
+    expect(screen.getAllByText(/ACTIVE CONTRACTS/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/AVAILABLE OFFERS/i).length).toBeGreaterThan(0);
   });
 
   it('displays available contracts and allows acceptance', () => {
@@ -34,14 +36,32 @@ describe('ContractsView Component', () => {
     (useGameStore as any).mockReturnValue({
       companies: [],
       availableContracts: [
-        { id: 'c1', title: 'Supply Mission', description: 'desc', requiredCargo: 10, requiredScience: 0, rewardMoney: 100, rewardScience: 0, rewardExperience: 10, status: 'available' }
+        { 
+          id: 'c1', 
+          title: 'Supply Mission', 
+          description: 'desc', 
+          requiredCargo: 10, 
+          requiredScience: 0, 
+          requiredMoney: 0,
+          deliveredCargo: 0,
+          deliveredScience: 0,
+          deliveredMoney: 0,
+          rewardMoney: 100, 
+          rewardScience: 0, 
+          rewardExperience: 10, 
+          status: 'available',
+          timeLimitSeconds: 0,
+          elapsedSeconds: 0,
+          maxExplosions: -1,
+          currentExplosions: 0,
+        }
       ],
-      activeContract: null,
+      activeContracts: [],
+      contractRefreshTimer: 300,
       generateContracts: vi.fn(),
       acceptContract: acceptSpy,
-      deliverContractResources: vi.fn(),
-      cargo: 0,
-      science: 0,
+      forfeitContract: vi.fn(),
+      getMaxActiveContracts: () => 1,
     });
 
     render(<ContractsView />);

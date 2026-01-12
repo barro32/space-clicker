@@ -7,6 +7,7 @@ vi.mock('./OrbitView', () => ({ OrbitView: () => null }));
 vi.mock('./ContractsView', () => ({ ContractsView: () => null }));
 vi.mock('./ResearchTreeView', () => ({ ResearchTreeView: () => null }));
 vi.mock('./DevConsole', () => ({ DevConsole: () => null }));
+vi.mock('./MoonView', () => ({ MoonView: () => null }));
 
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -49,6 +50,17 @@ describe('App navigation & persistence', () => {
       fuelCostPerRocket: 1,
       rocketExplosionChance: 0.5,
       profitPerRocket: 1,
+      totalSuccessfulLaunches: 0,
+      spaceStations: [],
+      activeContracts: [],
+      satellites: 0,
+      maxSatellites: 5,
+      lunarComponents: 0,
+      moonStatus: 'locked',
+      companies: [],
+      getEffectMultiplier: () => 1,
+      getCompanyPerkValue: () => 0,
+      getMaxFuel: () => 100,
     };
     
     // Handle both selector and non-selector calls

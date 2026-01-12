@@ -5,12 +5,13 @@ import { useGameStore, GameState } from './useGameStore.js';
 /**
  * COMPREHENSIVE RESEARCH NODE TEST SUITE
  * 
- * This test suite validates all 54 research nodes across 5 branches:
- * - Propulsion (22 nodes): p1, p2-1 to p2-20, p3
- * - Infrastructure (12 nodes): i1-1 to i1-10, i2, i3
- * - Commercial (3 nodes): c1, c2, c3
- * - Orbital (3 nodes): o1, o2, o3
- * - Control (14 nodes): u1-1 to u1-5, u2-1 to u2-5, u3, u4, u6, u7
+ * This test suite validates all 190 research nodes across 6 branches:
+ * - Propulsion (106 nodes): p1-1 to p1-5, p2-1 to p2-100, p3
+ * - Infrastructure (26 nodes): i1-1 to i1-10, i2-1 to i2-5, i3, f1-1 to f1-5, f2
+ * - Commercial (22 nodes): c1-1 to c1-5, c2, c3, c4, c5, c6, c7, l1-1 to l1-10, l2, l3, l4
+ * - Orbital (15 nodes): o1-o15
+ * - Control (14 nodes): u1-1 to u1-5, u2-1 to u2-5, u3, u4, u6, u7, u8, u9
+ * - Lunar (7 nodes): m1-m7
  * 
  * Each node is tested for:
  * 1. Existence in researchTree
@@ -23,7 +24,7 @@ import { useGameStore, GameState } from './useGameStore.js';
  * 8. Unlock conditions (prerequisites met, science sufficient)
  */
 
-describe('All 35 Research Nodes - Comprehensive Coverage', () => {
+describe('All 190 Research Nodes - Comprehensive Coverage', () => {
   beforeEach(() => {
     useGameStore.setState({
       money: 10000,
@@ -34,7 +35,7 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
       notifications: [],
       companies: [],
       availableContracts: [],
-      activeContract: null,
+      activeContracts: [],
       rockets: [],
       nextRocketId: 0,
       rocketCost: 10,
@@ -56,9 +57,9 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
   });
 
    describe('Node Structure and Validation', () => {
-      it('should have exactly 139 research nodes', () => {
-        // 100 Safety Protocols + 10 Modular Spaceports + 5 Assembly + 5 Recovery + 19 others (includes u8 Auto-Salvage)
-        expect(researchTree).toHaveLength(139);
+      it('should have exactly 199 research nodes', () => {
+        // 5 Efficient Engines + 100 Safety Protocols + 1 High-Energy Fuel + 9 Modular Spaceports + 5 Advanced Refineries + 1 Automated Construction + 5 Fuel Tanks + 1 Combustion Injection + 5 Market Analysis + 2 (c2, c3) + 4 (c4-c7) + 10 Cargo Optimization + 3 (l2-l4) + 15 Orbital + 10 Assembly Optimization + 10 Recovery Protocols + 6 Control singles + 7 Lunar = 199
+        expect(researchTree).toHaveLength(199);
       });
 
     it('should have all required branches represented', () => {
@@ -68,6 +69,7 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
       expect(branches).toContain('commercial');
       expect(branches).toContain('orbital');
       expect(branches).toContain('control');
+      expect(branches).toContain('lunar');
     });
 
     it('should have unique IDs across all nodes', () => {
@@ -130,14 +132,18 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
     it('all nodes should have valid effect types', () => {
       const validEffectTypes = [
         'fuelCostMultiplier',
+        'fuelCapacityBonus',
         'explosionChanceMultiplier',
         'cargoGenerationMultiplier',
+        'cargoPerLaunchMultiplier',
+        'passiveCargoBonus',
         'spaceportCapacityBonus',
         'refineryOutputMultiplier',
         'constructionCostMultiplier',
         'profitMultiplier',
-        'contractMoneyMultiplier',
-        'unlockHighValueContracts',
+        'contractRequirementMultiplier',
+        'companyXPMultiplier',
+        'unlockAfterburner',
         'stationLogisticsMultiplier',
         'stationScienceMultiplier',
         'unlockMoonMissions',
@@ -152,6 +158,27 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
         'uiTelemetryFlag',
         'autoBuildEnabled',
         'autoSalvageEnabled',
+        'contractRefreshMultiplier',
+        'maxActiveContractsBonus',
+        'maxAvailableContractsBonus',
+        // Orbital layer effect types
+        'unlockSatellites',
+        'maxSatellitesBonus',
+        'debrisImmunity',
+        'dockingBonusMultiplier',
+        'stationDocksBonus',
+        'satelliteBonusMultiplier',
+        // Lunar/Moon layer effect types
+        'lunarProductionMultiplier',
+        'unlockLunarManufacturing',
+        // Lunar branch effect types
+        'missionDurationMultiplier',
+        'extractorOutputMultiplier',
+        'moonRefineryOutputMultiplier',
+        'moonStorageMultiplier',
+        'hazardDurationMultiplier',
+        'massDriverEfficiency',
+        'unlockPlanetaryExpansion',
       ];
 
       researchTree.forEach(node => {
@@ -168,7 +195,17 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
 
    describe('Multi-level Research Configuration', () => {
       it('multi-level nodes should have levelSuffix=true', () => {
-        const multiLevelIds = ['p2-1', 'p2-2', 'p2-3', 'p2-4', 'p2-5', 'p2-6', 'p2-7', 'p2-8', 'p2-9', 'p2-10', 'p2-11', 'p2-12', 'p2-13', 'p2-14', 'p2-15', 'p2-16', 'p2-17', 'p2-18', 'p2-19', 'p2-20', 'i1-1', 'i1-2', 'i1-3', 'i1-4', 'i1-5', 'i1-6', 'i1-7', 'i1-8', 'i1-9', 'i1-10', 'u1-1', 'u1-2', 'u1-3', 'u1-4', 'u1-5', 'u2-1', 'u2-2', 'u2-3', 'u2-4', 'u2-5'];
+        const multiLevelIds = [
+          'p1-1', 'p1-2', 'p1-3', 'p1-4', 'p1-5', // Efficient Engines
+          'p2-1', 'p2-2', 'p2-3', 'p2-4', 'p2-5', 'p2-6', 'p2-7', 'p2-8', 'p2-9', 'p2-10', 'p2-11', 'p2-12', 'p2-13', 'p2-14', 'p2-15', 'p2-16', 'p2-17', 'p2-18', 'p2-19', 'p2-20', // Safety Protocols
+          'i1-1', 'i1-2', 'i1-3', 'i1-4', 'i1-5', 'i1-6', 'i1-7', 'i1-8', 'i1-9', // Modular Spaceports (9 levels)
+          'i2-1', 'i2-2', 'i2-3', 'i2-4', 'i2-5', // Advanced Refineries
+          'f1-1', 'f1-2', 'f1-3', 'f1-4', 'f1-5', // Fuel Tanks
+          'c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5', // Market Analysis
+          'u1-1', 'u1-2', 'u1-3', 'u1-4', 'u1-5', 'u1-6', 'u1-7', 'u1-8', 'u1-9', 'u1-10', // Assembly Optimization (10 levels)
+          'u2-1', 'u2-2', 'u2-3', 'u2-4', 'u2-5', 'u2-6', 'u2-7', 'u2-8', 'u2-9', 'u2-10', // Recovery Protocols (10 levels)
+          'l1-1', 'l1-2', 'l1-3', 'l1-4', 'l1-5', 'l1-6', 'l1-7', 'l1-8', 'l1-9', 'l1-10', // Cargo Optimization
+        ];
         multiLevelIds.forEach(id => {
           const node = researchTree.find(n => n.id === id);
           expect(node?.levelSuffix).toBe(true);
@@ -181,7 +218,7 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
     });
 
     it('single-level nodes should not have maxLevel', () => {
-      const singleLevelIds = ['p1', 'p3', 'i2', 'i3', 'c1', 'c2', 'c3', 'o1', 'o2', 'o3', 'o4', 'o5', 'o6', 'o7', 'u3', 'u4', 'u6', 'u7'];
+      const singleLevelIds = ['p3', 'i3', 'f2', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'l2', 'l3', 'l4', 'o1', 'o2', 'o3', 'o4', 'o5', 'o6', 'o7', 'o8', 'o9', 'o10', 'o11', 'o12', 'o13', 'o14', 'o15', 'u3', 'u4', 'u6', 'u7', 'u8', 'u9', 'm1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7'];
       singleLevelIds.forEach(id => {
         const node = researchTree.find(n => n.id === id);
         expect(node?.maxLevel).toBeUndefined();
@@ -189,7 +226,7 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
     });
 
     it('single-level nodes should not have levelSuffix=true', () => {
-      const singleLevelIds = ['p1', 'p3', 'i2', 'i3', 'c1', 'c2', 'c3', 'o1', 'o2', 'o3', 'o4', 'o5', 'o6', 'o7', 'u3', 'u4', 'u6', 'u7'];
+      const singleLevelIds = ['p3', 'i3', 'f2', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'l2', 'l3', 'l4', 'o1', 'o2', 'o3', 'o4', 'o5', 'o6', 'o7', 'o8', 'o9', 'o10', 'o11', 'o12', 'o13', 'o14', 'o15', 'u3', 'u4', 'u6', 'u7', 'u8', 'u9', 'm1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7'];
       singleLevelIds.forEach(id => {
         const node = researchTree.find(n => n.id === id);
         expect(node?.levelSuffix).not.toBe(true);
@@ -197,34 +234,34 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
     });
   });
 
-  describe('Propulsion Branch (12 nodes)', () => {
-    describe('p1: Efficient Engines', () => {
+  describe('Propulsion Branch', () => {
+    describe('p1-1: Efficient Engines I', () => {
       it('should exist in researchTree', () => {
-        const node = researchTree.find(n => n.id === 'p1');
+        const node = researchTree.find(n => n.id === 'p1-1');
         expect(node).toBeDefined();
       });
 
       it('should have no prerequisites', () => {
-        const node = researchTree.find(n => n.id === 'p1');
+        const node = researchTree.find(n => n.id === 'p1-1');
         expect(node?.prerequisites).toEqual([]);
       });
 
       it('should apply fuelCostMultiplier effect', () => {
-        const node = researchTree.find(n => n.id === 'p1');
+        const node = researchTree.find(n => n.id === 'p1-1');
         expect(node?.effect.type).toBe('fuelCostMultiplier');
-        expect(node?.effect.value).toBe(0.9);
+        expect(node?.effect.value).toBe(0.97);
       });
 
       it('should be unlockable without prerequisites', () => {
         useGameStore.setState({ science: 500, researchedNodes: [] } as unknown as GameState);
-        useGameStore.getState().unlockNode('p1');
-        expect(useGameStore.getState().researchedNodes).toContain('p1');
+        useGameStore.getState().unlockNode('p1-1');
+        expect(useGameStore.getState().researchedNodes).toContain('p1-1');
       });
 
       it('should not be unlockable with insufficient science', () => {
         useGameStore.setState({ science: 50, researchedNodes: [] } as unknown as GameState);
-        useGameStore.getState().unlockNode('p1');
-        expect(useGameStore.getState().researchedNodes).not.toContain('p1');
+        useGameStore.getState().unlockNode('p1-1');
+        expect(useGameStore.getState().researchedNodes).not.toContain('p1-1');
       });
     });
 
@@ -352,8 +389,8 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
      });
   });
 
-  describe('Infrastructure Branch (3 nodes)', () => {
-      describe('i1-1 through i1-10: Modular Spaceports I-X', () => {
+  describe('Infrastructure Branch', () => {
+      describe('i1-1 through i1-9: Modular Spaceports I-IX', () => {
         const spaceportLevels = [
           { id: 'i1-1', name: 'Modular Spaceports I' },
           { id: 'i1-2', name: 'Modular Spaceports II' },
@@ -364,7 +401,6 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
           { id: 'i1-7', name: 'Modular Spaceports VII' },
           { id: 'i1-8', name: 'Modular Spaceports VIII' },
           { id: 'i1-9', name: 'Modular Spaceports IX' },
-          { id: 'i1-10', name: 'Modular Spaceports X' },
         ];
 
         spaceportLevels.forEach(({ id, name }) => {
@@ -375,35 +411,35 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
             expect(node?.prerequisites).toEqual([]);
           });
 
-          it(`${id} should have spaceportCapacityBonus=3`, () => {
+          it(`${id} should have spaceportCapacityBonus=1`, () => {
             const node = researchTree.find(n => n.id === id);
             expect(node?.effect.type).toBe('spaceportCapacityBonus');
-            expect(node?.effect.value).toBe(3);
+            expect(node?.effect.value).toBe(1);
           });
         });
       });
 
-     describe('i2: Advanced Refineries', () => {
+     describe('i2-1: Advanced Refineries I', () => {
        it('should exist in researchTree', () => {
-         const node = researchTree.find(n => n.id === 'i2');
+         const node = researchTree.find(n => n.id === 'i2-1');
          expect(node).toBeDefined();
        });
 
        it('should have no prerequisites', () => {
-         const node = researchTree.find(n => n.id === 'i2');
+         const node = researchTree.find(n => n.id === 'i2-1');
          expect(node?.prerequisites).toEqual([]);
        });
 
        it('should apply refineryOutputMultiplier effect', () => {
-         const node = researchTree.find(n => n.id === 'i2');
+         const node = researchTree.find(n => n.id === 'i2-1');
          expect(node?.effect.type).toBe('refineryOutputMultiplier');
-         expect(node?.effect.value).toBe(1.5);
+         expect(node?.effect.value).toBe(1.15);
        });
 
        it('should be unlockable independently', () => {
          useGameStore.setState({ science: 5000, researchedNodes: [] } as unknown as GameState);
-         useGameStore.getState().unlockNode('i2');
-         expect(useGameStore.getState().researchedNodes).toContain('i2');
+         useGameStore.getState().unlockNode('i2-1');
+         expect(useGameStore.getState().researchedNodes).toContain('i2-1');
        });
      });
 
@@ -427,7 +463,7 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
        it('should affect getCurrentSpaceportCost()', () => {
         useGameStore.setState({
           science: 5000,
-          researchedNodes: ['i1', 'i2', 'i3'],
+          researchedNodes: ['i1-1', 'i2-1', 'i3'],
           spaceports: [{ id: 1 }], // 1 spaceport already exists
         } as unknown as GameState);
         const cost = useGameStore.getState().getCurrentSpaceportCost();
@@ -437,38 +473,38 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
     });
   });
 
-  describe('Commercial Branch (3 nodes)', () => {
-    describe('c1: Market Analysis', () => {
+  describe('Commercial Branch', () => {
+    describe('c1-1: Market Analysis I', () => {
       it('should exist in researchTree', () => {
-        const node = researchTree.find(n => n.id === 'c1');
+        const node = researchTree.find(n => n.id === 'c1-1');
         expect(node).toBeDefined();
       });
 
       it('should have no prerequisites', () => {
-        const node = researchTree.find(n => n.id === 'c1');
+        const node = researchTree.find(n => n.id === 'c1-1');
         expect(node?.prerequisites).toEqual([]);
       });
 
       it('should apply profitMultiplier effect', () => {
-        const node = researchTree.find(n => n.id === 'c1');
+        const node = researchTree.find(n => n.id === 'c1-1');
         expect(node?.effect.type).toBe('profitMultiplier');
-        expect(node?.effect.value).toBe(1.2);
+        expect(node?.effect.value).toBe(1.06);
       });
 
       it('should be unlockable without prerequisites', () => {
         useGameStore.setState({ science: 500, researchedNodes: [] } as unknown as GameState);
-        useGameStore.getState().unlockNode('c1');
-        expect(useGameStore.getState().researchedNodes).toContain('c1');
+        useGameStore.getState().unlockNode('c1-1');
+        expect(useGameStore.getState().researchedNodes).toContain('c1-1');
       });
 
       it('should apply multiplier in getEffectMultiplier', () => {
-        useGameStore.setState({ science: 1000, researchedNodes: ['c1'] } as unknown as GameState);
+        useGameStore.setState({ science: 1000, researchedNodes: ['c1-1'] } as unknown as GameState);
         const multiplier = useGameStore.getState().getEffectMultiplier('profitMultiplier');
-        expect(multiplier).toBe(1.2);
+        expect(multiplier).toBe(1.06);
       });
     });
 
-    describe('c2: Corporate Partnerships', () => {
+    describe('c2: Lean Logistics', () => {
       it('should exist in researchTree', () => {
         const node = researchTree.find(n => n.id === 'c2');
         expect(node).toBeDefined();
@@ -479,10 +515,10 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
         expect(node?.prerequisites).toEqual([]);
       });
 
-      it('should apply contractMoneyMultiplier effect', () => {
+      it('should apply contractRequirementMultiplier effect', () => {
         const node = researchTree.find(n => n.id === 'c2');
-        expect(node?.effect.type).toBe('contractMoneyMultiplier');
-        expect(node?.effect.value).toBe(1.25);
+        expect(node?.effect.type).toBe('contractRequirementMultiplier');
+        expect(node?.effect.value).toBe(0.80);
       });
 
       it('should be unlockable independently', () => {
@@ -492,7 +528,7 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
       });
     });
 
-    describe('c3: Interstellar Trade', () => {
+    describe('c3: Negotiation Tactics', () => {
       it('should exist in researchTree', () => {
         const node = researchTree.find(n => n.id === 'c3');
         expect(node).toBeDefined();
@@ -503,14 +539,14 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
         expect(node?.prerequisites).toEqual([]);
       });
 
-      it('should apply unlockHighValueContracts effect', () => {
+      it('should apply companyXPMultiplier effect', () => {
         const node = researchTree.find(n => n.id === 'c3');
-        expect(node?.effect.type).toBe('unlockHighValueContracts');
-        expect(node?.effect.value).toBe(1);
+        expect(node?.effect.type).toBe('companyXPMultiplier');
+        expect(node?.effect.value).toBe(1.5);
       });
 
       it('should be unlockable independently', () => {
-        useGameStore.setState({ science: 5000, researchedNodes: ['c1'] } as unknown as GameState);
+        useGameStore.setState({ science: 5000, researchedNodes: ['c1-1'] } as unknown as GameState);
         useGameStore.getState().unlockNode('c3');
         expect(useGameStore.getState().researchedNodes).toContain('c3');
       });
@@ -592,21 +628,26 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
   });
 
   describe('Control Branch (14 nodes)', () => {
-     describe('u1-1 through u1-5: Assembly Optimization I-V', () => {
+     describe('u1-1 through u1-10: Assembly Optimization I-X', () => {
        const assemblyLevels = [
-         { id: 'u1-1', name: 'Assembly Optimization I' },
-         { id: 'u1-2', name: 'Assembly Optimization II' },
-         { id: 'u1-3', name: 'Assembly Optimization III' },
-         { id: 'u1-4', name: 'Assembly Optimization IV' },
-         { id: 'u1-5', name: 'Assembly Optimization V' },
+         { id: 'u1-1', name: 'Assembly Optimization I', prereqs: ['u7'] }, // Requires Auto-Queue
+         { id: 'u1-2', name: 'Assembly Optimization II', prereqs: [] },
+         { id: 'u1-3', name: 'Assembly Optimization III', prereqs: [] },
+         { id: 'u1-4', name: 'Assembly Optimization IV', prereqs: [] },
+         { id: 'u1-5', name: 'Assembly Optimization V', prereqs: [] },
+         { id: 'u1-6', name: 'Assembly Optimization VI', prereqs: [] },
+         { id: 'u1-7', name: 'Assembly Optimization VII', prereqs: [] },
+         { id: 'u1-8', name: 'Assembly Optimization VIII', prereqs: [] },
+         { id: 'u1-9', name: 'Assembly Optimization IX', prereqs: [] },
+         { id: 'u1-10', name: 'Assembly Optimization X', prereqs: [] },
        ];
 
-       assemblyLevels.forEach(({ id, name }) => {
-         it(`${id} should exist with no prerequisites`, () => {
+       assemblyLevels.forEach(({ id, name, prereqs }) => {
+         it(`${id} should exist with correct prerequisites`, () => {
            const node = researchTree.find(n => n.id === id);
            expect(node).toBeDefined();
            expect(node?.name).toBe(name);
-           expect(node?.prerequisites).toEqual([]);
+           expect(node?.prerequisites).toEqual(prereqs);
          });
 
          it(`${id} should have buildRocketMultiplier=1.2`, () => {
@@ -617,21 +658,31 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
        });
      });
 
-     describe('u2-1 through u2-5: Recovery Protocols I-V', () => {
+     describe('u2-1 through u2-10: Recovery Protocols I-X', () => {
        const recoveryLevels = [
          { id: 'u2-1', name: 'Recovery Protocols I' },
          { id: 'u2-2', name: 'Recovery Protocols II' },
          { id: 'u2-3', name: 'Recovery Protocols III' },
          { id: 'u2-4', name: 'Recovery Protocols IV' },
          { id: 'u2-5', name: 'Recovery Protocols V' },
+         { id: 'u2-6', name: 'Recovery Protocols VI' },
+         { id: 'u2-7', name: 'Recovery Protocols VII' },
+         { id: 'u2-8', name: 'Recovery Protocols VIII' },
+         { id: 'u2-9', name: 'Recovery Protocols IX' },
+         { id: 'u2-10', name: 'Recovery Protocols X' },
        ];
 
        recoveryLevels.forEach(({ id, name }) => {
-         it(`${id} should exist with no prerequisites`, () => {
+         it(`${id} should exist with correct prerequisites`, () => {
            const node = researchTree.find(n => n.id === id);
            expect(node).toBeDefined();
            expect(node?.name).toBe(name);
-           expect(node?.prerequisites).toEqual([]);
+           // u2-1 requires u8 (Auto-Salvage), others have no prereqs
+           if (id === 'u2-1') {
+             expect(node?.prerequisites).toEqual(['u8']);
+           } else {
+             expect(node?.prerequisites).toEqual([]);
+           }
          });
 
          it(`${id} should have clearExplosionMultiplier=1.2`, () => {
@@ -741,11 +792,11 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
 
   describe('Effect Application and Multiplier Calculation', () => {
     it('multiplicative effects (ending in Multiplier) should multiply together', () => {
-      useGameStore.setState({ researchedNodes: ['p1', 'c1'] } as unknown as GameState);
-      // p1: fuelCostMultiplier = 0.9
-      // c1: profitMultiplier = 1.2 (different effect type, not multiplied together)
-      expect(useGameStore.getState().getEffectMultiplier('fuelCostMultiplier')).toBe(0.9);
-      expect(useGameStore.getState().getEffectMultiplier('profitMultiplier')).toBe(1.2);
+      useGameStore.setState({ researchedNodes: ['p1-1', 'c1-1'] } as unknown as GameState);
+      // p1-1: fuelCostMultiplier = 0.97
+      // c1-1: profitMultiplier = 1.06 (different effect type, not multiplied together)
+      expect(useGameStore.getState().getEffectMultiplier('fuelCostMultiplier')).toBe(0.97);
+      expect(useGameStore.getState().getEffectMultiplier('profitMultiplier')).toBe(1.06);
     });
 
     it('multiple instances of same multiplicative effect should multiply', () => {
@@ -758,9 +809,9 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
 
     it('additive effects should sum together', () => {
       useGameStore.setState({ researchedNodes: ['i1-1', 'i1-2', 'i1-3'] } as unknown as GameState);
-      // i1-1, i1-2, i1-3 all have spaceportCapacityBonus = 3
-      // Sum: 3 + 3 + 3 = 9
-      expect(useGameStore.getState().getEffectMultiplier('spaceportCapacityBonus')).toBe(9);
+      // i1-1, i1-2, i1-3 all have spaceportCapacityBonus = 1
+      // Sum: 1 + 1 + 1 = 3
+      expect(useGameStore.getState().getEffectMultiplier('spaceportCapacityBonus')).toBe(3);
     });
 
     it('effects should return 1 when no research is unlocked', () => {
@@ -782,8 +833,9 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
       const available = useGameStore.getState().getAvailableNodes();
       const availableIds = new Set(available.map(n => n.id));
 
-      // Root nodes: p1, p2-1, i1-1, i2, i3, c1, c2, c3, o1, o2, o3, o4, u1-1, u2-1, u6
-      const expectedRoots = ['p1', 'p2-1', 'i1-1', 'i2', 'i3', 'c1', 'c2', 'c3', 'o1', 'o2', 'o3', 'o4', 'u1-1', 'u2-1', 'u6'];
+      // Root nodes: p1-1, p2-1, i1-1, i2-1, i3, f1-1, c1-1, c2, c3, c4, c6, o1, o2, o3, o4, o5, o6, o7, o8, o10, u3, u4, u6, u7, u9, l1-1, l2, l3
+      // Note: u1-1 requires u7, u2-1 requires u8, u8 requires o7 - they are not roots
+      const expectedRoots = ['p1-1', 'p2-1', 'i1-1', 'i2-1', 'i3', 'f1-1', 'c1-1', 'c2', 'c3', 'c4', 'c6', 'o1', 'o2', 'o3', 'o4', 'o5', 'o6', 'o7', 'o8', 'o10', 'u3', 'u4', 'u6', 'u7', 'u9', 'l1-1', 'l2', 'l3'];
       expectedRoots.forEach(id => {
         expect(availableIds).toContain(id);
       });
@@ -836,7 +888,7 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
       } as unknown as GameState);
 
       const available = useGameStore.getState().getAvailableNodes();
-      expect(available.find(n => n.id === 'p1')).toBeDefined();
+      expect(available.find(n => n.id === 'p1-1')).toBeDefined();
     });
   });
 
@@ -847,7 +899,7 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
         researchedNodes: [],
       } as unknown as GameState);
 
-      useGameStore.getState().unlockNode('p1'); // costs 80
+      useGameStore.getState().unlockNode('p1-1'); // costs 80
 
       expect(useGameStore.getState().science).toBe(920);
     });
@@ -858,10 +910,10 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
         researchedNodes: [],
       } as unknown as GameState);
 
-      useGameStore.getState().unlockNode('p1'); // costs 80
+      useGameStore.getState().unlockNode('p1-1'); // costs 80
 
       expect(useGameStore.getState().science).toBe(79);
-      expect(useGameStore.getState().researchedNodes).not.toContain('p1');
+      expect(useGameStore.getState().researchedNodes).not.toContain('p1-1');
     });
 
     it('should prevent double-unlock of same node', () => {
@@ -870,15 +922,15 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
         researchedNodes: [],
       } as unknown as GameState);
 
-      useGameStore.getState().unlockNode('p1');
+      useGameStore.getState().unlockNode('p1-1');
       const scienceAfterFirst = useGameStore.getState().science;
 
-      useGameStore.getState().unlockNode('p1');
+      useGameStore.getState().unlockNode('p1-1');
       const scienceAfterSecond = useGameStore.getState().science;
 
       // Science should not change on second attempt
       expect(scienceAfterSecond).toBe(scienceAfterFirst);
-      expect(useGameStore.getState().researchedNodes.filter(id => id === 'p1')).toHaveLength(1);
+      expect(useGameStore.getState().researchedNodes.filter(id => id === 'p1-1')).toHaveLength(1);
     });
   });
 
@@ -889,7 +941,7 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
          researchedNodes: [],
        } as unknown as GameState);
 
-       const chain = ['p1', 'p2-1', 'p2-2', 'p2-3', 'p2-4', 'p2-5', 'p2-6', 'p2-7', 'p2-8', 'p2-9', 'p2-10', 'p3'];
+       const chain = ['p1-1', 'p2-1', 'p2-2', 'p2-3', 'p2-4', 'p2-5', 'p2-6', 'p2-7', 'p2-8', 'p2-9', 'p2-10', 'p3'];
        chain.forEach(id => {
          useGameStore.getState().unlockNode(id);
          expect(useGameStore.getState().researchedNodes).toContain(id);
@@ -902,7 +954,7 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
          researchedNodes: [],
        } as unknown as GameState);
 
-       const chain = ['i1-1', 'i1-2', 'i1-3', 'i1-4', 'i1-5', 'i2', 'i3'];
+       const chain = ['i1-1', 'i1-2', 'i1-3', 'i1-4', 'i1-5', 'i2-1', 'i3'];
        chain.forEach(id => {
          useGameStore.getState().unlockNode(id);
          expect(useGameStore.getState().researchedNodes).toContain(id);
@@ -915,7 +967,7 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
         researchedNodes: [],
       } as unknown as GameState);
 
-      const chain = ['c1', 'c2', 'c3'];
+      const chain = ['c1-1', 'c2', 'c3'];
       chain.forEach(id => {
         useGameStore.getState().unlockNode(id);
         expect(useGameStore.getState().researchedNodes).toContain(id);
@@ -941,7 +993,8 @@ describe('All 35 Research Nodes - Comprehensive Coverage', () => {
         researchedNodes: [],
       } as unknown as GameState);
 
-      const chain = ['u1-1', 'u1-2', 'u1-3', 'u3', 'u7'];
+      // u7 (Auto-Queue) must be unlocked before u1-1 (Assembly Optimization)
+      const chain = ['u7', 'u1-1', 'u1-2', 'u1-3', 'u3'];
       chain.forEach(id => {
         useGameStore.getState().unlockNode(id);
         expect(useGameStore.getState().researchedNodes).toContain(id);

@@ -1,7 +1,7 @@
 {
   "name": "ai-game",
   "version": "1.0.0",
-  "description": "",
+  "description": "Space Evolution - A space-themed idle game with rockets, orbital mechanics, contracts, and lunar exploration",
   "main": "src/index.tsx",
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
     "build": "vite build",
     "preview": "vite preview"
   },
-  "keywords": [],
+  "keywords": ["idle-game", "react", "typescript", "space", "simulation", "incremental"],
   "author": "",
   "license": "ISC",
   "dependencies": {
