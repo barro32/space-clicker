@@ -1,6 +1,6 @@
 import { useGameStore, MoonBuildingType, MoonSector } from './useGameStore.js'
 import { MOON } from './gameConstants.js'
-import { FaMoon, FaRocket, FaWarehouse, FaWrench, FaBolt, FaExclamationTriangle, FaArrowRight, FaIndustry, FaSun, FaAtom, FaBatteryFull, FaGripHorizontal } from 'react-icons/fa'
+import { FaMoon, FaRocket, FaWarehouse, FaWrench, FaBolt, FaExclamationTriangle, FaArrowRight, FaIndustry, FaSun, FaAtom, FaBatteryFull, FaGripHorizontal, FaBox, FaFlask, FaGem } from 'react-icons/fa'
 import { useState } from 'react'
 
 export function MoonView() {
@@ -86,14 +86,14 @@ export function MoonView() {
                     <span>Fuel:</span>
                     <span>{fuel.toLocaleString()} / {cost.fuel.toLocaleString()}</span>
                   </div>
-                  <div className={`flex justify-between ${cargo >= cost.cargo ? 'text-green-400' : 'text-red-400'}`}>
-                    <span>Cargo:</span>
-                    <span>{Math.floor(cargo).toLocaleString()} / {cost.cargo.toLocaleString()}</span>
-                  </div>
-                  <div className={`flex justify-between ${science >= cost.science ? 'text-green-400' : 'text-red-400'}`}>
-                    <span>Science:</span>
-                    <span>{Math.floor(science).toLocaleString()} / {cost.science.toLocaleString()}</span>
-                  </div>
+                   <div className={`flex justify-between ${cargo >= cost.cargo ? 'text-green-400' : 'text-red-400'}`}>
+                     <span className="flex items-center gap-1"><FaBox className="w-3 h-3" /> Cargo:</span>
+                     <span>{Math.floor(cargo).toLocaleString()} / {cost.cargo.toLocaleString()}</span>
+                   </div>
+                   <div className={`flex justify-between ${science >= cost.science ? 'text-green-400' : 'text-red-400'}`}>
+                     <span className="flex items-center gap-1"><FaFlask className="w-3 h-3" /> Science:</span>
+                     <span>{Math.floor(science).toLocaleString()} / {cost.science.toLocaleString()}</span>
+                   </div>
                   <div className={`flex justify-between ${lunarComponents >= cost.lunarComponents ? 'text-green-400' : 'text-red-400'}`}>
                     <span>Lunar Components:</span>
                     <span>{Math.floor(lunarComponents).toLocaleString()} / {cost.lunarComponents.toLocaleString()}</span>
@@ -214,8 +214,8 @@ export function MoonView() {
         </div>
       </div>
 
-      {/* Main Grid Layout */}
-      <div className="flex-1 grid grid-cols-4 gap-3 overflow-hidden">
+       {/* Main Grid Layout: 3 columns */}
+       <div className="flex-1 grid grid-cols-3 gap-3 overflow-hidden">
         
         {/* Left Column: Sector Grid */}
         <div className="col-span-1 terminal-panel p-3 space-y-2 overflow-y-auto">
@@ -264,54 +264,99 @@ export function MoonView() {
           
           {selectedSector && (
             <div className="space-y-2 text-xs">
-              {/* Sector Traits */}
-              {Object.keys(selectedSector.traits).length > 0 && (
-                <div className="border border-green-500/20 rounded p-2 bg-green-900/10">
-                  <div className="text-green-400 font-bold mb-1">Traits:</div>
-                  {Object.entries(selectedSector.traits).map(([traitName, trait]) => (
-                    <div key={traitName} className="text-green-400/70 text-xs">
-                      {traitName}
-                    </div>
-                  ))}
-                </div>
-              )}
+               {/* Sector Traits */}
+               {Object.keys(selectedSector.traits).length > 0 && (
+                 <div className="border border-green-500/20 rounded p-2 bg-green-900/10">
+                   <div className="text-green-400 font-bold mb-1">Traits:</div>
+                   {Object.entries(selectedSector.traits).map(([traitName, trait]) => (
+                     <div key={traitName} className="text-green-400/70 text-xs">
+                       {traitName}
+                     </div>
+                   ))}
+                 </div>
+               )}
 
-              {/* Available Building Types */}
-              <div className="border border-green-500/20 rounded p-2">
-                <div className="text-green-400 font-bold mb-1">Build:</div>
-                <div className="space-y-1">
-                  {['extractor', 'refinery', 'silo', 'maintenance', 'massDriver', 'solarArray', 'nuclearReactor', 'battery'].map(type => {
-                    const cost = getMoonBuildingCost(type as any)
-                    const canBuild = cargo >= cost.cargo && science >= cost.science && (!cost.regolith || moonResources.regolith >= cost.regolith) && selectedSector.slotsUsed < selectedSector.slots
-                    const buildingNames: Record<string, string> = {
-                      extractor: 'Extractor',
-                      refinery: 'Refinery',
-                      silo: 'Silo',
-                      maintenance: 'Maintenance',
-                      massDriver: 'Mass Driver',
-                      solarArray: 'Solar',
-                      nuclearReactor: 'Nuclear',
-                      battery: 'Battery',
-                    }
-                    return (
-                      <button
-                        key={type}
-                        onClick={() => constructBuildingOnMoon(selectedSector.id, type as any)}
-                        disabled={!canBuild}
-                        onMouseEnter={() => setBuildingHoverType(type)}
-                        onMouseLeave={() => setBuildingHoverType(null)}
-                        className={`w-full py-1 px-1 text-xs rounded border text-left truncate ${
-                          canBuild
-                            ? 'bg-green-900/20 border-green-500/40 text-green-400 hover:bg-green-900/40'
-                            : 'bg-gray-900/20 border-gray-600/40 text-gray-500'
-                        }`}
-                      >
-                        {buildingNames[type]}
-                      </button>
-                    )
-                  })}
+               {/* Buildings in Sector */}
+               {selectedSector && Object.keys(selectedSector.buildings).length > 0 && (
+                 <div className="border border-green-500/20 rounded p-2 bg-green-900/10">
+                   <div className="text-green-400 font-bold mb-1">Buildings:</div>
+                   <div className="space-y-1">
+                     {Object.entries(selectedSector.buildings).map(([buildingType, count]) => {
+                       const buildingNames: Record<string, string> = {
+                         extractors: 'Extractors',
+                         refineries: 'Refineries',
+                         silos: 'Silos',
+                         maintenance: 'Maintenance Bays',
+                         massDrivers: 'Mass Drivers',
+                         solarArray: 'Solar Arrays',
+                         nuclearReactor: 'Nuclear Reactors',
+                         battery: 'Batteries',
+                         fabricator: 'Fabricators',
+                       };
+                       return (
+                         <div key={buildingType} className="text-green-400/70 text-xs flex justify-between">
+                           <span>{buildingNames[buildingType] || buildingType}</span>
+                           <span>x{count}</span>
+                         </div>
+                       );
+                     })}
+                   </div>
+                 </div>
+               )}
+
+                {/* Available Building Types */}
+                <div className="border border-green-500/20 rounded p-2">
+                  <div className="text-green-400 font-bold mb-1">Build:</div>
+                  <div className="space-y-1">
+                    {['extractor', 'refinery', 'silo', 'maintenance', 'massDriver', 'solarArray', 'nuclearReactor', 'battery', 'fabricator'].map(type => {
+                      const cost = getMoonBuildingCost(type as any)
+                      const canBuild = cargo >= cost.cargo && science >= cost.science && (!cost.regolith || moonResources.regolith >= cost.regolith) && (!cost.alloys || moonResources.alloys >= cost.alloys) && selectedSector.slotsUsed < selectedSector.slots
+                      const buildingNames: Record<string, string> = {
+                        extractor: 'Extractor',
+                        refinery: 'Refinery',
+                        silo: 'Silo',
+                        maintenance: 'Maintenance',
+                        massDriver: 'Mass Driver',
+                        solarArray: 'Solar',
+                        nuclearReactor: 'Nuclear',
+                        battery: 'Battery',
+                        fabricator: 'Fabricator',
+                      }
+                      return (
+                        <button
+                          key={type}
+                          onClick={() => constructBuildingOnMoon(selectedSector.id, type as any)}
+                          disabled={!canBuild}
+                          onMouseEnter={() => setBuildingHoverType(type)}
+                          onMouseLeave={() => setBuildingHoverType(null)}
+                          className={`w-full py-1.5 px-1.5 text-xs rounded border text-left transition ${
+                            canBuild
+                              ? 'bg-green-900/20 border-green-500/40 text-green-400 hover:bg-green-900/40'
+                              : 'bg-gray-900/20 border-gray-600/40 text-gray-500'
+                          }`}
+                        >
+                          <div className="font-bold">{buildingNames[type]}</div>
+                          <div className="text-green-500/60 text-xs mt-0.5 space-y-1">
+                            <div className="flex items-center gap-1">
+                              <FaBox className="w-3 h-3" /> {Math.round(cost.cargo).toLocaleString()}
+                              <FaFlask className="w-3 h-3 ml-2" /> {Math.round(cost.science).toLocaleString()}
+                            </div>
+                            {cost.regolith > 0 && (
+                              <div className="flex items-center gap-1">
+                                <FaGripHorizontal className="w-3 h-3" /> {Math.round(cost.regolith).toLocaleString()}
+                              </div>
+                            )}
+                            {cost.alloys > 0 && (
+                              <div className="flex items-center gap-1">
+                                <FaGem className="w-3 h-3" /> {Math.round(cost.alloys).toLocaleString()}
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
             </div>
           )}
         </div>
@@ -331,14 +376,24 @@ export function MoonView() {
               <div className="h-full bg-amber-600" style={{ width: `${(moonResources.regolith / storage.regolith) * 100}%` }} />
             </div>
 
-            <div className="text-xs text-green-500/60 mt-2">Moon Helium-3</div>
-            <div className="flex justify-between text-xs text-green-400 mb-1">
-              <span>{Math.floor(moonResources.helium3).toLocaleString()}</span>
-              <span>/ {storage.helium3.toLocaleString()}</span>
-            </div>
-            <div className="h-1 bg-gray-800 rounded overflow-hidden">
-              <div className="h-full bg-cyan-500" style={{ width: `${(moonResources.helium3 / storage.helium3) * 100}%` }} />
-            </div>
+             <div className="text-xs text-green-500/60 mt-2">Moon Helium-3</div>
+             <div className="flex justify-between text-xs text-green-400 mb-1">
+               <span>{Math.floor(moonResources.helium3).toLocaleString()}</span>
+               <span>/ {storage.helium3.toLocaleString()}</span>
+             </div>
+             <div className="h-1 bg-gray-800 rounded overflow-hidden">
+               <div className="h-full bg-cyan-500" style={{ width: `${(moonResources.helium3 / storage.helium3) * 100}%` }} />
+             </div>
+
+             {/* Moon Alloys */}
+             <div className="text-xs text-green-500/60 mt-2">Moon Alloys</div>
+             <div className="flex justify-between text-xs text-green-400 mb-1">
+               <span>{Math.floor(moonResources.alloys).toLocaleString()}</span>
+               <span>/ {storage.alloys.toLocaleString()}</span>
+             </div>
+             <div className="h-1 bg-gray-800 rounded overflow-hidden">
+               <div className="h-full bg-purple-600" style={{ width: `${(moonResources.alloys / storage.alloys) * 100}%` }} />
+             </div>
           </div>
 
           {/* Power System */}
@@ -361,15 +416,18 @@ export function MoonView() {
             </div>
           </div>
 
-          {/* Earth Resources */}
-          <div className="border-t border-green-500/20 pt-2 mt-2">
-            <div className="text-xs text-green-400 font-bold mb-1">Earth Reserves</div>
-            <div className="text-xs">
-              <div className="text-green-400">
-                He-3: {Math.floor(earthResources.helium3).toLocaleString()}
-              </div>
-            </div>
-          </div>
+           {/* Earth Resources */}
+           <div className="border-t border-green-500/20 pt-2 mt-2">
+             <div className="text-xs text-green-400 font-bold mb-1">Earth Reserves</div>
+             <div className="text-xs space-y-1">
+               <div className="text-cyan-400">
+                 He-3: {Math.floor(earthResources.helium3).toLocaleString()}
+               </div>
+               <div className="text-purple-400">
+                 Alloys: {Math.floor(earthResources.alloys).toLocaleString()}
+               </div>
+             </div>
+           </div>
 
           {/* Manual Launch */}
           <button
@@ -379,21 +437,6 @@ export function MoonView() {
           >
             LAUNCH MAX He-3
           </button>
-        </div>
-
-        {/* Right Column: Log */}
-        <div className="col-span-1 terminal-panel p-3 flex flex-col">
-          <h2 className="terminal-text text-xs border-b border-green-500/30 pb-1 mb-2">SYSTEM LOG</h2>
-          
-          <div className="flex-1 overflow-y-auto text-xs font-mono space-y-1">
-            {moonLog.length === 0 ? (
-              <div className="text-green-500/40">No activity logged.</div>
-            ) : (
-              moonLog.map((log, i) => (
-                <div key={i} className="text-green-400/70 leading-tight">{log}</div>
-              ))
-            )}
-          </div>
         </div>
       </div>
     </div>

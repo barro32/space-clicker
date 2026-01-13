@@ -329,15 +329,17 @@ export const MOON = {
   BOUNTY_TIME_LIMITS: [30, 45, 60, 90], // Possible time limits
   BOUNTY_AMOUNTS: [250, 500, 750, 1000], // He-3 amounts
   
-  // Legacy local storage (can be increased by Silos)
-  STORAGE_BASE: {
-    regolith: 1000,
-    helium3: 100,
-  },
-  STORAGE_PER_SILO: {
-    regolith: 500,
-    helium3: 50,
-  },
+   // Legacy local storage (can be increased by Silos)
+   STORAGE_BASE: {
+     regolith: 1000,
+     helium3: 100,
+     alloys: 500,
+   },
+   STORAGE_PER_SILO: {
+     regolith: 500,
+     helium3: 50,
+     alloys: 250,
+   },
   
   // Building Production Rates (apply sector traits)
   EXTRACTOR_REGOLITH_RATE: 5, // Per tick per extractor
@@ -345,17 +347,18 @@ export const MOON = {
   REFINERY_REGOLITH_COST: 10, // Regolith consumed per Helium-3 produced
   MASS_DRIVER_HELIUM3_RATE: 5, // Helium-3 transported to Earth per tick (legacy)
   
-  // Building Costs
-  BUILDING_COSTS: {
-    extractor: { cargo: 500, science: 200 },
-    refinery: { cargo: 1000, science: 500, regolith: 200 },
-    silo: { cargo: 300, science: 100 },
-    maintenance: { cargo: 800, science: 400 },
-    massDriver: { cargo: 2000, science: 1000, regolith: 500 },
-    solarArray: { cargo: 600, science: 300 },
-    nuclearReactor: { cargo: 1200, science: 800 },
-    battery: { cargo: 400, science: 150 },
-  },
+   // Building Costs
+   BUILDING_COSTS: {
+     extractor: { cargo: 500, science: 200 },
+     refinery: { cargo: 1000, science: 500, regolith: 200 },
+     silo: { cargo: 300, science: 100 },
+     maintenance: { cargo: 800, science: 400 },
+     massDriver: { cargo: 2000, science: 1000, regolith: 500 },
+     solarArray: { cargo: 600, science: 300 },
+     nuclearReactor: { cargo: 1200, science: 800 },
+     battery: { cargo: 400, science: 150 },
+     fabricator: { cargo: 1500, science: 600, regolith: 300 },
+   },
   
   // Building Cost Scaling
   BUILDING_COST_EXPONENT: 1.4,
@@ -378,7 +381,13 @@ export const MOON = {
   },
   MAINTENANCE_DURATION_REDUCTION: 0.15, // 15% faster hazard clearing per maintenance building
   
-  // Manual Transport (before Mass Drivers)
-  MANUAL_TRANSPORT_REGOLITH: 100, // Per click
-  MANUAL_TRANSPORT_HELIUM3: 10, // Per click
+   // Manual Transport (before Mass Drivers)
+   MANUAL_TRANSPORT_REGOLITH: 100, // Per click
+   MANUAL_TRANSPORT_HELIUM3: 10, // Per click
+   
+   // === FABRICATOR SYSTEM ===
+   // Fabricator (converts regolith to alloys)
+   FABRICATOR_ALLOYS_RATE: 0.05, // Per tick per fabricator
+   FABRICATOR_REGOLITH_COST: 20, // Regolith consumed per alloy produced
+   FABRICATOR_POWER_DEMAND: 25, // Power consumed per fabricator
 };

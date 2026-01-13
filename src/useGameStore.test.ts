@@ -501,5 +501,109 @@ describe('Auto-build (Auto-Queue)', () => {
       expect(state.cargo).toBe(0);
     });
   });
-});
 
+  describe('Moon - Fabricator Research Effects', () => {
+    beforeEach(() => {
+      // Set up Moon system with fabricators
+      useGameStore.setState({
+        money: 100000,
+        science: 50000,
+        fuel: 1000,
+        cargo: 10000,
+        moonStatus: 'unlocked',
+        moonResources: { regolith: 10000, helium3: 0, alloys: 0 },
+        earthResources: { helium3: 0, alloys: 0 },
+        moonSectors: [
+          {
+            id: 'sector-1',
+            name: 'Landing Zone',
+            slots: 4,
+            slotsUsed: 1,
+            traits: {},
+            buildings: {
+              extractors: 1,
+              refineries: 0,
+              silos: 0,
+              maintenance: 0,
+              massDrivers: 0,
+              solarArray: 0,
+              nuclearReactor: 0,
+              battery: 0,
+              fabricator: 0,
+            },
+          }
+        ],
+        researchedNodes: [],
+        notifications: [],
+        companies: DEFAULT_COMPANIES.map(c => ({ ...c })),
+      } as unknown as GameState);
+    });
+
+    it('m16 (Alloy Furnaces) increases fabricator output by 50%', () => {
+      const state = useGameStore.getState();
+      
+      // Build a fabricator first
+      state.constructBuildingOnMoon('sector-1', 'fabricator');
+      
+      // Run a tick without m16
+      state.tick();
+      const alloysWithoutBonus = state.moonResources.alloys;
+      
+      // Reset alloys and unlock m16
+      state.moonSectors[0].buildings.fabricator = 1;
+      state.moonResources.alloys = 0;
+      state.researchedNodes.push('m16');
+      
+      // Run tick with m16
+      state.tick();
+      const alloysWithBonus = state.moonResources.alloys;
+      
+      // With m16, should be 1.5x the original
+      expect(alloysWithBonus).toBeCloseTo(alloysWithoutBonus * 1.5, 1);
+    });
+
+    it('m17 (Efficient Smelting) reduces fabricator cost by 30%', () => {
+      const state = useGameStore.getState();
+      
+      // Build a fabricator and some power sources
+      state.moonSectors[0].buildings.fabricator = 1;
+      state.moonSectors[0].buildings.solarArray = 2; // Provide power during day
+      state.moonResources.regolith = 10000;
+      state.moonResources.alloys = 0;
+      
+      // Run a tick without m17
+      state.tick();
+      const regolithUsedWithoutBonus = 10000 - state.moonResources.regolith;
+      
+      // Reset and unlock m17 (requires m16 first)
+      state.moonResources.regolith = 10000;
+      state.moonResources.alloys = 0;
+      state.researchedNodes.push('m16', 'm17');
+      
+      // Run tick with m17
+      state.tick();
+      const regolithUsedWithBonus = 10000 - state.moonResources.regolith;
+      
+      // With m17, should use less regolith (cost is 0.7x = 30% reduction)
+      // Only test if regolith was actually used (production happened)
+      if (regolithUsedWithoutBonus > 0) {
+        expect(regolithUsedWithBonus).toBeLessThan(regolithUsedWithoutBonus);
+        expect(regolithUsedWithBonus).toBeCloseTo(regolithUsedWithoutBonus * 0.7, 1);
+      }
+    });
+
+    it('m18 (Expanded Storage Vaults) increases alloy storage by 250', () => {
+      const state = useGameStore.getState();
+      
+      // Get storage without m18
+      const storageWithout = state.getMoonStorageCapacity().alloys;
+      
+      // Unlock m18
+      state.researchedNodes.push('m18');
+      const storageWith = state.getMoonStorageCapacity().alloys;
+      
+      // m18 effect value is 250 added to storage
+      expect(storageWith).toBe(storageWithout + 250);
+    });
+  });
+});

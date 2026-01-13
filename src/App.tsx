@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useGameStore, GameState } from "./useGameStore.js"
-import { FaMoneyBillAlt, FaFlask, FaGasPump, FaBoxOpen, FaChevronUp, FaChevronDown, FaChevronLeft, FaChevronRight, FaRocket, FaSatellite, FaFlask as FaLab, FaExclamationTriangle, FaFileContract, FaIndustry, FaMoon, FaGem, FaLock } from 'react-icons/fa'
+import { FaMoneyBillAlt, FaFlask, FaGasPump, FaBox, FaChevronUp, FaChevronDown, FaChevronLeft, FaChevronRight, FaRocket, FaSatellite, FaFlask as FaLab, FaExclamationTriangle, FaFileContract, FaIndustry, FaMoon, FaGem, FaLock } from 'react-icons/fa'
 import { SpaceportView } from "./SpaceportView.js"
 import { OrbitView } from "./OrbitView.js"
 import { ContractsView } from "./ContractsView.js"
@@ -220,11 +220,46 @@ const loadInitialState = () => {
           // Migration: Moon layer state
           if (parsed.moonStatus === undefined) parsed.moonStatus = 'locked';
           if (parsed.moonMissionTicksRemaining === undefined) parsed.moonMissionTicksRemaining = 0;
-          if (!parsed.moonBuildings) parsed.moonBuildings = { extractors: 0, refineries: 0, silos: 0, maintenance: 0, massDrivers: 0 };
-          if (!parsed.moonResources) parsed.moonResources = { regolith: 0, helium3: 0 };
-          if (!parsed.earthResources) parsed.earthResources = { regolith: 0, helium3: 0 };
+          if (!parsed.moonBuildings) parsed.moonBuildings = { extractors: 0, refineries: 0, silos: 0, maintenance: 0, massDrivers: 0, solarArray: 0, nuclearReactor: 0, battery: 0, fabricator: 0 };
+          if (!parsed.moonResources) parsed.moonResources = { regolith: 0, helium3: 0, alloys: 0 };
+          if (!parsed.earthResources) parsed.earthResources = { regolith: 0, helium3: 0, alloys: 0 };
+          
+          // Ensure existing moonResources and earthResources have alloys property
+          if (parsed.moonResources && parsed.moonResources.alloys === undefined) {
+            parsed.moonResources.alloys = 0;
+          }
+          if (parsed.earthResources && parsed.earthResources.alloys === undefined) {
+            parsed.earthResources.alloys = 0;
+          }
+          
+          // Ensure existing moonBuildings have new building types
+          if (parsed.moonBuildings) {
+            if (parsed.moonBuildings.solarArray === undefined) parsed.moonBuildings.solarArray = 0;
+            if (parsed.moonBuildings.nuclearReactor === undefined) parsed.moonBuildings.nuclearReactor = 0;
+            if (parsed.moonBuildings.battery === undefined) parsed.moonBuildings.battery = 0;
+            if (parsed.moonBuildings.fabricator === undefined) parsed.moonBuildings.fabricator = 0;
+          }
+          
           if (parsed.activeHazard === undefined) parsed.activeHazard = null;
           if (!parsed.moonLog) parsed.moonLog = [];
+          if (!parsed.moonSectors) parsed.moonSectors = [{ 
+            id: 'starting-sector', 
+            name: 'Landing Zone', 
+            traits: {}, 
+            buildings: {}, 
+            slots: 4, 
+            slotsUsed: 0 
+          }];
+          if (!parsed.moonPowerSystem) parsed.moonPowerSystem = { 
+            dayNightTick: 0, 
+            isDay: true, 
+            currentEnergy: 200, 
+            maxEnergy: 200, 
+            energyGeneration: 0, 
+            energyDemand: 0 
+          };
+          if (!parsed.moonBounties) parsed.moonBounties = [];
+          if (parsed.moonBountyRefreshTimer === undefined) parsed.moonBountyRefreshTimer = 300;
           
           // Migration: Layer unlock tracking
           if (parsed.totalSuccessfulLaunches === undefined) parsed.totalSuccessfulLaunches = 0;
@@ -547,11 +582,12 @@ export function App() {
         satellites: state.satellites, maxSatellites: state.maxSatellites,
         spaceDebris: state.spaceDebris, transitRockets: state.transitRockets,
         dockedRockets: state.dockedRockets,
-        // Moon layer state
-        moonStatus: state.moonStatus, moonMissionTicksRemaining: state.moonMissionTicksRemaining,
-        moonBuildings: state.moonBuildings, moonResources: state.moonResources,
-        earthResources: state.earthResources, activeHazard: state.activeHazard,
-        moonLog: state.moonLog,
+         // Moon layer state
+         moonStatus: state.moonStatus, moonMissionTicksRemaining: state.moonMissionTicksRemaining,
+         moonBuildings: state.moonBuildings, moonResources: state.moonResources,
+         earthResources: state.earthResources, activeHazard: state.activeHazard,
+         moonLog: state.moonLog, moonSectors: state.moonSectors, moonPowerSystem: state.moonPowerSystem,
+         moonBounties: state.moonBounties, moonBountyRefreshTimer: state.moonBountyRefreshTimer,
         // Layer unlock tracking
         totalSuccessfulLaunches: state.totalSuccessfulLaunches,
         orbitLayerUnlocked: state.orbitLayerUnlocked,
@@ -712,7 +748,7 @@ export function App() {
             
             {/* Cargo */}
             <div className="flex items-center gap-2 bg-black/40 border border-yellow-500/30 rounded px-2.5 py-1 relative">
-              <FaBoxOpen className="text-yellow-400 text-sm" />
+              <FaBox className="text-yellow-400 text-sm" />
               <span className="text-yellow-400 font-bold font-mono">{Math.floor(cargo).toLocaleString()}</span>
               {resourceChanges.filter(c => c.type === 'cargo').map(change => (
                 <div key={change.id} className="absolute -top-2 right-1 animate-float-up text-yellow-400 font-bold pointer-events-none text-xs">+{change.amount}</div>

@@ -57,8 +57,11 @@ export type EffectType =
    | 'sectorScanCostReduction'
    | 'buildingSlotsPerSectorBonus'
    | 'massDriverChargeTimeMultiplier'
-   | 'massDriverCapacityBonus'
-   | 'bountyRewardMultiplier';
+    | 'massDriverCapacityBonus'
+    | 'bountyRewardMultiplier'
+    | 'fabricatorOutputMultiplier'
+    | 'fabricatorCostReduction'
+    | 'alloysStorageBonus';
 
 // Layer assignment for research sidebar filtering
 export type ResearchLayer = 'surface' | 'orbit' | 'contracts' | 'moon';
@@ -808,14 +811,44 @@ export const researchTree: ResearchNode[] = [
      effect: { type: 'massDriverCapacityBonus', value: 2 },
      assignedLayer: 'moon'
    },
-   {
-     id: 'm15',
-     name: 'Corporate Partnerships',
-     description: 'Bounty rewards increased by 50%.',
-     branch: 'lunar',
-     scienceCost: 5500,
-     prerequisites: ['m13', 'm14'],
-     effect: { type: 'bountyRewardMultiplier', value: 1.5 },
-     assignedLayer: 'moon'
-   },
+    {
+      id: 'm15',
+      name: 'Corporate Partnerships',
+      description: 'Bounty rewards increased by 50%.',
+      branch: 'lunar',
+      scienceCost: 5500,
+      prerequisites: ['m13', 'm14'],
+      effect: { type: 'bountyRewardMultiplier', value: 1.5 },
+      assignedLayer: 'moon'
+    },
+    {
+      id: 'm16',
+      name: 'Alloy Furnaces',
+      description: 'Fabricators produce 50% more alloys.',
+      branch: 'lunar',
+      scienceCost: 5000,
+      prerequisites: ['o14'],
+      effect: { type: 'fabricatorOutputMultiplier', value: 1.5 },
+      assignedLayer: 'moon'
+    },
+    {
+      id: 'm17',
+      name: 'Efficient Smelting',
+      description: 'Fabricators require 30% less regolith per alloy.',
+      branch: 'lunar',
+      scienceCost: 4000,
+      prerequisites: ['m16'],
+      effect: { type: 'fabricatorCostReduction', value: 0.7 },
+      assignedLayer: 'moon'
+    },
+    {
+      id: 'm18',
+      name: 'Expanded Storage Vaults',
+      description: 'Increases alloy storage capacity by 50%.',
+      branch: 'lunar',
+      scienceCost: 3500,
+      prerequisites: ['o14'],
+      effect: { type: 'alloysStorageBonus', value: 250 },
+      assignedLayer: 'moon'
+    },
 ];

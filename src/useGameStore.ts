@@ -8,7 +8,7 @@ interface Spaceport {
 
 // Moon Layer Types
 export type MoonStatus = 'locked' | 'ready' | 'transit' | 'unlocked';
-export type MoonBuildingType = 'extractor' | 'refinery' | 'silo' | 'maintenance' | 'massDriver';
+export type MoonBuildingType = 'extractor' | 'refinery' | 'silo' | 'maintenance' | 'massDriver' | 'solarArray' | 'nuclearReactor' | 'battery' | 'fabricator';
 export type MoonHazardType = 'moonDust' | 'solarFlare';
 
 export interface MoonBuildings {
@@ -17,6 +17,10 @@ export interface MoonBuildings {
   silos: number;
   maintenance: number;
   massDrivers: number;
+  solarArray: number;
+  nuclearReactor: number;
+  battery: number;
+  fabricator: number;
 }
 
 export interface MoonHazard {
@@ -29,11 +33,13 @@ export interface MoonHazard {
 export interface MoonResources {
   regolith: number;
   helium3: number;
+  alloys: number;
 }
 
 export interface EarthResources {
   regolith: number;
   helium3: number;
+  alloys: number;
 }
 
 // Moon Sector Types
@@ -47,7 +53,7 @@ export interface MoonSector {
   id: string;
   name: string;
   traits: Record<string, MoonSectorTrait>;
-  buildings: Partial<Record<MoonBuildingType | 'solarArray' | 'nuclearReactor' | 'battery', number>>;
+  buildings: Partial<Record<MoonBuildingType | 'solarArray' | 'nuclearReactor' | 'battery' | 'fabricator', number>>;
   slots: number; // Total building slots
   slotsUsed: number; // Slots currently occupied
 }
@@ -187,7 +193,7 @@ export interface GameState {
    getMaxAvailableContracts: () => number;
    getMaxFuel: () => number;
    getMoonStorageCapacity: () => MoonResources;
-   getMoonBuildingCost: (type: MoonBuildingType) => { cargo: number; science: number; regolith: number };
+    getMoonBuildingCost: (type: MoonBuildingType | 'solarArray' | 'nuclearReactor' | 'battery' | 'fabricator') => { cargo: number; science: number; regolith: number; alloys: number };
    setView: (view: "surface" | "orbit" | "contracts" | "research") => void;
   addNotification: (message: string) => void;
   addMoonLog: (message: string) => void;
@@ -274,9 +280,9 @@ export const useGameStore = create<GameState>((set, get) => ({
    // Moon layer state
    moonStatus: 'locked',
    moonMissionTicksRemaining: 0,
-   moonBuildings: { extractors: 0, refineries: 0, silos: 0, maintenance: 0, massDrivers: 0 },
-   moonResources: { regolith: 0, helium3: 0 },
-   earthResources: { regolith: 0, helium3: 0 },
+   moonBuildings: { extractors: 0, refineries: 0, silos: 0, maintenance: 0, massDrivers: 0, solarArray: 0, nuclearReactor: 0, battery: 0, fabricator: 0 },
+    moonResources: { regolith: 0, helium3: 0, alloys: 0 },
+    earthResources: { regolith: 0, helium3: 0, alloys: 0 },
    activeHazard: null,
    moonLog: [],
    moonSectors: [{ 
@@ -849,21 +855,22 @@ export const useGameStore = create<GameState>((set, get) => ({
        // Calculate power generation and demand
        let totalEnergyGen = 0;
        let totalEnergyDemand = 0;
-       
-       // Count buildings across all sectors
-       let solarCount = 0, nuclearCount = 0, batteryCount = 0;
-       let extractorCount = 0, refineryCount = 0, siloCount = 0, maintenanceCount = 0, massDriverCount = 0;
-       
-       for (const sector of state.moonSectors) {
-         solarCount += sector.buildings.solarArray || 0;
-         nuclearCount += sector.buildings.nuclearReactor || 0;
-         batteryCount += sector.buildings.battery || 0;
-         extractorCount += sector.buildings.extractor || 0;
-         refineryCount += sector.buildings.refinery || 0;
-         siloCount += sector.buildings.silo || 0;
-         maintenanceCount += sector.buildings.maintenance || 0;
-         massDriverCount += sector.buildings.massDriver || 0;
-       }
+        
+        // Count buildings across all sectors
+        let solarCount = 0, nuclearCount = 0, batteryCount = 0;
+        let extractorCount = 0, refineryCount = 0, siloCount = 0, maintenanceCount = 0, massDriverCount = 0, fabricatorCount = 0;
+        
+        for (const sector of state.moonSectors) {
+          solarCount += sector.buildings.solarArray || 0;
+          nuclearCount += sector.buildings.nuclearReactor || 0;
+          batteryCount += sector.buildings.battery || 0;
+          extractorCount += sector.buildings.extractor || 0;
+          refineryCount += sector.buildings.refinery || 0;
+          siloCount += sector.buildings.silo || 0;
+          maintenanceCount += sector.buildings.maintenance || 0;
+          massDriverCount += sector.buildings.massDriver || 0;
+          fabricatorCount += sector.buildings.fabricator || 0;
+        }
        
        // Solar only generates during day
        if (newMoonPowerSystem.isDay) {
@@ -876,12 +883,13 @@ export const useGameStore = create<GameState>((set, get) => ({
          newEarthResources.helium3 -= nuclearCount * MOON.NUCLEAR_REACTOR_HELIUM3_COST;
        }
        
-       // Power demand
-       totalEnergyDemand += extractorCount * MOON.EXTRACTOR_POWER_DEMAND;
-       totalEnergyDemand += refineryCount * MOON.REFINERY_POWER_DEMAND;
-       totalEnergyDemand += siloCount * MOON.SILO_POWER_DEMAND;
-       totalEnergyDemand += maintenanceCount * MOON.MAINTENANCE_POWER_DEMAND;
-       totalEnergyDemand += massDriverCount * MOON.MASS_DRIVER_POWER_DEMAND;
+        // Power demand
+        totalEnergyDemand += extractorCount * MOON.EXTRACTOR_POWER_DEMAND;
+        totalEnergyDemand += refineryCount * MOON.REFINERY_POWER_DEMAND;
+        totalEnergyDemand += siloCount * MOON.SILO_POWER_DEMAND;
+        totalEnergyDemand += maintenanceCount * MOON.MAINTENANCE_POWER_DEMAND;
+        totalEnergyDemand += massDriverCount * MOON.MASS_DRIVER_POWER_DEMAND;
+        totalEnergyDemand += fabricatorCount * MOON.FABRICATOR_POWER_DEMAND;
        
        // Battery storage (can charge or discharge)
        newMoonPowerSystem.maxEnergy = batteryCount * MOON.BATTERY_CAPACITY_PER_UNIT;
@@ -942,31 +950,42 @@ export const useGameStore = create<GameState>((set, get) => ({
         notificationsToAdd.push(`Moon Hazard: ${hazardDef.name}!`);
         hazardDebuff = 1 - hazardDef.debuff;
       }
-      
-       // Extractor production (Regolith) - only if powered
-       const extractorMultiplier = state.getEffectMultiplier('extractorOutputMultiplier' as EffectType) || 1;
-       const powerEfficiency = hasPower ? 1 : 0; // No production if no power
-       const regolithProduction = state.moonBuildings.extractors * MOON.EXTRACTOR_REGOLITH_RATE * hazardDebuff * extractorMultiplier * powerEfficiency;
-      newMoonResources.regolith = Math.min(storage.regolith, newMoonResources.regolith + regolithProduction);
-      
-       // Refinery production (Helium-3 from Regolith) - only if powered
-       const refineryMultiplier = state.getEffectMultiplier('moonRefineryOutputMultiplier' as EffectType) || 1;
-       const potentialHelium3 = state.moonBuildings.refineries * MOON.REFINERY_HELIUM3_RATE * hazardDebuff * refineryMultiplier * powerEfficiency;
+       
+        // Extractor production (Regolith) - only if powered
+        const extractorMultiplier = state.getEffectMultiplier('extractorOutputMultiplier' as EffectType) || 1;
+        const powerEfficiency = hasPower ? 1 : 0; // No production if no power
+        const regolithProduction = extractorCount * MOON.EXTRACTOR_REGOLITH_RATE * hazardDebuff * extractorMultiplier * powerEfficiency;
+       newMoonResources.regolith = Math.min(storage.regolith, newMoonResources.regolith + regolithProduction);
+       
+        // Refinery production (Helium-3 from Regolith) - only if powered
+        const refineryMultiplier = state.getEffectMultiplier('moonRefineryOutputMultiplier' as EffectType) || 1;
+        const potentialHelium3 = refineryCount * MOON.REFINERY_HELIUM3_RATE * hazardDebuff * refineryMultiplier * powerEfficiency;
       const regolithNeeded = potentialHelium3 * MOON.REFINERY_REGOLITH_COST;
       const actualRegolithUsed = Math.min(regolithNeeded, newMoonResources.regolith);
       const actualHelium3 = (actualRegolithUsed / MOON.REFINERY_REGOLITH_COST);
-      newMoonResources.regolith -= actualRegolithUsed;
-      newMoonResources.helium3 = Math.min(storage.helium3, newMoonResources.helium3 + actualHelium3);
-      
-      // Mass Driver auto-transport (only Helium-3, not regolith)
-      if (state.moonBuildings.massDrivers > 0) {
-        const transportMultiplier = state.moonBuildings.massDrivers;
-        const massDriverEfficiency = state.getEffectMultiplier('massDriverEfficiency' as EffectType) || 1;
-        const helium3ToTransport = Math.min(newMoonResources.helium3, MOON.MASS_DRIVER_HELIUM3_RATE * transportMultiplier * hazardDebuff * massDriverEfficiency);
-        
-        newMoonResources.helium3 -= helium3ToTransport;
-        newEarthResources.helium3 += helium3ToTransport;
-      }
+       newMoonResources.regolith -= actualRegolithUsed;
+       newMoonResources.helium3 = Math.min(storage.helium3, newMoonResources.helium3 + actualHelium3);
+       
+        // Fabricator production (Alloys from Regolith) - only if powered
+        const fabricatorMultiplier = state.getEffectMultiplier('fabricatorOutputMultiplier' as EffectType) || 1;
+        const fabricatorCostReduction = state.getEffectMultiplier('fabricatorCostReduction' as EffectType) || 1;
+        const effectiveRegolithCost = MOON.FABRICATOR_REGOLITH_COST * fabricatorCostReduction;
+        const potentialAlloys = fabricatorCount * MOON.FABRICATOR_ALLOYS_RATE * hazardDebuff * fabricatorMultiplier * powerEfficiency;
+        const regolithNeededForFab = potentialAlloys * effectiveRegolithCost;
+        const actualRegolithUsedForFab = Math.min(regolithNeededForFab, newMoonResources.regolith - actualRegolithUsed);
+        const actualAlloys = Math.max(0, (actualRegolithUsedForFab / effectiveRegolithCost));
+        newMoonResources.regolith -= actualRegolithUsedForFab;
+        newMoonResources.alloys = Math.min(storage.alloys, newMoonResources.alloys + actualAlloys);
+       
+       // Mass Driver auto-transport (only Helium-3, not regolith)
+       if (massDriverCount > 0) {
+         const transportMultiplier = massDriverCount;
+         const massDriverEfficiency = state.getEffectMultiplier('massDriverEfficiency' as EffectType) || 1;
+         const helium3ToTransport = Math.min(newMoonResources.helium3, MOON.MASS_DRIVER_HELIUM3_RATE * transportMultiplier * hazardDebuff * massDriverEfficiency);
+         
+         newMoonResources.helium3 -= helium3ToTransport;
+         newEarthResources.helium3 += helium3ToTransport;
+       }
     }
 
     return {
@@ -1567,34 +1586,48 @@ export const useGameStore = create<GameState>((set, get) => ({
   }),
   
   // Moon layer helper methods
-  getMoonStorageCapacity: () => {
-    const state = get();
-    const siloBonus = state.moonBuildings.silos;
-    return {
-      regolith: MOON.STORAGE_BASE.regolith + siloBonus * MOON.STORAGE_PER_SILO.regolith,
-      helium3: MOON.STORAGE_BASE.helium3 + siloBonus * MOON.STORAGE_PER_SILO.helium3,
-    };
-  },
+    getMoonStorageCapacity: () => {
+      const state = get();
+      const siloBonus = state.moonSectors.reduce((total, sector) => total + (sector.buildings.silo || 0), 0);
+      const alloysStorageBonus = state.getEffectMultiplier('alloysStorageBonus' as EffectType) || 0;
+      return {
+        regolith: MOON.STORAGE_BASE.regolith + siloBonus * MOON.STORAGE_PER_SILO.regolith,
+        helium3: MOON.STORAGE_BASE.helium3 + siloBonus * MOON.STORAGE_PER_SILO.helium3,
+        alloys: MOON.STORAGE_BASE.alloys + siloBonus * MOON.STORAGE_PER_SILO.alloys + alloysStorageBonus,
+      };
+    },
   
-  getMoonBuildingCost: (type: MoonBuildingType) => {
-    const state = get();
-    const buildingKeyMap: Record<MoonBuildingType, keyof MoonBuildings> = {
-      extractor: 'extractors',
-      refinery: 'refineries',
-      silo: 'silos',
-      maintenance: 'maintenance',
-      massDriver: 'massDrivers',
-    };
-    const count = state.moonBuildings[buildingKeyMap[type]] || 0;
-    const baseCost = MOON.BUILDING_COSTS[type];
-    const multiplier = Math.pow(MOON.BUILDING_COST_EXPONENT, count);
-    const regolithCost = 'regolith' in baseCost ? Math.round(baseCost.regolith * multiplier) : 0;
-    return {
-      cargo: Math.round(baseCost.cargo * multiplier),
-      science: Math.round(baseCost.science * multiplier),
-      regolith: regolithCost,
-    };
-  },
+   getMoonBuildingCost: (type: MoonBuildingType | 'solarArray' | 'nuclearReactor' | 'battery' | 'fabricator') => {
+     const state = get();
+     const buildingKeyMap: Record<string, keyof MoonBuildings | string> = {
+       extractor: 'extractors',
+       refinery: 'refineries',
+       silo: 'silos',
+       maintenance: 'maintenance',
+       massDriver: 'massDrivers',
+       solarArray: 'solarArray',
+       nuclearReactor: 'nuclearReactor',
+       battery: 'battery',
+       fabricator: 'fabricator',
+     };
+     
+     // Count total buildings of this type across all sectors
+     let count = 0;
+     for (const sector of state.moonSectors) {
+       count += sector.buildings[buildingKeyMap[type] as keyof typeof sector.buildings] || 0;
+     }
+     
+      const baseCost = MOON.BUILDING_COSTS[type as keyof typeof MOON.BUILDING_COSTS];
+      const multiplier = Math.pow(MOON.BUILDING_COST_EXPONENT, count);
+      const regolithCost = 'regolith' in baseCost ? Math.round((baseCost.regolith as number) * multiplier) : 0;
+      const alloysCost = 'alloys' in baseCost ? Math.round((baseCost.alloys as number) * multiplier) : 0;
+      return {
+        cargo: Math.round(baseCost.cargo * multiplier),
+        science: Math.round(baseCost.science * multiplier),
+        regolith: regolithCost,
+        alloys: alloysCost,
+      };
+   },
   
   addMoonLog: (message: string) => set(state => {
     const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
@@ -1652,6 +1685,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       silo: 'silos',
       maintenance: 'maintenance',
       massDriver: 'massDrivers',
+      solarArray: 'solarArray',
+      nuclearReactor: 'nuclearReactor',
+      battery: 'battery',
+      fabricator: 'fabricator',
     };
     const buildingKey = buildingKeyMap[type];
     const newBuildings = { ...state.moonBuildings };
@@ -1663,6 +1700,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       silo: 'Storage Silo',
       maintenance: 'Maintenance Bay',
       massDriver: 'Mass Driver',
+      solarArray: 'Solar Array',
+      nuclearReactor: 'Nuclear Reactor',
+      battery: 'Battery',
+      fabricator: 'Fabricator',
     };
     
     get().addMoonLog(`CONSTRUCTION COMPLETE: ${buildingNames[type]} online`);
