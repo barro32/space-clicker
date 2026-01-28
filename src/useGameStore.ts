@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { researchTree, ResearchNode, EffectType } from './researchTree.js'
-import { INITIAL_STATE, COST_SCALING, PRODUCTION, DEFAULT_COMPANIES, COMPANY_DEFINITIONS, CompanyPerkEffect, ORBITAL, MOON, AFTERBURNER } from './gameConstants.js'
+import { INITIAL_STATE, COST_SCALING, PRODUCTION, DEFAULT_COMPANIES, COMPANY_DEFINITIONS, CompanyPerkEffect, ORBITAL, MOON, GameSettings, DEFAULT_SETTINGS } from './gameConstants.js'
 
 interface Spaceport {
   id: number;
@@ -218,15 +218,16 @@ export interface GameState {
    clearHazard: () => void;
    // Layer unlock action
    unlockLayer: (layer: 'orbit' | 'contracts') => void;
-   researchedNodes: string[];
-   previouslyAvailableResearch: string[];
-   autoBuildActive: boolean;
-   autoSalvageActive: boolean;
-   afterburnerActive: boolean;
-   toggleAutoBuild: () => void;
-   toggleAutoSalvage: () => void;
-   toggleAfterburner: () => void;
-    unlockNode: (nodeId: string) => void;
+    researchedNodes: string[];
+    previouslyAvailableResearch: string[];
+    autoBuildActive: boolean;
+    autoSalvageActive: boolean;
+    toggleAutoBuild: () => void;
+    toggleAutoSalvage: () => void;
+    settings: GameSettings;
+    updateSettings: (partial: Partial<GameSettings>) => void;
+    resetSettings: () => void;
+     unlockNode: (nodeId: string) => void;
     getAvailableNodes: () => ResearchNode[];
     scanSector: () => void;
     constructBuildingOnMoon: (sectorId: string, buildingType: MoonBuildingType | 'solarArray' | 'nuclearReactor' | 'battery') => void;
@@ -303,13 +304,13 @@ export const useGameStore = create<GameState>((set, get) => ({
    },
    moonBounties: [],
    moonBountyRefreshTimer: MOON.BOUNTY_GENERATION_INTERVAL,
-  researchedNodes: [],
-  previouslyAvailableResearch: [],
-  autoBuildActive: false,
-  autoSalvageActive: false,
-  afterburnerActive: false,
-  
-  tick: () => set(state => {
+    researchedNodes: [],
+    previouslyAvailableResearch: [],
+    autoBuildActive: false,
+    autoSalvageActive: false,
+    settings: DEFAULT_SETTINGS,
+   
+   tick: () => set(state => {
     // Clear animation flags at start of each tick
     const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
    
@@ -331,36 +332,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     // New transit rockets to add this tick
     let newTransitRockets: TransitRocket[] = [...state.transitRockets];
 
-    // Get combined multipliers (research + company perks)
-    let baseFuelCost = state.fuelCostPerRocket * state.getTotalEffectValue('fuelCostMultiplier');
-    let baseExplosionChance = state.rocketExplosionChance * state.getTotalEffectValue('explosionChanceMultiplier');
-    
-    // Afterburner logic
-    const afterburnerUnlocked = state.getEffectMultiplier('unlockAfterburner') > 0;
-    const afterburnerActive = afterburnerUnlocked && state.afterburnerActive;
-    let afterburnerOutputMultiplier = 1;
-    
-    if (afterburnerActive) {
-      // Fuel cost multiplier (default 3x, reduced by efficiency perk)
-      const afterburnerEfficiency = state.getCompanyPerkValue('afterburnerEfficiency');
-      const fuelCostMultiplier = afterburnerEfficiency > 0 ? afterburnerEfficiency : AFTERBURNER.FUEL_COST_MULTIPLIER;
-      baseFuelCost *= fuelCostMultiplier;
-      
-      // Output multiplier (default 2x, increased by output perk)
-      const afterburnerOutput = state.getCompanyPerkValue('afterburnerOutput');
-      afterburnerOutputMultiplier = afterburnerOutput > 0 ? afterburnerOutput : AFTERBURNER.OUTPUT_MULTIPLIER;
-      
-      // Explosion risk bonus (negated by thermal shielding perk)
-      const hasThermalShielding = state.getCompanyPerkValue('thermalShielding') > 0;
-      if (!hasThermalShielding) {
-        baseExplosionChance += AFTERBURNER.EXPLOSION_RISK_BONUS;
-      }
-    }
-    
-    const effectiveFuelCost = baseFuelCost;
-    const effectiveExplosionChance = baseExplosionChance;
+     // Get combined multipliers (research + company perks)
+     let baseFuelCost = state.fuelCostPerRocket * state.getTotalEffectValue('fuelCostMultiplier');
+     let baseExplosionChance = state.rocketExplosionChance * state.getTotalEffectValue('explosionChanceMultiplier');
+     
+     const effectiveFuelCost = baseFuelCost;
+     const effectiveExplosionChance = baseExplosionChance;
 
-    // Process each rocket launch
+     // Process each rocket launch
     for (const rocket of activeRockets) {
       if (fuelAvailable >= effectiveFuelCost) {
         fuelAvailable -= effectiveFuelCost;
@@ -488,60 +467,59 @@ export const useGameStore = create<GameState>((set, get) => ({
     // Calculate debris penalty
     const debrisPenalty = hasDebrisImmunity ? 1 : Math.max(1 - ORBITAL.MAX_DEBRIS_PENALTY, 1 - (newDebris.length * ORBITAL.DEBRIS_PENALTY_PER_PIECE));
 
-    // Calculate production with company perk bonuses
-    const profitMultiplier = state.getTotalEffectValue('profitMultiplier');
-    // Apply afterburner output multiplier to launch-based production
-    let cargoProd = successfulCargoLaunches * state.profitPerRocket * profitMultiplier * afterburnerOutputMultiplier;
-    
-    // Science production with company perks
-    const sciencePerRocketBonus = state.getCompanyPerkValue('sciencePerRocketBonus');
-    const sciencePerExplosionBonus = state.getCompanyPerkValue('sciencePerExplosionBonus');
-    let sciProd = successfulScienceLaunches * (PRODUCTION.SCIENCE_PER_SCIENCE_ROCKET + sciencePerRocketBonus) * afterburnerOutputMultiplier + explosionCount * (PRODUCTION.SCIENCE_PER_EXPLOSION + sciencePerExplosionBonus) + explosionScienceFromCost;
-    
-    // Cargo generation - combine research multipliers and company perks
-    const cargoPerLaunchMultiplier = state.getTotalEffectValue('cargoPerLaunchMultiplier');
-    const cargoGenerationMultiplier = state.getEffectMultiplier('cargoGenerationMultiplier');
-    const totalCargoMultiplier = (cargoPerLaunchMultiplier !== 1 ? cargoPerLaunchMultiplier : 1) * (cargoGenerationMultiplier !== 0 ? cargoGenerationMultiplier : 1);
-    let cargoResourceProd = successfulCargoLaunches * PRODUCTION.CARGO_PER_SUCCESSFUL_LAUNCH * totalCargoMultiplier * afterburnerOutputMultiplier;
+      // Calculate production with company perk bonuses
+      const profitMultiplier = state.getTotalEffectValue('profitMultiplier');
+      let moneyProduction = successfulCargoLaunches * state.profitPerRocket * profitMultiplier;
+     
+      // Science production with company perks
+      const sciencePerRocketBonus = state.getCompanyPerkValue('sciencePerRocketBonus');
+      const sciencePerExplosionBonus = state.getCompanyPerkValue('sciencePerExplosionBonus');
+      let sciProd = successfulScienceLaunches * (PRODUCTION.SCIENCE_PER_SCIENCE_ROCKET + sciencePerRocketBonus) + explosionCount * (PRODUCTION.SCIENCE_PER_EXPLOSION + sciencePerExplosionBonus) + explosionScienceFromCost;
+     
+      // Cargo generation - combine research multipliers and company perks
+      const cargoPerLaunchMultiplier = state.getTotalEffectValue('cargoPerLaunchMultiplier');
+      const cargoGenerationMultiplier = state.getEffectMultiplier('cargoGenerationMultiplier');
+      const totalCargoMultiplier = (cargoPerLaunchMultiplier !== 1 ? cargoPerLaunchMultiplier : 1) * (cargoGenerationMultiplier !== 0 ? cargoGenerationMultiplier : 1);
+      let cargoResourceProd = successfulCargoLaunches * PRODUCTION.CARGO_PER_SUCCESSFUL_LAUNCH * totalCargoMultiplier;
 
-    // Passive bonuses from company perks
-    const passiveMoneyBonus = state.getCompanyPerkValue('passiveMoneyBonus');
-    const passiveScienceBonus = state.getCompanyPerkValue('passiveScienceBonus');
-    const passiveCargoBonus = state.getCompanyPerkValue('passiveCargoBonus');
-    cargoProd += passiveMoneyBonus;
-    sciProd += passiveScienceBonus;
-    cargoResourceProd += passiveCargoBonus;
-    
-    // Passive cargo bonus from research
-    const researchPassiveCargoBonus = state.getEffectMultiplier('passiveCargoBonus');
-    cargoResourceProd += researchPassiveCargoBonus;
+     // Passive bonuses from company perks
+     const passiveMoneyBonus = state.getCompanyPerkValue('passiveMoneyBonus');
+     const passiveScienceBonus = state.getCompanyPerkValue('passiveScienceBonus');
+     const passiveCargoBonus = state.getCompanyPerkValue('passiveCargoBonus');
+     moneyProduction += passiveMoneyBonus;
+     sciProd += passiveScienceBonus;
+     cargoResourceProd += passiveCargoBonus;
+     
+     // Passive cargo bonus from research
+     const researchPassiveCargoBonus = state.getEffectMultiplier('passiveCargoBonus');
+     cargoResourceProd += researchPassiveCargoBonus;
 
-    // Passive Spaceport Bonuses
-    for (let i = 0; i < state.spaceports.length; i++) {
-      sciProd += PRODUCTION.PASSIVE_SCIENCE_PER_SPACEPORT;
-      cargoProd += (i + 1) * PRODUCTION.PASSIVE_CARGO_BONUS_PER_SPACEPORT;
-    }
-    
-    // Satellite Science Bonus (Nova perk: Telemetry Link)
-    const satelliteScienceBonus = state.getCompanyPerkValue('satelliteScienceBonus');
-    if (satelliteScienceBonus > 0) {
-      sciProd += state.satellites * satelliteScienceBonus;
-    }
-    
-    // Fuel to Money Bonus (Titan perk: Liquid Assets)
-    // Money gen scales with current fuel % (up to +50% at full tank)
-    const fuelToMoneyBonus = state.getCompanyPerkValue('fuelToMoneyBonus');
-    if (fuelToMoneyBonus > 0 && maxFuel > 0) {
-      const fuelPercentage = fuelAvailable / maxFuel;
-      const moneyBonus = fuelPercentage * fuelToMoneyBonus;
-      cargoProd *= (1 + moneyBonus);
-    }
-    
-    // Global Money Multiplier (Titan perk: Monopoly)
-    const globalMoneyMultiplier = state.getCompanyPerkValue('globalMoneyMultiplier');
-    if (globalMoneyMultiplier > 1) {
-      cargoProd *= globalMoneyMultiplier;
-    }
+     // Passive Spaceport Bonuses
+     for (let i = 0; i < state.spaceports.length; i++) {
+       sciProd += PRODUCTION.PASSIVE_SCIENCE_PER_SPACEPORT;
+       moneyProduction += (i + 1) * PRODUCTION.PASSIVE_CARGO_BONUS_PER_SPACEPORT;
+     }
+     
+     // Satellite Science Bonus (Nova perk: Telemetry Link)
+     const satelliteScienceBonus = state.getCompanyPerkValue('satelliteScienceBonus');
+     if (satelliteScienceBonus > 0) {
+       sciProd += state.satellites * satelliteScienceBonus;
+     }
+     
+     // Fuel to Money Bonus (Titan perk: Liquid Assets)
+     // Money gen scales with current fuel % (up to +50% at full tank)
+     const fuelToMoneyBonus = state.getCompanyPerkValue('fuelToMoneyBonus');
+     if (fuelToMoneyBonus > 0 && maxFuel > 0) {
+       const fuelPercentage = fuelAvailable / maxFuel;
+       const moneyBonus = fuelPercentage * fuelToMoneyBonus;
+       moneyProduction *= (1 + moneyBonus);
+     }
+     
+     // Global Money Multiplier (Titan perk: Monopoly)
+     const globalMoneyMultiplier = state.getCompanyPerkValue('globalMoneyMultiplier');
+     if (globalMoneyMultiplier > 1) {
+       moneyProduction *= globalMoneyMultiplier;
+     }
 
     // Apply Orbital Station Benefits with company perk multipliers and docking bonus
     const stationBonusMultiplier = state.getCompanyPerkValue('stationBonusMultiplier') || 1;
@@ -570,10 +548,10 @@ export const useGameStore = create<GameState>((set, get) => ({
           if (dockedCount > 0) {
             lunarProd += dockedCount * ORBITAL.LUNAR_COMPONENT_PRODUCTION_RATE * station.level * lunarProductionMultiplier;
           }
-        } else if (station.type === 'logistics') {
-          const baseOutput = PRODUCTION.STATION_LOGISTICS_BONUS * station.level * state.getEffectMultiplier('stationLogisticsMultiplier') * stationBonusMultiplier;
-          cargoProd += baseOutput * stationDockingBonus * debrisPenalty;
-        }
+         } else if (station.type === 'logistics') {
+           const baseOutput = PRODUCTION.STATION_LOGISTICS_BONUS * station.level * state.getEffectMultiplier('stationLogisticsMultiplier') * stationBonusMultiplier;
+           moneyProduction += baseOutput * stationDockingBonus * debrisPenalty;
+         }
       });
     }
     
@@ -589,7 +567,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     lunarProd *= satelliteBonus * debrisPenalty;
     
     // Apply satellite bonus to all production
-    cargoProd *= satelliteBonus;
+    moneyProduction *= satelliteBonus;
     sciProd *= satelliteBonus;
     cargoResourceProd *= satelliteBonus;
 
@@ -609,9 +587,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
       
       // Deliver resources to contract (sequential - fill each contract in order)
-      const moneyToDeliver = Math.min(cargoProd, contract.requiredMoney - contract.deliveredMoney);
+      const moneyToDeliver = Math.min(moneyProduction, contract.requiredMoney - contract.deliveredMoney);
       contract.deliveredMoney += moneyToDeliver;
-      cargoProd -= moneyToDeliver;
+      moneyProduction -= moneyToDeliver;
       
       const scienceToDeliver = Math.min(sciProd, contract.requiredScience - contract.deliveredScience);
       contract.deliveredScience += scienceToDeliver;
@@ -732,8 +710,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       get().addNotification('New contracts available!');
     }
 
-    // Auto-build logic
-    let finalMoney = state.money + cargoProd;
+     // Auto-build logic
+     let finalMoney = state.money + moneyProduction;
     let finalRockets = state.rockets;
     let finalNextId = state.nextRocketId;
     let finalScience = newScience;
@@ -1245,100 +1223,166 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }),
     
-  getCurrentSpaceportCost: () => {
-    const state = get();
-    return Math.round(state.spaceportCost * Math.pow(COST_SCALING.SPACEPORT_COST_EXPONENT, state.spaceports.length) * state.getEffectMultiplier('constructionCostMultiplier'));
-  },
+   /**
+    * Gets current spaceport cost with construction multiplier applied.
+    * Cost scales exponentially with number of spaceports already owned.
+    * 
+    * @returns The current cost to build a new spaceport
+    */
+   getCurrentSpaceportCost: () => {
+     const state = get();
+     return Math.round(state.spaceportCost * Math.pow(COST_SCALING.SPACEPORT_COST_EXPONENT, state.spaceports.length) * state.getEffectMultiplier('constructionCostMultiplier'));
+   },
+   
+   /**
+    * Gets current rocket cost with research and company perk multipliers applied.
+    * Cost scales exponentially with number of rockets already owned.
+    * 
+    * @returns The current cost to build a new rocket
+    */
+   getCurrentRocketCost: () => {
+     const state = get();
+     const currentRocketCount = state.rockets.filter(r => r !== null).length;
+     const constructionMultiplier = state.getEffectMultiplier('constructionCostMultiplier');
+     const rocketCostMultiplier = state.getCompanyPerkValue('rocketCostMultiplier') || 1;
+     const baseCost = state.rocketCost * Math.pow(COST_SCALING.ROCKET_COST_EXPONENT, currentRocketCount);
+     return Math.round(baseCost * constructionMultiplier * rocketCostMultiplier);
+   },
   
-  getCurrentRocketCost: () => {
-    const state = get();
-    const currentRocketCount = state.rockets.filter(r => r !== null).length;
-    const constructionMultiplier = state.getEffectMultiplier('constructionCostMultiplier');
-    const rocketCostMultiplier = state.getCompanyPerkValue('rocketCostMultiplier') || 1;
-    const baseCost = state.rocketCost * Math.pow(COST_SCALING.ROCKET_COST_EXPONENT, currentRocketCount);
-    return Math.round(baseCost * constructionMultiplier * rocketCostMultiplier);
-  },
+   /**
+    * Gets research effect value (from researched nodes only).
+    * 
+    * Effect value semantics:
+    * - For '*Multiplier' types: returns multiplicative product (base 1)
+    *   E.g., if you have multipliers 1.2 and 1.5, result is 1.8 (80% total increase)
+    * - For other types (e.g., bonuses, unlocks): returns additive sum (base 0)
+    *   E.g., if you have bonuses +50 and +30, result is +80
+    * 
+    * @param type The effect type to retrieve (e.g., 'rocketCostMultiplier', 'maxSatellitesBonus')
+    * @returns The calculated effect value. Returns 1 for multipliers (no effect), 0 for bonuses (no effect)
+    */
+   getEffectMultiplier: (type: EffectType) => {
+     const state = get();
+     
+     if (!researchTree || !Array.isArray(researchTree)) {
+       return 1;
+     }
+     if (!state.researchedNodes || !Array.isArray(state.researchedNodes)) {
+       return 1;
+     }
+     
+     const multipliers = researchTree
+       .filter((node: ResearchNode) => state.researchedNodes.includes(node.id) && node.effect.type === type)
+       .map((node: ResearchNode) => node.effect.value);
+     
+     if (type.endsWith('Multiplier')) {
+       return multipliers.length === 0 ? 1 : multipliers.reduce((acc, val) => acc * val, 1);
+     } else {
+       return multipliers.length === 0 ? 0 : multipliers.reduce((acc, val) => acc + val, 0);
+     }
+   },
   
-  getEffectMultiplier: (type: EffectType) => {
-    const state = get();
-    
-    if (!researchTree || !Array.isArray(researchTree)) {
-      return 1;
-    }
-    if (!state.researchedNodes || !Array.isArray(state.researchedNodes)) {
-      return 1;
-    }
-    
-    const multipliers = researchTree
-      .filter((node: ResearchNode) => state.researchedNodes.includes(node.id) && node.effect.type === type)
-      .map((node: ResearchNode) => node.effect.value);
-    
-    if (type.endsWith('Multiplier')) {
-      return multipliers.length === 0 ? 1 : multipliers.reduce((acc, val) => acc * val, 1);
-    } else {
-      return multipliers.length === 0 ? 0 : multipliers.reduce((acc, val) => acc + val, 0);
-    }
-  },
+   /**
+    * Gets company perk effect value (from all companies and their unlocked perks).
+    * 
+    * Effect value semantics:
+    * - For '*Multiplier' types: returns multiplicative product (base 1)
+    *   E.g., if Titan has multiplier 1.3 and Nova has 1.2, result is 1.56 (56% total increase)
+    * - For other types: returns additive sum (base 0)
+    *   E.g., if Zenith has +10 and Atlas has +5, result is +15
+    * 
+    * @param perkEffect The company perk effect type to retrieve (e.g., 'rocketCostMultiplier', 'passiveMoneyBonus')
+    * @returns The calculated perk value. Returns 1 for multipliers (no effect), 0 for bonuses (no effect)
+    */
+   getCompanyPerkValue: (perkEffect: CompanyPerkEffect) => {
+     const state = get();
+     
+     if (!state.companies || !Array.isArray(state.companies)) {
+       return 0;
+     }
+     
+     let totalValue = 0;
+     let isMultiplier = perkEffect.endsWith('Multiplier');
+     if (isMultiplier) totalValue = 1;
+     
+     for (const company of state.companies) {
+       const definition = COMPANY_DEFINITIONS.find(d => d.id === company.id);
+       if (!definition) continue;
+       
+       for (const perk of definition.perks) {
+         if (perk.effect === perkEffect && company.level >= perk.level) {
+           if (isMultiplier) {
+             totalValue *= perk.value;
+           } else {
+             totalValue += perk.value;
+           }
+         }
+       }
+     }
+     
+     return totalValue;
+   },
   
-  getCompanyPerkValue: (perkEffect: CompanyPerkEffect) => {
-    const state = get();
-    
-    if (!state.companies || !Array.isArray(state.companies)) {
-      return 0;
-    }
-    
-    let totalValue = 0;
-    let isMultiplier = perkEffect.endsWith('Multiplier');
-    if (isMultiplier) totalValue = 1;
-    
-    for (const company of state.companies) {
-      const definition = COMPANY_DEFINITIONS.find(d => d.id === company.id);
-      if (!definition) continue;
-      
-      for (const perk of definition.perks) {
-        if (perk.effect === perkEffect && company.level >= perk.level) {
-          if (isMultiplier) {
-            totalValue *= perk.value;
-          } else {
-            totalValue += perk.value;
-          }
-        }
-      }
-    }
-    
-    return totalValue;
-  },
+   /**
+    * Gets combined effect value from both research and company perks.
+    * 
+    * Effect value semantics:
+    * - For '*Multiplier' types: combines multiplicatively
+    *   E.g., research 1.2 × company 1.5 = 1.8 total (80% increase)
+    * - For other types: combines additively
+    *   E.g., research +30 + company +20 = +50 total
+    * 
+    * @param type The effect type to retrieve (can be EffectType or CompanyPerkEffect)
+    * @returns The calculated total effect value combining research and perks
+    */
+   getTotalEffectValue: (type: EffectType | CompanyPerkEffect) => {
+     const state = get();
+     const researchValue = state.getEffectMultiplier(type as EffectType);
+     const perkValue = state.getCompanyPerkValue(type as CompanyPerkEffect);
+     
+     if (type.endsWith('Multiplier')) {
+       return researchValue * perkValue;
+     } else {
+       return researchValue + perkValue;
+     }
+   },
   
-  getTotalEffectValue: (type: EffectType | CompanyPerkEffect) => {
-    const state = get();
-    const researchValue = state.getEffectMultiplier(type as EffectType);
-    const perkValue = state.getCompanyPerkValue(type as CompanyPerkEffect);
-    
-    if (type.endsWith('Multiplier')) {
-      return researchValue * perkValue;
-    } else {
-      return researchValue + perkValue;
-    }
-  },
+   /**
+    * Gets maximum number of contracts that can be active simultaneously.
+    * Combines research bonuses and company perk bonuses.
+    * 
+    * @returns Maximum active contracts allowed
+    */
+   getMaxActiveContracts: () => {
+     const state = get();
+     const researchBonus = state.getEffectMultiplier('maxActiveContractsBonus');
+     const companyBonus = state.getCompanyPerkValue('maxActiveContractsBonus');
+     return INITIAL_STATE.MAX_ACTIVE_CONTRACTS + researchBonus + companyBonus;
+   },
+   
+   /**
+    * Gets maximum number of contracts available to accept.
+    * Multiplier research effects can increase this pool.
+    * 
+    * @returns Maximum available contracts to show
+    */
+   getMaxAvailableContracts: () => {
+     const state = get();
+     return INITIAL_STATE.MAX_AVAILABLE_CONTRACTS + state.getEffectMultiplier('maxAvailableContractsBonus');
+   },
   
-  getMaxActiveContracts: () => {
-    const state = get();
-    const researchBonus = state.getEffectMultiplier('maxActiveContractsBonus');
-    const companyBonus = state.getCompanyPerkValue('maxActiveContractsBonus');
-    return INITIAL_STATE.MAX_ACTIVE_CONTRACTS + researchBonus + companyBonus;
-  },
-  
-  getMaxAvailableContracts: () => {
-    const state = get();
-    return INITIAL_STATE.MAX_AVAILABLE_CONTRACTS + state.getEffectMultiplier('maxAvailableContractsBonus');
-  },
-  
-  getMaxFuel: () => {
-    const state = get();
-    const researchFuelCapacityBonus = state.getEffectMultiplier('fuelCapacityBonus');
-    const perkFuelCapacityBonus = state.getCompanyPerkValue('fuelCapacityBonus');
-    return INITIAL_STATE.FUEL + researchFuelCapacityBonus + perkFuelCapacityBonus + state.bonusFuelCapacity;
-  },
+   /**
+    * Gets maximum fuel capacity with all multipliers applied.
+    * Combines research bonuses, company perk bonuses, and developer bonuses.
+    * 
+    * @returns Maximum fuel tank capacity
+    */
+   getMaxFuel: () => {
+     const state = get();
+     const researchFuelCapacityBonus = state.getEffectMultiplier('fuelCapacityBonus');
+     const perkFuelCapacityBonus = state.getCompanyPerkValue('fuelCapacityBonus');
+     return INITIAL_STATE.FUEL + researchFuelCapacityBonus + perkFuelCapacityBonus + state.bonusFuelCapacity;
+   },
   
   getAvailableNodes: () => {
     const state = get();
@@ -1490,18 +1534,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       activeContracts: state.activeContracts.filter(c => c.id !== contractId),
     };
   }),
+   
+   toggleAutoBuild: () => set(state => ({ autoBuildActive: !state.autoBuildActive })),
+   toggleAutoSalvage: () => set(state => ({ autoSalvageActive: !state.autoSalvageActive })),
+   
+   updateSettings: (partial: Partial<GameSettings>) => set(state => ({
+    settings: { ...state.settings, ...partial },
+  })),
   
-  toggleAutoBuild: () => set(state => ({ autoBuildActive: !state.autoBuildActive })),
-  toggleAutoSalvage: () => set(state => ({ autoSalvageActive: !state.autoSalvageActive })),
-  toggleAfterburner: () => set(state => {
-    // Only allow toggling if afterburner is unlocked
-    const afterburnerUnlocked = state.getEffectMultiplier('unlockAfterburner') > 0;
-    if (!afterburnerUnlocked) return {};
-    return { afterburnerActive: !state.afterburnerActive };
-  }),
+  resetSettings: () => set({ settings: DEFAULT_SETTINGS }),
   
-  // Layer unlock action
-  unlockLayer: (layer: 'orbit' | 'contracts') => set(state => {
+   // Layer unlock action
+   unlockLayer: (layer: 'orbit' | 'contracts') => set(state => {
     if (layer === 'orbit') {
       // Orbit requires 500 cargo
       if (state.orbitLayerUnlocked) return {};
@@ -1584,19 +1628,32 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
     return {};
   }),
-  
-  // Moon layer helper methods
-    getMoonStorageCapacity: () => {
-      const state = get();
-      const siloBonus = state.moonSectors.reduce((total, sector) => total + (sector.buildings.silo || 0), 0);
-      const alloysStorageBonus = state.getEffectMultiplier('alloysStorageBonus' as EffectType) || 0;
-      return {
-        regolith: MOON.STORAGE_BASE.regolith + siloBonus * MOON.STORAGE_PER_SILO.regolith,
-        helium3: MOON.STORAGE_BASE.helium3 + siloBonus * MOON.STORAGE_PER_SILO.helium3,
-        alloys: MOON.STORAGE_BASE.alloys + siloBonus * MOON.STORAGE_PER_SILO.alloys + alloysStorageBonus,
-      };
-    },
-  
+   
+   // Moon layer helper methods
+   /**
+    * Gets current moon storage capacity for all lunar resource types.
+    * Storage increases with silo buildings and research effects.
+    * 
+    * @returns Object with regolith, helium3, and alloys capacity
+    */
+   getMoonStorageCapacity: () => {
+     const state = get();
+     const siloBonus = state.moonSectors.reduce((total, sector) => total + (sector.buildings.silo || 0), 0);
+     const alloysStorageBonus = state.getEffectMultiplier('alloysStorageBonus' as EffectType) || 0;
+     return {
+       regolith: MOON.STORAGE_BASE.regolith + siloBonus * MOON.STORAGE_PER_SILO.regolith,
+       helium3: MOON.STORAGE_BASE.helium3 + siloBonus * MOON.STORAGE_PER_SILO.helium3,
+       alloys: MOON.STORAGE_BASE.alloys + siloBonus * MOON.STORAGE_PER_SILO.alloys + alloysStorageBonus,
+     };
+   },
+   
+   /**
+    * Gets cost to build a specific moon building type.
+    * Cost scales exponentially with the number of buildings of that type already built.
+    * 
+    * @param type The moon building type (e.g., 'extractor', 'refinery', 'silo')
+    * @returns Cost object with cargo, science, regolith, and alloys costs
+    */
    getMoonBuildingCost: (type: MoonBuildingType | 'solarArray' | 'nuclearReactor' | 'battery' | 'fabricator') => {
      const state = get();
      const buildingKeyMap: Record<string, keyof MoonBuildings | string> = {
@@ -1617,16 +1674,16 @@ export const useGameStore = create<GameState>((set, get) => ({
        count += sector.buildings[buildingKeyMap[type] as keyof typeof sector.buildings] || 0;
      }
      
-      const baseCost = MOON.BUILDING_COSTS[type as keyof typeof MOON.BUILDING_COSTS];
-      const multiplier = Math.pow(MOON.BUILDING_COST_EXPONENT, count);
-      const regolithCost = 'regolith' in baseCost ? Math.round((baseCost.regolith as number) * multiplier) : 0;
-      const alloysCost = 'alloys' in baseCost ? Math.round((baseCost.alloys as number) * multiplier) : 0;
-      return {
-        cargo: Math.round(baseCost.cargo * multiplier),
-        science: Math.round(baseCost.science * multiplier),
-        regolith: regolithCost,
-        alloys: alloysCost,
-      };
+     const baseCost = MOON.BUILDING_COSTS[type as keyof typeof MOON.BUILDING_COSTS];
+     const multiplier = Math.pow(MOON.BUILDING_COST_EXPONENT, count);
+     const regolithCost = 'regolith' in baseCost ? Math.round((baseCost.regolith as number) * multiplier) : 0;
+     const alloysCost = 'alloys' in baseCost ? Math.round((baseCost.alloys as number) * multiplier) : 0;
+     return {
+       cargo: Math.round(baseCost.cargo * multiplier),
+       science: Math.round(baseCost.science * multiplier),
+       regolith: regolithCost,
+       alloys: alloysCost,
+     };
    },
   
   addMoonLog: (message: string) => set(state => {

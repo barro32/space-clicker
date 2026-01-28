@@ -1,10 +1,11 @@
 import { useGameStore } from './useGameStore.js';
 import { INITIAL_STATE, DEFAULT_COMPANIES } from './gameConstants.js';
+import { deleteGameState } from './persistence.js';
 
 export function DevConsole() {
-  const handleReset = () => {
-    // Clear localStorage
-    localStorage.removeItem('gameState');
+  const handleReset = async () => {
+    // Clear game state (localStorage or Electron file)
+    await deleteGameState();
     
     // Reset the Zustand store to initial defaults
     useGameStore.setState({

@@ -165,9 +165,9 @@ describe('Auto-build (Auto-Queue)', () => {
 
       useGameStore.getState().tick();
 
-      const state = useGameStore.getState();
-      // Logistics stations generate money (via cargoProd in tick), not cargo resources
-      expect(state.money).toBeGreaterThan(0);
+       const state = useGameStore.getState();
+       // Logistics stations generate money (via moneyProduction in tick), not cargo resources
+       expect(state.money).toBeGreaterThan(0);
     });
 
     it('should generate cargo from active rockets', () => {

@@ -1,9 +1,9 @@
 import { useGameStore } from "./useGameStore.js"
-import { FaRegBuilding, FaRocket, FaBomb, FaGasPump, FaFlask, FaFire } from "react-icons/fa"
-import { COST_SCALING, AFTERBURNER } from "./gameConstants.js"
+import { FaRegBuilding, FaRocket, FaBomb, FaGasPump, FaFlask } from "react-icons/fa"
+import { COST_SCALING } from "./gameConstants.js"
 
 export function SpaceportView() {
-     const { rockets, spaceports, buildSpaceport, buildRocket, explodedRocketIds, clearExplosion, fuelRefineries, buildFuelRefinery, fuelRefineryCost, autoBuildActive, autoSalvageActive, toggleAutoBuild, toggleAutoSalvage, buildScienceRocket, fuel, tickCount, afterburnerActive, toggleAfterburner } = useGameStore()
+     const { rockets, spaceports, buildSpaceport, buildRocket, explodedRocketIds, clearExplosion, fuelRefineries, buildFuelRefinery, fuelRefineryCost, autoBuildActive, autoSalvageActive, toggleAutoBuild, toggleAutoSalvage, buildScienceRocket, fuel, tickCount } = useGameStore()
      
       // use effective capacity from research
       const effectiveCapacity = useGameStore(state => Math.max(1, state.spaceportCapacity + state.getEffectMultiplier('spaceportCapacityBonus')));
@@ -38,19 +38,11 @@ export function SpaceportView() {
      const autoSalvageEnabled = useGameStore(state => state.getEffectMultiplier('autoSalvageEnabled') > 0);
      const clearMultiplier = useGameStore(state => state.getEffectMultiplier('clearExplosionMultiplier') || 1);
      const autoSalvageInterval = Math.max(1, Math.floor(20 / clearMultiplier));
-     const autoSalvageProgress = autoSalvageEnabled && autoSalvageActive && explodedRocketIds.length > 0
-       ? (((tickCount + 10) % autoSalvageInterval) / autoSalvageInterval) * 100
-       : 0;
-     
-     // Afterburner state
-     const afterburnerUnlocked = useGameStore(state => state.getEffectMultiplier('unlockAfterburner') > 0);
-     const hasThermalShielding = useGameStore(state => state.getCompanyPerkValue('thermalShielding') > 0);
-     const afterburnerEfficiency = useGameStore(state => state.getCompanyPerkValue('afterburnerEfficiency'));
-     const afterburnerOutputBonus = useGameStore(state => state.getCompanyPerkValue('afterburnerOutput'));
-     const fuelCostMult = afterburnerEfficiency > 0 ? afterburnerEfficiency : AFTERBURNER.FUEL_COST_MULTIPLIER;
-     const outputMult = afterburnerOutputBonus > 0 ? afterburnerOutputBonus : AFTERBURNER.OUTPUT_MULTIPLIER;
+      const autoSalvageProgress = autoSalvageEnabled && autoSalvageActive && explodedRocketIds.length > 0
+        ? (((tickCount + 10) % autoSalvageInterval) / autoSalvageInterval) * 100
+        : 0;
 
-   return (
+    return (
      <div className="w-full h-full flex flex-col items-center justify-center px-8 overflow-auto">
        {/* Spaceports Grid - scrollable for many spaceports */}
        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 max-h-[50vh] overflow-y-auto w-full max-w-4xl">
@@ -231,52 +223,21 @@ export function SpaceportView() {
                <div className="text-lg font-bold text-green-400 font-mono text-center">${currentSpaceportCost.toLocaleString()}</div>
                <div className="text-xs text-gray-500 font-mono text-center">Capacity +{effectiveCapacity}</div>
              </div>
-           )}
+             )}
 
             {/* Build Fuel Refinery */}
-            {refineriesUnlocked && (
-              <div className="bg-black/30 border-2 border-orange-500/50 rounded p-4 hover:border-orange-500/80 hover:bg-orange-900/20 transition-all cursor-pointer" onClick={buildFuelRefinery} title="Build fuel refinery">
-                <div className="flex items-center justify-center mb-2">
-                  <FaGasPump className="text-2xl text-orange-400" />
-                </div>
-                <div className="text-xs text-gray-400 font-mono text-center mb-1">FUEL REFINERY</div>
-                <div className="text-lg font-bold text-green-400 font-mono text-center">${currentFuelRefineryCost.toLocaleString()}</div>
-                <div className="text-xs text-cyan-400 font-mono text-center">Total: {fuelRefineries}</div>
-              </div>
-            )}
-
-            {/* Afterburner Toggle */}
-            {afterburnerUnlocked && (
-              <div 
-                className={`bg-black/30 border-2 rounded p-4 transition-all cursor-pointer ${
-                  afterburnerActive 
-                    ? 'border-red-500 bg-red-900/30 shadow-lg shadow-red-500/30' 
-                    : 'border-yellow-500/50 hover:border-yellow-500/80 hover:bg-yellow-900/20'
-                }`}
-                onClick={toggleAfterburner}
-                title={`Afterburner: ${outputMult}x output, ${fuelCostMult}x fuel cost${hasThermalShielding ? '' : ', +5% explosion risk'}`}
-              >
-                <div className="flex items-center justify-center mb-2">
-                  <FaFire className={`text-2xl ${afterburnerActive ? 'text-red-400 animate-pulse' : 'text-yellow-400'}`} />
-                </div>
-                <div className="text-xs text-gray-400 font-mono text-center mb-1">AFTERBURNER</div>
-                <div className={`text-lg font-bold font-mono text-center ${afterburnerActive ? 'text-red-400' : 'text-yellow-400'}`}>
-                  {afterburnerActive ? 'ACTIVE' : 'OFF'}
-                </div>
-                <div className="text-xs font-mono text-center mt-1 space-y-0.5">
-                  <div className="text-green-400">{outputMult}x Output</div>
-                  <div className="text-orange-400">{fuelCostMult}x Fuel</div>
-                  {!hasThermalShielding && (
-                    <div className="text-red-400">+5% Risk</div>
-                  )}
-                  {hasThermalShielding && (
-                    <div className="text-cyan-400">Shielded</div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-   )
+             {refineriesUnlocked && (
+               <div className="bg-black/30 border-2 border-orange-500/50 rounded p-4 hover:border-orange-500/80 hover:bg-orange-900/20 transition-all cursor-pointer" onClick={buildFuelRefinery} title="Build fuel refinery">
+                 <div className="flex items-center justify-center mb-2">
+                   <FaGasPump className="text-2xl text-orange-400" />
+                 </div>
+                 <div className="text-xs text-gray-400 font-mono text-center mb-1">FUEL REFINERY</div>
+                 <div className="text-lg font-bold text-green-400 font-mono text-center">${currentFuelRefineryCost.toLocaleString()}</div>
+                 <div className="text-xs text-cyan-400 font-mono text-center">Total: {fuelRefineries}</div>
+               </div>
+             )}
+           </div>
+         </div>
+       </div>
+    )
 }

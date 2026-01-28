@@ -1,15 +1,18 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useGameStore, GameState } from "./useGameStore.js"
 import { FaMoneyBillAlt, FaFlask, FaGasPump, FaBox, FaChevronUp, FaChevronDown, FaChevronLeft, FaChevronRight, FaRocket, FaSatellite, FaFlask as FaLab, FaExclamationTriangle, FaFileContract, FaIndustry, FaMoon, FaGem, FaLock } from 'react-icons/fa'
+import { MdSettings } from 'react-icons/md'
 import { SpaceportView } from "./SpaceportView.js"
 import { OrbitView } from "./OrbitView.js"
 import { ContractsView } from "./ContractsView.js"
 import { ResearchTreeView } from "./ResearchTreeView.js"
 import { MoonView } from "./MoonView.js"
 import { ResearchSidebar } from "./components/ResearchSidebar.js"
+import { SettingsPanel } from "./components/SettingsPanel.js"
 import { DevConsole } from './DevConsole.js'
-import { INITIAL_STATE, TIME, DEFAULT_COMPANIES } from './gameConstants.js'
+import { INITIAL_STATE, TIME, DEFAULT_COMPANIES, DEFAULT_SETTINGS } from './gameConstants.js'
 import { researchTree, ResearchNode, EffectType } from './researchTree.js'
+import { loadGameStateSync, loadGameStateAsync, saveGameState } from './persistence.js'
 
 
 // Helper function to calculate effect multiplier (duplicated from store for use in metrics calculation)
@@ -140,9 +143,9 @@ function calculateGameMetrics(state: GameState): GameMetrics {
 const loadInitialState = () => {
   if (typeof window !== 'undefined') {
     try {
-      const savedState = localStorage.getItem('gameState');
+      const savedState = loadGameStateSync();
       if (savedState) {
-        const parsed = JSON.parse(savedState);
+        const parsed = savedState;
         if (parsed.money !== undefined && parsed.science !== undefined) {
           if (!parsed.spaceStations) parsed.spaceStations = [];
           if (!parsed.currentView) parsed.currentView = "surface";
@@ -258,10 +261,17 @@ const loadInitialState = () => {
             energyGeneration: 0, 
             energyDemand: 0 
           };
-          if (!parsed.moonBounties) parsed.moonBounties = [];
-          if (parsed.moonBountyRefreshTimer === undefined) parsed.moonBountyRefreshTimer = 300;
-          
-          // Migration: Layer unlock tracking
+           if (!parsed.moonBounties) parsed.moonBounties = [];
+           if (parsed.moonBountyRefreshTimer === undefined) parsed.moonBountyRefreshTimer = 300;
+           
+           // Migration: Settings (user preferences)
+           if (!parsed.settings) parsed.settings = DEFAULT_SETTINGS;
+           else {
+             // Ensure all settings have defaults if migrating from older saves
+             parsed.settings = { ...DEFAULT_SETTINGS, ...parsed.settings };
+           }
+           
+           // Migration: Layer unlock tracking
           if (parsed.totalSuccessfulLaunches === undefined) parsed.totalSuccessfulLaunches = 0;
           if (parsed.orbitLayerUnlocked === undefined) parsed.orbitLayerUnlocked = false;
           if (parsed.contractsLayerUnlocked === undefined) parsed.contractsLayerUnlocked = false;
@@ -361,8 +371,9 @@ export function App() {
   const { money, science, fuel, cargo, tick, notifications } = useGameStore()
   const maxFuel = useGameStore(state => state.getMaxFuel());
   
-  // Current layer state
-  const [currentLayer, setCurrentLayer] = useState<Layer>('surface');
+   // Current layer state
+   const [currentLayer, setCurrentLayer] = useState<Layer>('surface');
+   const [settingsOpen, setSettingsOpen] = useState(false);
   
   // Get computed values
   const researchedNodes = useGameStore(state => state.researchedNodes);
@@ -561,7 +572,7 @@ export function App() {
 
   // Autosave
   useEffect(() => {
-    const saveState = () => {
+    const saveState = async () => {
       const state = useGameStore.getState();
       const stateToSave = {
         money: state.money, science: state.science, fuel: state.fuel, cargo: state.cargo,
@@ -593,7 +604,7 @@ export function App() {
         orbitLayerUnlocked: state.orbitLayerUnlocked,
         contractsLayerUnlocked: state.contractsLayerUnlocked,
       };
-      localStorage.setItem('gameState', JSON.stringify(stateToSave));
+      await saveGameState(stateToSave);
       setLastSaveTime(Date.now());
     };
 
@@ -823,13 +834,22 @@ export function App() {
                   </>
                 )}
               </div>
-            )}
-          </div>
-          
-          {/* Save indicator - minimal */}
-          <div className="text-[10px] text-gray-600 font-mono whitespace-nowrap">
-            {displayTime}
-          </div>
+           )}
+           </div>
+           
+           {/* Settings Button */}
+           <button
+             onClick={() => setSettingsOpen(true)}
+             className="p-2 rounded-lg bg-gray-800/80 border border-cyan-500/30 hover:bg-gray-700 hover:border-cyan-500/50 transition-all text-cyan-400 hover:text-cyan-300"
+             title="Open settings"
+           >
+             <MdSettings size={20} />
+           </button>
+           
+           {/* Save indicator - minimal */}
+           <div className="text-[10px] text-gray-600 font-mono whitespace-nowrap">
+             {displayTime}
+           </div>
         </div>
       </div>
 
@@ -1005,6 +1025,9 @@ export function App() {
       {(currentLayer === 'orbit' || currentLayer === 'contracts' || currentLayer === 'moon') && (
         <ResearchSidebar layer={currentLayer} />
       )}
+
+      {/* Settings Panel Modal */}
+      {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
 
       <DevConsole />
     </div>

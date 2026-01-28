@@ -13,11 +13,10 @@ export type EffectType =
   | 'passiveCargoBonus'
   | 'refineryOutputMultiplier'
   | 'constructionCostMultiplier'
-  | 'profitMultiplier'
-  | 'contractRequirementMultiplier'
-  | 'companyXPMultiplier'
-  | 'unlockAfterburner'
-  | 'stationLogisticsMultiplier'
+   | 'profitMultiplier'
+   | 'contractRequirementMultiplier'
+   | 'companyXPMultiplier'
+   | 'stationLogisticsMultiplier'
   | 'stationScienceMultiplier'
   | 'unlockMoonMissions'
   | 'unlockScienceRockets'
@@ -319,34 +318,24 @@ export const researchTree: ResearchNode[] = [
   },
 
   // --- INFRASTRUCTURE BRANCH (Surface) ---
-  // Modular Spaceports (10 levels)
-  ...generateModularSpaceports(),
-  // Advanced Refineries (5 levels)
-  ...generateAdvancedRefineries(),
-  {
-    id: 'i3',
-    name: 'Automated Construction',
-    description: 'Reduces construction cost of all structures by 15%.',
-    branch: 'infrastructure',
-    scienceCost: 600,
-    prerequisites: [],
-    effect: { type: 'constructionCostMultiplier', value: 0.85 },
-    assignedLayer: 'surface'
-  },
-  // Fuel Tanks (5 levels)
-  ...generateFuelTanks(),
-  {
-    id: 'f2',
-    name: 'Combustion Injection',
-    description: 'Unlocks the Afterburner toggle: 2x output but 3x fuel cost and +5% explosion risk.',
-    branch: 'infrastructure',
-    scienceCost: 500,
-    prerequisites: ['f1-1'],
-    effect: { type: 'unlockAfterburner', value: 1 },
-    assignedLayer: 'surface'
-  },
+   // Modular Spaceports (10 levels)
+   ...generateModularSpaceports(),
+   // Advanced Refineries (5 levels)
+   ...generateAdvancedRefineries(),
+   {
+     id: 'i3',
+     name: 'Automated Construction',
+     description: 'Reduces construction cost of all structures by 15%.',
+     branch: 'infrastructure',
+     scienceCost: 600,
+     prerequisites: [],
+     effect: { type: 'constructionCostMultiplier', value: 0.85 },
+     assignedLayer: 'surface'
+   },
+   // Fuel Tanks (5 levels)
+   ...generateFuelTanks(),
 
-  // --- COMMERCIAL BRANCH (Contracts) ---
+   // --- COMMERCIAL BRANCH (Contracts) ---
   // Market Analysis (5 levels)
   ...generateMarketAnalysis(),
   {

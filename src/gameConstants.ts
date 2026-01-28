@@ -32,16 +32,13 @@ export type CompanyPerkEffect =
   | 'refineryOutputMultiplier'
   | 'fuelCapacityBonus'
   | 'refineryCostMultiplier'
-  | 'passiveFuelBonus'
-  | 'afterburnerEfficiency' // Reduces afterburner fuel cost (3x -> 2x)
-  | 'afterburnerOutput' // Increases afterburner output bonus (2x -> 2.5x)
-  // Aegis Security (Safety)
+   | 'passiveFuelBonus'
+   // Aegis Security (Safety)
   | 'explosionChanceMultiplier'
   | 'salvageSpeedMultiplier'
   | 'autoSalvageSpeedMultiplier'
-  | 'hazardDurationReduction'
-  | 'thermalShielding' // Negates afterburner explosion risk
-  | 'scienceFromExplosions' // Explosions grant science based on rocket cost
+   | 'hazardDurationReduction'
+   | 'scienceFromExplosions' // Explosions grant science based on rocket cost
   // Atlas Engineering (Speed/Capacity)
   | 'spaceportCapacityBonus'
   | 'batchBuildBonus'
@@ -135,10 +132,10 @@ export const COMPANY_DEFINITIONS: CompanyDefinition[] = [
       { level: 4, name: 'Refined Output', description: '+25% refinery output', effect: 'refineryOutputMultiplier', value: 1.25 },
       { level: 5, name: 'Extra Tanks', description: '+50 max fuel capacity', effect: 'fuelCapacityBonus', value: 50 },
       { level: 6, name: 'Reserve Tanks', description: '+100 max fuel capacity', effect: 'fuelCapacityBonus', value: 100 },
-      { level: 7, name: 'Industrial Scale', description: '-15% refinery cost', effect: 'refineryCostMultiplier', value: 0.85 },
-      { level: 8, name: 'Mass Production', description: '-25% refinery cost', effect: 'refineryCostMultiplier', value: 0.75 },
-      { level: 9, name: 'Flow Control', description: 'Afterburner fuel cost reduced (3x to 2x)', effect: 'afterburnerEfficiency', value: 2.0 },
-      { level: 10, name: 'Plasma Injectors', description: 'Afterburner output increased (2x to 2.5x)', effect: 'afterburnerOutput', value: 2.5 },
+       { level: 7, name: 'Industrial Scale', description: '-15% refinery cost', effect: 'refineryCostMultiplier', value: 0.85 },
+       { level: 8, name: 'Mass Production', description: '-25% refinery cost', effect: 'refineryCostMultiplier', value: 0.75 },
+       { level: 9, name: 'Quantum Refining', description: '+50% refinery output', effect: 'refineryOutputMultiplier', value: 1.5 },
+       { level: 10, name: 'Infinite Reserves', description: '+200 max fuel capacity', effect: 'fuelCapacityBonus', value: 200 },
     ],
   },
   {
@@ -149,10 +146,10 @@ export const COMPANY_DEFINITIONS: CompanyDefinition[] = [
     perks: [
       { level: 1, name: 'Safety Training', description: '-5% explosion chance', effect: 'explosionChanceMultiplier', value: 0.95 },
       { level: 2, name: 'Safety Protocols', description: '-10% explosion chance', effect: 'explosionChanceMultiplier', value: 0.90 },
-      { level: 3, name: 'Quick Cleanup', description: '+50% manual salvage speed', effect: 'salvageSpeedMultiplier', value: 1.5 },
-      { level: 4, name: 'Salvage Expertise', description: '+3 science per salvage', effect: 'sciencePerSalvageBonus', value: 3 },
-      { level: 5, name: 'Thermal Shields', description: 'Negates Afterburner explosion risk', effect: 'thermalShielding', value: 1 },
-      { level: 6, name: 'Black Box', description: 'Explosions grant science (50% of rocket cost)', effect: 'scienceFromExplosions', value: 0.5 },
+       { level: 3, name: 'Quick Cleanup', description: '+50% manual salvage speed', effect: 'salvageSpeedMultiplier', value: 1.5 },
+       { level: 4, name: 'Salvage Expertise', description: '+3 science per salvage', effect: 'sciencePerSalvageBonus', value: 3 },
+       { level: 5, name: 'Advanced Salvage', description: '+100% auto-salvage speed', effect: 'autoSalvageSpeedMultiplier', value: 2 },
+       { level: 6, name: 'Black Box', description: 'Explosions grant science (50% of rocket cost)', effect: 'scienceFromExplosions', value: 0.5 },
       { level: 7, name: 'Risk Management', description: '-15% explosion chance', effect: 'explosionChanceMultiplier', value: 0.85 },
       { level: 8, name: 'Hazard Control', description: '-25% hazard duration on Moon', effect: 'hazardDurationReduction', value: 0.25 },
       { level: 9, name: 'Auto Recovery', description: '1.5x auto-salvage speed', effect: 'autoSalvageSpeedMultiplier', value: 1.5 },
@@ -230,11 +227,15 @@ export const TIME = {
   DISPLAY_TIME_THRESHOLD_SECONDS: 60,
 };
 
-// Afterburner System
-export const AFTERBURNER = {
-  FUEL_COST_MULTIPLIER: 3, // 3x fuel consumption (reduced by perks)
-  OUTPUT_MULTIPLIER: 2, // 2x resource output (increased by perks)
-  EXPLOSION_RISK_BONUS: 0.05, // +5% flat explosion chance (negated by thermal shielding)
+// Game Settings (user preferences)
+export interface GameSettings {
+  soundMuted: boolean;
+  fullscreen: boolean;
+}
+
+export const DEFAULT_SETTINGS: GameSettings = {
+   soundMuted: false,
+   fullscreen: false,
 };
 
 // Orbital Layer Constants

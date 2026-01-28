@@ -56,11 +56,11 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
     } as unknown as GameState);
   });
 
-   describe('Node Structure and Validation', () => {
-    it('should have exactly 210 research nodes', () => {
-         // Previous count (207) + 3 new fabricator nodes (m16, m17, m18) = 210
-         expect(researchTree).toHaveLength(210);
-       });
+    describe('Node Structure and Validation', () => {
+     it('should have exactly 209 research nodes', () => {
+          // Previous count (210) - 1 removed afterburner node (f2) = 209
+          expect(researchTree).toHaveLength(209);
+        });
 
     it('should have all required branches represented', () => {
       const branches = new Set(researchTree.map(n => n.branch));
