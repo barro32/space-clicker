@@ -473,15 +473,15 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
        });
 
        it('should affect getCurrentSpaceportCost()', () => {
-        useGameStore.setState({
-          science: 5000,
-          researchedNodes: ['i1-1', 'i2-1', 'i3'],
-          spaceports: [{ id: 1 }], // 1 spaceport already exists
-        } as unknown as GameState);
-        const cost = useGameStore.getState().getCurrentSpaceportCost();
-        // 1000 * 1.5^1 * 0.85 = 1000 * 1.5 * 0.85 = 1275
-        expect(cost).toBe(1275);
-      });
+         useGameStore.setState({
+           science: 5000,
+           researchedNodes: ['i1-1', 'i2-1', 'i3'],
+           spaceports: [{ id: 1 }], // 1 spaceport already exists
+         } as unknown as GameState);
+         const cost = useGameStore.getState().getCurrentSpaceportCost();
+         // 1000 * 2.5^1 * 0.85 = 1000 * 2.5 * 0.85 = 2125
+         expect(cost).toBe(2125);
+       });
     });
   });
 
