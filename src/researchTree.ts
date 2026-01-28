@@ -107,7 +107,7 @@ const generateSafetyProtocols = (): ResearchNode[] => {
 // Generate Modular Spaceports (9 levels) - Surface layer
 const generateModularSpaceports = (): ResearchNode[] => {
   const levels = 9;
-  const baseCosts = [9, 32, 65, 108, 173, 259, 367, 497, 648]; // 80% more expensive
+  const baseCosts = [200, 400, 700, 1150, 1800, 2700, 3900, 5400, 7200]; // Aggressive scaling (100-200 per level increase)
   const nodes: ResearchNode[] = [];
   for (let i = 1; i <= levels; i++) {
     nodes.push({
@@ -115,7 +115,7 @@ const generateModularSpaceports = (): ResearchNode[] => {
       name: `Modular Spaceports ${toRoman(i)}`,
       description: i === 1 ? 'Increases spaceport capacity by 1 slot.' : 'Increases spaceport capacity by another slot.',
       branch: 'infrastructure',
-      scienceCost: baseCosts[i - 1] || 648 + (i - 9) * 90,
+      scienceCost: baseCosts[i - 1] || 7200 + (i - 9) * 1800,
       prerequisites: [],
       effect: { type: 'spaceportCapacityBonus', value: 1 },
       ...(i === 1 ? { maxLevel: levels } : {}),
