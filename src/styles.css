@@ -1,11 +1,19 @@
 @import "tailwindcss";
 
-/* Prevent text selection on interactive elements */
-button, [role="button"], .no-select {
+/* Disable text selection globally across entire game */
+* {
+  user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
-  user-select: none;
+}
+
+/* Allow text selection only in specific input elements if needed */
+input, textarea {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
 }
 
 /* Hide scrollbars but keep functionality */

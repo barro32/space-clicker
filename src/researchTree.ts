@@ -43,13 +43,14 @@ export type EffectType =
    | 'unlockLunarManufacturing'
    | 'missionDurationMultiplier'
    | 'extractorOutputMultiplier'
-   | 'moonRefineryOutputMultiplier'
-   | 'moonStorageMultiplier'
-   | 'hazardDurationMultiplier'
-   | 'massDriverEfficiency'
-   | 'unlockPlanetaryExpansion'
-   // Moon Power System effects - REMOVED (not implemented)
-   | 'powerGenerationMultiplier'
+    | 'moonRefineryOutputMultiplier'
+    | 'moonStorageMultiplier'
+    | 'hazardDurationMultiplier'
+    | 'massDriverEfficiency'
+    | 'unlockPlanetaryExpansion'
+    | 'refineryCapacityBonus' // Adds capacity per refinery (retroactive)
+    // Moon Power System effects - REMOVED (not implemented)
+    | 'powerGenerationMultiplier'
    | 'sectorScanCostReduction'
    | 'buildingSlotsPerSectorBonus'
    | 'massDriverCapacityBonus'
@@ -278,6 +279,29 @@ const generateFuelTanks = (): ResearchNode[] => {
   return nodes;
 };
 
+// Generate Refinery Capacity upgrades (5 levels) - Surface layer
+// Each level increases capacity per refinery (retroactive to existing refineries)
+const generateRefineryCapacity = (): ResearchNode[] => {
+  const levels = 5;
+  const baseCosts = [150, 300, 500, 800, 1200];
+  const nodes: ResearchNode[] = [];
+  for (let i = 1; i <= levels; i++) {
+    nodes.push({
+      id: `f2-${i}`,
+      name: `Enhanced Refinery Capacity ${toRoman(i)}`,
+      description: i === 1 ? 'Each refinery stores +5 more fuel (retroactive). Base is 10 per refinery.' : `Each refinery stores +${5 * i} more fuel (retroactive).`,
+      branch: 'infrastructure',
+      scienceCost: baseCosts[i - 1] || 1200 + (i - 5) * 600,
+      prerequisites: i === 1 ? ['f1-1'] : [`f2-${i - 1}`],
+      effect: { type: 'refineryCapacityBonus', value: 5 * i },
+      ...(i === 1 ? { maxLevel: levels } : {}),
+      levelSuffix: true,
+      assignedLayer: 'surface'
+    });
+  }
+  return nodes;
+};
+
 // Helper to convert number to roman numeral
 const toRoman = (num: number): string => {
   const romanNumerals: [number, string][] = [
@@ -327,10 +351,12 @@ export const researchTree: ResearchNode[] = [
      effect: { type: 'constructionCostMultiplier', value: 0.85 },
      assignedLayer: 'surface'
    },
-   // Fuel Tanks (5 levels)
-   ...generateFuelTanks(),
+    // Fuel Tanks (5 levels)
+    ...generateFuelTanks(),
+    // Refinery Capacity (5 levels)
+    ...generateRefineryCapacity(),
 
-   // --- COMMERCIAL BRANCH (Contracts) ---
+    // --- COMMERCIAL BRANCH (Contracts) ---
   // Market Analysis (5 levels)
   ...generateMarketAnalysis(),
   {

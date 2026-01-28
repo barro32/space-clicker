@@ -56,11 +56,12 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
     } as unknown as GameState);
   });
 
-    describe('Node Structure and Validation', () => {
-     it('should have exactly 209 research nodes', () => {
-          // Previous count (209) - 5 removed unimplemented nodes (m8, m9, m10, m13, m15) = 204
-          expect(researchTree).toHaveLength(204);
-        });
+     describe('Node Structure and Validation', () => {
+      it('should have exactly 209 research nodes', () => {
+           // Previous count (209) - 5 removed unimplemented nodes (m8, m9, m10, m13, m15) = 204
+           // + 5 new Refinery Capacity nodes = 209
+           expect(researchTree).toHaveLength(209);
+         });
 
     it('should have all required branches represented', () => {
       const branches = new Set(researchTree.map(n => n.branch));
@@ -179,6 +180,7 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
         'hazardDurationMultiplier',
         'massDriverEfficiency',
         'unlockPlanetaryExpansion',
+        'refineryCapacityBonus',
         'solarArrayEfficiency',
         'nuclearReactorEfficiency',
         'batteryCapacityMultiplier',
