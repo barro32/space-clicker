@@ -207,13 +207,13 @@ export function ResearchSidebar({ layer }: ResearchSidebarProps) {
       }`}>
         <div className="p-4 h-full flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-white">{layerTitle} Research</h2>
-            <div className="flex items-center gap-2 text-gray-300 bg-black/30 px-2 py-1 rounded border border-blue-500/30">
-              <FaFlask className="text-blue-400 text-sm" />
-              <span className="font-mono text-sm font-bold text-blue-400">{Math.floor(science)}</span>
-            </div>
-          </div>
+           <div className="flex items-center justify-between mb-4">
+             <h2 className="research-title">{layerTitle} Research</h2>
+             <div className="flex items-center gap-2 text-gray-300 bg-black/30 px-2 py-1 rounded border border-blue-500/30">
+               <FaFlask className="text-blue-400 text-base" />
+               <span className="research-science-label">{Math.floor(science)}</span>
+             </div>
+           </div>
 
           {/* Research List */}
           <div className="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
@@ -236,40 +236,40 @@ export function ResearchSidebar({ layer }: ResearchSidebarProps) {
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-1">
-                        <BranchIcon branch={node.branch} />
-                        <h3 className="font-semibold text-xs text-white truncate">{node.name}</h3>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className={`text-xs font-mono ${canAfford ? 'text-blue-400' : 'text-red-400'}`}>
-                          {node.scienceCost}
-                        </span>
-                        {!available && <FaLock className="text-gray-500 text-[10px]" />}
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-gray-400 leading-tight">
+                       <div className="flex items-center gap-1">
+                         <BranchIcon branch={node.branch} />
+                         <h3 className="research-item-title truncate">{node.name}</h3>
+                       </div>
+                       <div className="flex items-center gap-1">
+                         <span className={`research-item-cost ${canAfford ? 'text-blue-400' : 'text-red-400'}`}>
+                           {node.scienceCost}
+                         </span>
+                         {!available && <FaLock className="text-gray-500 text-xs" />}
+                       </div>
+                     </div>
+                     <p className="research-item-description">
                       {node.description}
                     </p>
                     {/* Show additional costs */}
-                    {(node.cargoCost || node.lunarComponentCost || node.helium3Cost) && (
-                      <div className="flex gap-2 mt-1">
-                        {node.cargoCost && (
-                          <span className={`text-[10px] ${cargo >= node.cargoCost ? 'text-yellow-400' : 'text-red-400'}`}>
-                            {node.cargoCost} cargo
-                          </span>
-                        )}
-                        {node.lunarComponentCost && (
-                          <span className={`text-[10px] ${lunarComponents >= node.lunarComponentCost ? 'text-purple-400' : 'text-red-400'}`}>
-                            {node.lunarComponentCost} lunar
-                          </span>
-                        )}
-                        {node.helium3Cost && (
-                          <span className={`text-[10px] ${earthResources.helium3 >= node.helium3Cost ? 'text-cyan-400' : 'text-red-400'}`}>
-                            {node.helium3Cost.toLocaleString()} He-3
-                          </span>
-                        )}
-                      </div>
-                    )}
+                     {(node.cargoCost || node.lunarComponentCost || node.helium3Cost) && (
+                       <div className="flex gap-2 mt-1">
+                         {node.cargoCost && (
+                           <span className={`research-item-additional ${cargo >= node.cargoCost ? 'text-yellow-400' : 'text-red-400'}`}>
+                             {node.cargoCost} cargo
+                           </span>
+                         )}
+                         {node.lunarComponentCost && (
+                           <span className={`research-item-additional ${lunarComponents >= node.lunarComponentCost ? 'text-purple-400' : 'text-red-400'}`}>
+                             {node.lunarComponentCost} lunar
+                           </span>
+                         )}
+                         {node.helium3Cost && (
+                           <span className={`research-item-additional ${earthResources.helium3 >= node.helium3Cost ? 'text-cyan-400' : 'text-red-400'}`}>
+                             {node.helium3Cost.toLocaleString()} He-3
+                           </span>
+                         )}
+                       </div>
+                     )}
                   </div>
                 );
               })}
@@ -301,26 +301,26 @@ export function ResearchSidebar({ layer }: ResearchSidebarProps) {
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1">
-                      <BranchIcon branch={firstNode.branch} />
-                      <h3 className="font-semibold text-xs text-white truncate">{cleanName}</h3>
-                      {currentLevel > 0 && (
-                        <span className="text-[10px] bg-purple-500/30 text-purple-300 px-1 rounded font-mono">
-                          {currentLevel}/{totalLevels}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {nextNode && (
-                        <span className={`text-xs font-mono ${canAffordNext ? 'text-blue-400' : 'text-red-400'}`}>
-                          {nextNode.scienceCost}
-                        </span>
-                      )}
-                      {!canUnlockNext && currentLevel === 0 && (
-                        <FaLock className="text-gray-500 text-[10px]" />
-                      )}
-                    </div>
-                  </div>
+                     <div className="flex items-center gap-1">
+                       <BranchIcon branch={firstNode.branch} />
+                       <h3 className="research-item-title truncate">{cleanName}</h3>
+                       {currentLevel > 0 && (
+                         <span className="research-level-badge bg-purple-500/30 text-purple-300 px-1 rounded">
+                           {currentLevel}/{totalLevels}
+                         </span>
+                       )}
+                     </div>
+                     <div className="flex items-center gap-1">
+                       {nextNode && (
+                         <span className={`research-item-cost ${canAffordNext ? 'text-blue-400' : 'text-red-400'}`}>
+                           {nextNode.scienceCost}
+                         </span>
+                       )}
+                       {!canUnlockNext && currentLevel === 0 && (
+                         <FaLock className="text-gray-500 text-xs" />
+                       )}
+                     </div>
+                   </div>
 
                   {/* Progress Bar */}
                   <div className="mb-1">
@@ -332,41 +332,41 @@ export function ResearchSidebar({ layer }: ResearchSidebarProps) {
                     </div>
                   </div>
 
-                  <p className="text-[10px] text-gray-400 leading-tight">
-                    {nextNode ? nextNode.description : firstNode.description}
-                  </p>
+                   <p className="research-item-description">
+                     {nextNode ? nextNode.description : firstNode.description}
+                   </p>
                 </div>
               );
             })}
 
             {/* Completed Research (collapsed) */}
-            <div className="mt-4 pt-2 border-t border-gray-700">
-              <h3 className="text-xs text-gray-500 mb-2">Completed</h3>
-              {singleLevelNodes
-                .filter(n => isUnlocked(n.id))
-                .map(node => (
-                  <div key={node.id} className="rounded p-1 flex items-center gap-1 opacity-50">
-                    <FaCheckCircle className="text-green-500 text-[10px]" />
-                    <span className="text-[10px] text-green-400">{node.name}</span>
-                  </div>
-                ))}
-              
-              {multiLevelBaseIds
-                .filter(baseId => getCurrentLevel(baseId) === getTotalLevels(baseId))
-                .map(baseId => {
-                  const firstNode = getMultiLevelGroup(baseId)[0];
-                  const cleanName = getCleanName(firstNode.name);
-                  const totalLevels = getTotalLevels(baseId);
+             <div className="mt-4 pt-2 border-t border-gray-700">
+               <h3 className="research-completed-heading mb-2">Completed</h3>
+               {singleLevelNodes
+                 .filter(n => isUnlocked(n.id))
+                 .map(node => (
+                   <div key={node.id} className="rounded p-1 flex items-center gap-1 opacity-50">
+                     <FaCheckCircle className="text-green-500 text-xs" />
+                     <span className="research-completed-item text-green-400">{node.name}</span>
+                   </div>
+                 ))}
+               
+               {multiLevelBaseIds
+                 .filter(baseId => getCurrentLevel(baseId) === getTotalLevels(baseId))
+                 .map(baseId => {
+                   const firstNode = getMultiLevelGroup(baseId)[0];
+                   const cleanName = getCleanName(firstNode.name);
+                   const totalLevels = getTotalLevels(baseId);
 
-                  return (
-                    <div key={baseId} className="rounded p-1 flex items-center gap-1 opacity-50">
-                      <FaCheckCircle className="text-green-500 text-[10px]" />
-                      <span className="text-[10px] text-green-400">{cleanName}</span>
-                      <span className="text-[10px] text-green-600 font-mono">({totalLevels})</span>
-                    </div>
-                  );
-                })}
-            </div>
+                   return (
+                     <div key={baseId} className="rounded p-1 flex items-center gap-1 opacity-50">
+                       <FaCheckCircle className="text-green-500 text-xs" />
+                       <span className="research-completed-item text-green-400">{cleanName}</span>
+                       <span className="research-completed-item text-green-600 font-mono">({totalLevels})</span>
+                     </div>
+                   );
+                 })}
+             </div>
           </div>
         </div>
       </div>
