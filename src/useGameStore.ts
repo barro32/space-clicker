@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { researchTree, ResearchNode, EffectType } from './researchTree.js'
-import { INITIAL_STATE, COST_SCALING, PRODUCTION, DEFAULT_COMPANIES, COMPANY_DEFINITIONS, CompanyPerkEffect, ORBITAL, MOON, GameSettings, DEFAULT_SETTINGS } from './gameConstants.js'
+import { INITIAL_STATE, COST_SCALING, PRODUCTION, DEFAULT_COMPANIES, COMPANY_DEFINITIONS, CompanyPerkEffect, ORBITAL, MOON, GameSettings, DEFAULT_SETTINGS, AUTOMATION, CONTRACT, LAYER_UNLOCK, GAME } from './gameConstants.js'
 
 interface Spaceport {
   id: number;
@@ -297,8 +297,8 @@ export const useGameStore = create<GameState>((set, get) => ({
    moonPowerSystem: { 
      dayNightTick: 0, 
      isDay: true, 
-     currentEnergy: 200, 
-     maxEnergy: 200, 
+     currentEnergy: MOON.INITIAL_POWER_ENERGY, 
+     maxEnergy: MOON.INITIAL_POWER_ENERGY, 
      energyGeneration: 0, 
      energyDemand: 0 
    },
@@ -480,19 +480,15 @@ export const useGameStore = create<GameState>((set, get) => ({
       const totalCargoMultiplier = (cargoPerLaunchMultiplier !== 1 ? cargoPerLaunchMultiplier : 1) * (cargoGenerationMultiplier !== 0 ? cargoGenerationMultiplier : 1);
       let cargoResourceProd = successfulCargoLaunches * PRODUCTION.CARGO_PER_SUCCESSFUL_LAUNCH * totalCargoMultiplier;
 
-     // Passive bonuses from company perks
-     const passiveMoneyBonus = state.getCompanyPerkValue('passiveMoneyBonus');
-     const passiveScienceBonus = state.getCompanyPerkValue('passiveScienceBonus');
-     const passiveCargoBonus = state.getCompanyPerkValue('passiveCargoBonus');
-     moneyProduction += passiveMoneyBonus;
-     sciProd += passiveScienceBonus;
-     cargoResourceProd += passiveCargoBonus;
-     
-     // Passive cargo bonus from research
-     const researchPassiveCargoBonus = state.getEffectMultiplier('passiveCargoBonus');
-     cargoResourceProd += researchPassiveCargoBonus;
+      // Passive bonuses from both research and company perks
+      const passiveMoneyBonus = state.getTotalEffectValue('passiveMoneyBonus');
+      const passiveScienceBonus = state.getTotalEffectValue('passiveScienceBonus');
+      const passiveCargoBonus = state.getTotalEffectValue('passiveCargoBonus');
+      moneyProduction += passiveMoneyBonus;
+      sciProd += passiveScienceBonus;
+       cargoResourceProd += passiveCargoBonus;
 
-     // Passive Spaceport Bonuses
+      // Passive Spaceport Bonuses
      for (let i = 0; i < state.spaceports.length; i++) {
        sciProd += PRODUCTION.PASSIVE_SCIENCE_PER_SPACEPORT;
        moneyProduction += (i + 1) * PRODUCTION.PASSIVE_CARGO_BONUS_PER_SPACEPORT;
@@ -680,10 +676,10 @@ export const useGameStore = create<GameState>((set, get) => ({
 
         // Randomize requirements with some variance
         // Apply contract requirement multiplier (c2 Lean Logistics research)
-        const contractRequirementMult = state.getEffectMultiplier('contractRequirementMultiplier') || 1;
-        const baseCargoReq = 50 * levelScale * (0.5 + Math.random()) * contractRequirementMult;
-        const baseScienceReq = 100 * levelScale * (0.5 + Math.random()) * contractRequirementMult;
-        const baseMoneyReq = 300 * levelScale * (0.5 + Math.random()) * contractRequirementMult;
+         const contractRequirementMult = state.getEffectMultiplier('contractRequirementMultiplier') || 1;
+         const baseCargoReq = CONTRACT.BASE_CARGO_REQ * levelScale * (0.5 + Math.random()) * contractRequirementMult;
+         const baseScienceReq = CONTRACT.BASE_SCIENCE_REQ * levelScale * (0.5 + Math.random()) * contractRequirementMult;
+         const baseMoneyReq = CONTRACT.BASE_MONEY_REQ * levelScale * (0.5 + Math.random()) * contractRequirementMult;
 
         newAvailableContracts.push({
           id: `contract-${Date.now()}-${Math.random()}`,
@@ -719,9 +715,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (autoBuildEnabled && state.autoBuildActive) {
       const buildMultiplier = state.getEffectMultiplier('buildRocketMultiplier') || 1;
       const autoBuildSpeedMultiplier = state.getCompanyPerkValue('autoBuildSpeedMultiplier') || 1;
-      const buildSpeedMultiplier = state.getCompanyPerkValue('buildSpeedMultiplier') || 1;
-      const baseInterval = 20;
-      const effectiveInterval = Math.max(1, Math.floor(baseInterval / (buildMultiplier * autoBuildSpeedMultiplier * buildSpeedMultiplier)));
+       const buildSpeedMultiplier = state.getCompanyPerkValue('buildSpeedMultiplier') || 1;
+       const baseInterval = AUTOMATION.BASE_INTERVAL;
+       const effectiveInterval = Math.max(1, Math.floor(baseInterval / (buildMultiplier * autoBuildSpeedMultiplier * buildSpeedMultiplier)));
       
       if (state.tickCount % effectiveInterval === 0) {
         const effectiveCapacity = state.spaceportCapacity + state.getTotalEffectValue('spaceportCapacityBonus');
@@ -757,10 +753,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (autoSalvageEnabled && state.autoSalvageActive && finalExplodedRocketIds.length > 0) {
       const clearMultiplier = state.getEffectMultiplier('clearExplosionMultiplier') || 1;
       const autoSalvageSpeedMultiplier = state.getCompanyPerkValue('autoSalvageSpeedMultiplier') || 1;
-      const baseInterval = 20;
-      const effectiveInterval = Math.max(1, Math.floor(baseInterval / (clearMultiplier * autoSalvageSpeedMultiplier)));
-      
-      if ((state.tickCount + 10) % effectiveInterval === 0) {
+       const baseInterval = AUTOMATION.BASE_INTERVAL;
+       const effectiveInterval = Math.max(1, Math.floor(baseInterval / (clearMultiplier * autoSalvageSpeedMultiplier)));
+       
+       if ((state.tickCount + AUTOMATION.SALVAGE_TICK_OFFSET) % effectiveInterval === 0) {
         const rocketId = finalExplodedRocketIds[0];
         const newRockets = [...finalRockets];
         const rocketIndex = newRockets.findIndex(r => r !== null && r.id === rocketId);
@@ -787,7 +783,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     const updatedNotifications = newlyAvailable.length > 0 
-      ? [...notificationsToAdd, ...state.notifications].slice(0, 5)
+      ? [...notificationsToAdd, ...state.notifications].slice(0, GAME.MAX_NOTIFICATIONS)
       : state.notifications;
 
      // === MOON LAYER MECHANICS ===
@@ -813,7 +809,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         newMoonStatus = 'unlocked';
         newMoonMissionTicks = 0;
         const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
-        newMoonLog = [`[${timestamp}] LANDING SUCCESSFUL - Lunar base operational`, ...newMoonLog].slice(0, 50);
+        newMoonLog = [`[${timestamp}] LANDING SUCCESSFUL - Lunar base operational`, ...newMoonLog].slice(0, MOON.LOG_MAX_ENTRIES);
         notificationsToAdd.push('Lunar Landing Successful! Moon base is now operational.');
       }
     }
@@ -899,14 +895,14 @@ export const useGameStore = create<GameState>((set, get) => ({
         // Clear hazard if duration is up
         if (newActiveHazard.ticksRemaining <= 0) {
           const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
-          newMoonLog = [`[${timestamp}] HAZARD CLEARED: ${newActiveHazard.name} has subsided`, ...newMoonLog].slice(0, 50);
+          newMoonLog = [`[${timestamp}] HAZARD CLEARED: ${newActiveHazard.name} has subsided`, ...newMoonLog].slice(0, MOON.LOG_MAX_ENTRIES);
           newActiveHazard = null;
         }
       }
       
       // Roll for new hazard (only if none active)
       if (!newActiveHazard && Math.random() < MOON.HAZARD_CHANCE) {
-        const hazardType = Math.random() < 0.7 ? 'moonDust' : 'solarFlare';
+        const hazardType = Math.random() < MOON.HAZARD_DUST_CHANCE ? 'moonDust' : 'solarFlare';
         const hazardDef = MOON.HAZARDS[hazardType];
         const baseDuration = hazardDef.durationMin + Math.floor(Math.random() * (hazardDef.durationMax - hazardDef.durationMin));
         
@@ -922,7 +918,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         };
         
         const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
-        newMoonLog = [`[${timestamp}] WARNING: ${hazardDef.name} detected!`, ...newMoonLog].slice(0, 50);
+        newMoonLog = [`[${timestamp}] WARNING: ${hazardDef.name} detected!`, ...newMoonLog].slice(0, MOON.LOG_MAX_ENTRIES);
         notificationsToAdd.push(`Moon Hazard: ${hazardDef.name}!`);
         hazardDebuff = 1 - hazardDef.debuff;
       }
@@ -980,7 +976,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       rockets: finalRockets,
       nextRocketId: finalNextId,
       previouslyAvailableResearch: currentAvailableIds,
-      notifications: [...notificationsToAdd, ...updatedNotifications].slice(0, 5),
+      notifications: [...notificationsToAdd, ...updatedNotifications].slice(0, GAME.MAX_NOTIFICATIONS),
       recentlyLaunchedRocketIds: recentlyLaunchedIds,
       newlyAvailableResearchIds: newlyAvailable,
       // Orbital state updates
@@ -1140,7 +1136,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           maxDocks: baseDocks,
           dockedRockets: [],
         }],
-        notifications: [`Deployed ${type} station`, ...state.notifications].slice(0, 5)
+        notifications: [`Deployed ${type} station`, ...state.notifications].slice(0, GAME.MAX_NOTIFICATIONS)
       };
     }
     return {};
@@ -1400,7 +1396,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   
   setView: (view: "surface" | "orbit" | "contracts" | "research") => set({ currentView: view }),
   
-  addNotification: (message: string) => set(state => ({ notifications: [message, ...state.notifications].slice(0, 5) })),
+  addNotification: (message: string) => set(state => ({ notifications: [message, ...state.notifications].slice(0, GAME.MAX_NOTIFICATIONS) })),
   
   generateContracts: () => set(state => {
     const maxAvailable = get().getMaxAvailableContracts();
@@ -1462,20 +1458,20 @@ export const useGameStore = create<GameState>((set, get) => ({
       const company = companiesToPick.splice(companyIndex, 1)[0];
       
       const levelScale = Math.pow(company.level, 1.5);
-      const isFragile = Math.random() > 0.7;
-      const isTimed = Math.random() > 0.5;
+       const isFragile = Math.random() > CONTRACT.FRAGILE_CHANCE;
+       const isTimed = Math.random() > CONTRACT.TIMED_CHANCE;
       
       const contractType = contractTypes[Math.floor(Math.random() * contractTypes.length)];
       const title = contractType.titles[Math.floor(Math.random() * contractType.titles.length)];
       const description = contractType.descriptions[Math.floor(Math.random() * contractType.descriptions.length)];
 
       // Apply contract requirement multiplier (c2 Lean Logistics research)
-      const contractRequirementMult = get().getEffectMultiplier('contractRequirementMultiplier') || 1;
-      const baseCargoReq = 50 * levelScale * (1 + Math.random()) * contractRequirementMult;
-      const baseScienceReq = 100 * levelScale * (1 + Math.random()) * contractRequirementMult;
-      const baseMoneyReq = 300 * levelScale * (1 + Math.random()) * contractRequirementMult;
-      const baseMoneyReward = 800 * levelScale * (1 + Math.random());
-      const baseScienceReward = 50 * levelScale * (1 + Math.random());
+       const contractRequirementMult = get().getEffectMultiplier('contractRequirementMultiplier') || 1;
+       const baseCargoReq = CONTRACT.BASE_CARGO_REQ * levelScale * (1 + Math.random()) * contractRequirementMult;
+       const baseScienceReq = CONTRACT.BASE_SCIENCE_REQ * levelScale * (1 + Math.random()) * contractRequirementMult;
+       const baseMoneyReq = CONTRACT.BASE_MONEY_REQ * levelScale * (1 + Math.random()) * contractRequirementMult;
+       const baseMoneyReward = CONTRACT.BASE_MONEY_REWARD * levelScale * (1 + Math.random());
+       const baseScienceReward = CONTRACT.BASE_SCIENCE_REWARD * levelScale * (1 + Math.random());
 
       newContracts.push({
         id: `contract-${Date.now()}-${Math.random()}`,
@@ -1488,10 +1484,10 @@ export const useGameStore = create<GameState>((set, get) => ({
         deliveredCargo: 0, deliveredScience: 0, deliveredMoney: 0,
         rewardMoney: Math.round(baseMoneyReward * (contractType.rewardMoneyBonus || 1)),
         rewardScience: Math.round(baseScienceReward * (contractType.rewardScienceBonus || 1)),
-        rewardExperience: 50 * company.level,
-        timeLimitSeconds: isTimed ? 60 + Math.floor(Math.random() * 120) * company.level : 0,
-        elapsedSeconds: 0,
-        maxExplosions: isFragile ? 1 + Math.floor(Math.random() * 3) : -1,
+         rewardExperience: CONTRACT.EXPERIENCE_PER_LEVEL * company.level,
+         timeLimitSeconds: isTimed ? CONTRACT.TIME_LIMIT_BASE + Math.floor(Math.random() * CONTRACT.TIME_LIMIT_VARIANCE_MAX) * company.level : 0,
+         elapsedSeconds: 0,
+         maxExplosions: isFragile ? 1 + Math.floor(Math.random() * CONTRACT.FRAGILE_EXPLOSION_LIMIT_MAX) : -1,
         currentExplosions: 0,
         status: 'available'
       });
@@ -1510,7 +1506,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     return {
       activeContracts: [...state.activeContracts, { ...contract, status: 'active' }],
       availableContracts: state.availableContracts.filter(c => c.id !== contractId), // Only remove the accepted contract
-      notifications: [`Contract Accepted: ${contract.title}`, ...state.notifications].slice(0, 5)
+      notifications: [`Contract Accepted: ${contract.title}`, ...state.notifications].slice(0, GAME.MAX_NOTIFICATIONS)
     };
   }),
   
@@ -1550,16 +1546,16 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (layer === 'orbit') {
       // Orbit requires 500 cargo
       if (state.orbitLayerUnlocked) return {};
-      if (state.cargo < 500) return {};
+      if (state.cargo < LAYER_UNLOCK.ORBIT_CARGO_REQUIRED) return {};
       get().addNotification('Orbital Operations Unlocked!');
       return {
-        cargo: state.cargo - 500,
+        cargo: state.cargo - LAYER_UNLOCK.ORBIT_CARGO_REQUIRED,
         orbitLayerUnlocked: true,
       };
     } else if (layer === 'contracts') {
       // Contracts requires 1000 successful launches
       if (state.contractsLayerUnlocked) return {};
-      if (state.totalSuccessfulLaunches < 1000) return {};
+      if (state.totalSuccessfulLaunches < LAYER_UNLOCK.CONTRACTS_LAUNCHES_REQUIRED) return {};
       get().addNotification('Contract Operations Unlocked!');
       return {
         contractsLayerUnlocked: true,
@@ -1584,7 +1580,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         cargo: state.cargo - costCargo,
         science: state.science - costScience,
         satellites: state.satellites + 1,
-        notifications: [`Satellite launched! (${state.satellites + 1}/${maxSatellites})`, ...state.notifications].slice(0, 5),
+        notifications: [`Satellite launched! (${state.satellites + 1}/${maxSatellites})`, ...state.notifications].slice(0, GAME.MAX_NOTIFICATIONS),
       };
     }
     return {};
@@ -1597,7 +1593,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     return {
       spaceDebris: state.spaceDebris.filter(d => d.id !== debrisId),
       science: state.science + ORBITAL.DEBRIS_CLEAR_SCIENCE_REWARD,
-      notifications: [`Debris cleared! +${ORBITAL.DEBRIS_CLEAR_SCIENCE_REWARD} Science`, ...state.notifications].slice(0, 5),
+      notifications: [`Debris cleared! +${ORBITAL.DEBRIS_CLEAR_SCIENCE_REWARD} Science`, ...state.notifications].slice(0, GAME.MAX_NOTIFICATIONS),
     };
   }),
   
@@ -1624,7 +1620,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         cargo: state.cargo - costCargo,
         science: state.science - costScience,
         spaceStations: newStations,
-        notifications: [`Station upgraded to Level ${station.level + 1}!`, ...state.notifications].slice(0, 5),
+        notifications: [`Station upgraded to Level ${station.level + 1}!`, ...state.notifications].slice(0, GAME.MAX_NOTIFICATIONS),
       };
     }
     return {};
@@ -1690,7 +1686,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   
   addMoonLog: (message: string) => set(state => {
     const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
-    return { moonLog: [`[${timestamp}] ${message}`, ...state.moonLog].slice(0, 50) };
+    return { moonLog: [`[${timestamp}] ${message}`, ...state.moonLog].slice(0, MOON.LOG_MAX_ENTRIES) };
   }),
   
   // Moon layer actions
@@ -1774,7 +1770,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         ? { ...state.moonResources, regolith: state.moonResources.regolith - cost.regolith }
         : state.moonResources,
       moonBuildings: newBuildings,
-      notifications: [`Built ${buildingNames[type]} on the Moon!`, ...state.notifications].slice(0, 5),
+      notifications: [`Built ${buildingNames[type]} on the Moon!`, ...state.notifications].slice(0, GAME.MAX_NOTIFICATIONS),
     };
   }),
   
@@ -1882,7 +1878,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         science: state.science - costScience,
         cargo: state.cargo - costCargo,
         moonSectors: [...state.moonSectors, newSector],
-        notifications: [`New sector discovered: ${newSector.name}!`, ...state.notifications].slice(0, 5),
+        notifications: [`New sector discovered: ${newSector.name}!`, ...state.notifications].slice(0, GAME.MAX_NOTIFICATIONS),
       };
     }),
 
@@ -1938,7 +1934,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         science: state.science - cost.science,
         moonResources: cost.regolith ? { ...state.moonResources, regolith: state.moonResources.regolith - cost.regolith } : state.moonResources,
         moonSectors: newSectors,
-        notifications: [`Built ${buildingNames[buildingType]}!`, ...state.notifications].slice(0, 5),
+        notifications: [`Built ${buildingNames[buildingType]}!`, ...state.notifications].slice(0, GAME.MAX_NOTIFICATIONS),
       };
     }),
 
@@ -1974,7 +1970,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           ...state.earthResources,
           helium3: state.earthResources.helium3 + actualAmount,
         },
-        notifications: [`Launched ${Math.floor(actualAmount)} He-3 to Earth!`, ...state.notifications].slice(0, 5),
+        notifications: [`Launched ${Math.floor(actualAmount)} He-3 to Earth!`, ...state.notifications].slice(0, GAME.MAX_NOTIFICATIONS),
       };
     }),
 

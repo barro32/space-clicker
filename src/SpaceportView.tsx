@@ -1,6 +1,7 @@
 import { useGameStore } from "./useGameStore.js"
 import { FaRegBuilding, FaRocket, FaBomb, FaGasPump, FaFlask } from "react-icons/fa"
 import { COST_SCALING } from "./gameConstants.js"
+import { AUTOMATION } from "./gameConstants.js"
 
 export function SpaceportView() {
      const { rockets, spaceports, buildSpaceport, buildRocket, explodedRocketIds, clearExplosion, fuelRefineries, buildFuelRefinery, fuelRefineryCost, autoBuildActive, autoSalvageActive, toggleAutoBuild, toggleAutoSalvage, buildScienceRocket, fuel, tickCount } = useGameStore()
@@ -29,7 +30,7 @@ export function SpaceportView() {
      // Auto-build progress calculation
      const autoBuildEnabled = useGameStore(state => state.getEffectMultiplier('autoBuildEnabled') > 0);
      const buildMultiplier = useGameStore(state => state.getEffectMultiplier('buildRocketMultiplier') || 1);
-     const autoBuildInterval = Math.max(1, Math.floor(20 / buildMultiplier));
+     const autoBuildInterval = Math.max(1, Math.floor(AUTOMATION.BASE_INTERVAL / buildMultiplier));
      const autoBuildProgress = autoBuildEnabled && autoBuildActive 
        ? ((tickCount % autoBuildInterval) / autoBuildInterval) * 100
        : 0;
@@ -37,7 +38,7 @@ export function SpaceportView() {
      // Auto-salvage progress calculation
      const autoSalvageEnabled = useGameStore(state => state.getEffectMultiplier('autoSalvageEnabled') > 0);
      const clearMultiplier = useGameStore(state => state.getEffectMultiplier('clearExplosionMultiplier') || 1);
-     const autoSalvageInterval = Math.max(1, Math.floor(20 / clearMultiplier));
+     const autoSalvageInterval = Math.max(1, Math.floor(AUTOMATION.BASE_INTERVAL / clearMultiplier));
       const autoSalvageProgress = autoSalvageEnabled && autoSalvageActive && explodedRocketIds.length > 0
         ? (((tickCount + 10) % autoSalvageInterval) / autoSalvageInterval) * 100
         : 0;

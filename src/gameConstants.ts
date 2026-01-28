@@ -366,6 +366,7 @@ export const MOON = {
   
   // Hazards
   HAZARD_CHANCE: 0.02, // 2% per tick
+  HAZARD_DUST_CHANCE: 0.7, // 70% chance of Moon Dust (vs 30% Solar Flare)
   HAZARDS: {
     moonDust: {
       name: 'Moon Dust Storm',
@@ -383,12 +384,65 @@ export const MOON = {
   MAINTENANCE_DURATION_REDUCTION: 0.15, // 15% faster hazard clearing per maintenance building
   
    // Manual Transport (before Mass Drivers)
-   MANUAL_TRANSPORT_REGOLITH: 100, // Per click
-   MANUAL_TRANSPORT_HELIUM3: 10, // Per click
-   
-   // === FABRICATOR SYSTEM ===
-   // Fabricator (converts regolith to alloys)
-   FABRICATOR_ALLOYS_RATE: 0.05, // Per tick per fabricator
-   FABRICATOR_REGOLITH_COST: 20, // Regolith consumed per alloy produced
-   FABRICATOR_POWER_DEMAND: 25, // Power consumed per fabricator
+    MANUAL_TRANSPORT_REGOLITH: 100, // Per click
+    MANUAL_TRANSPORT_HELIUM3: 10, // Per click
+    
+    // === FABRICATOR SYSTEM ===
+    // Fabricator (converts regolith to alloys)
+    FABRICATOR_ALLOYS_RATE: 0.05, // Per tick per fabricator
+    FABRICATOR_REGOLITH_COST: 20, // Regolith consumed per alloy produced
+    FABRICATOR_POWER_DEMAND: 25, // Power consumed per fabricator
+    
+    // === UI/LOG SETTINGS ===
+    LOG_MAX_ENTRIES: 50, // Maximum moon log entries to keep in history
+    INITIAL_POWER_ENERGY: 200, // Starting energy for moon power system
+};
+
+// Automation Settings
+export const AUTOMATION = {
+  BASE_INTERVAL: 20, // Ticks between auto-build/salvage operations
+  SALVAGE_TICK_OFFSET: 10, // Offset to prevent auto-build and auto-salvage on same tick
+};
+
+// Contract System
+export const CONTRACT = {
+  BASE_CARGO_REQ: 50,
+  BASE_SCIENCE_REQ: 100,
+  BASE_MONEY_REQ: 300,
+  
+  // Contract type multipliers (difficulty/rarity scaling)
+  TYPES: {
+    easyMoney: { cargoMul: 0.2, scienceMul: 0.2, moneyMul: 0.2 },
+    easyScience: { cargoMul: 0.2, scienceMul: 2.0, moneyMul: 0.2 },
+    hardMoney: { cargoMul: 3.0, scienceMul: 0.3, moneyMul: 3.0 },
+    hardScience: { cargoMul: 0.3, scienceMul: 3.0, moneyMul: 0.3 },
+    balancedSmall: { cargoMul: 1.5, scienceMul: 1.5, moneyMul: 1.0 },
+    balancedLarge: { cargoMul: 1.0, scienceMul: 1.0, moneyMul: 1.5 },
+    timedChallenge: { cargoMul: 1.0, scienceMul: 1.0, moneyMul: 1.0 },
+    fragile: { cargoMul: 1.0, scienceMul: 1.0, moneyMul: 1.0 },
+  },
+  
+  // Base rewards
+  BASE_MONEY_REWARD: 800,
+  BASE_SCIENCE_REWARD: 50,
+  EXPERIENCE_PER_LEVEL: 50, // XP (contracts completed) needed per company level
+  
+  // Special contract properties
+  FRAGILE_CHANCE: 0.7, // Probability of fragile contract type (>0.7 = fragile)
+  TIMED_CHANCE: 0.5, // Probability of timed contract modifier (>0.5 = timed)
+  TIME_LIMIT_BASE: 60, // Base ticks for timed contracts
+  TIME_LIMIT_VARIANCE_MAX: 120, // Max additional ticks variance for timed contracts
+  FRAGILE_EXPLOSION_LIMIT_MAX: 3, // Max explosions before fragile contract fails
+};
+
+// Layer Unlock Thresholds
+export const LAYER_UNLOCK = {
+  ORBIT_CARGO_REQUIRED: 500, // Cargo needed to unlock orbital layer
+  CONTRACTS_LAUNCHES_REQUIRED: 1000, // Rocket launches needed to unlock contracts
+};
+
+// Game UI/UX Settings
+export const GAME = {
+  MAX_NOTIFICATIONS: 5, // Maximum notifications to display at once
+  MOON_LOG_MAX_ENTRIES: 50, // Maximum moon log entries (also in MOON.LOG_MAX_ENTRIES)
 };

@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useGameStore, GameState } from "./useGameStore.js"
+import { MOON } from "./gameConstants.js"
 import { FaMoneyBillAlt, FaFlask, FaGasPump, FaBox, FaChevronUp, FaChevronDown, FaChevronLeft, FaChevronRight, FaRocket, FaSatellite, FaFlask as FaLab, FaExclamationTriangle, FaFileContract, FaIndustry, FaMoon, FaGem, FaLock } from 'react-icons/fa'
 import { MdSettings } from 'react-icons/md'
 import { SpaceportView } from "./SpaceportView.js"
@@ -256,8 +257,8 @@ const loadInitialState = () => {
           if (!parsed.moonPowerSystem) parsed.moonPowerSystem = { 
             dayNightTick: 0, 
             isDay: true, 
-            currentEnergy: 200, 
-            maxEnergy: 200, 
+            currentEnergy: MOON.INITIAL_POWER_ENERGY, 
+            maxEnergy: MOON.INITIAL_POWER_ENERGY, 
             energyGeneration: 0, 
             energyDemand: 0 
           };
