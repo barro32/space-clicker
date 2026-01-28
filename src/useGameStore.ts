@@ -314,12 +314,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     // Clear animation flags at start of each tick
     const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
    
-    const fuelProduction = state.fuelRefineries * state.fuelProductionPerRefinery * state.getEffectMultiplier('refineryOutputMultiplier');
-    // Add passive fuel from company perks
-    const passiveFuelBonus = state.getCompanyPerkValue('passiveFuelBonus');
-    // Apply fuel capacity bonus from research, company perks, and dev bonus
-    const maxFuel = state.getMaxFuel();
-    let fuelAvailable = Math.min(maxFuel, state.fuel + fuelProduction + passiveFuelBonus);
+     const fuelProduction = state.fuelRefineries * state.fuelProductionPerRefinery * state.getEffectMultiplier('refineryOutputMultiplier');
+     // Apply fuel capacity bonus from research, company perks, and dev bonus
+     const maxFuel = state.getMaxFuel();
+     let fuelAvailable = Math.min(maxFuel, state.fuel + fuelProduction);
     let successfulCargoLaunches = 0;
     let successfulScienceLaunches = 0;
     let explosionCount = 0;
@@ -1823,10 +1821,10 @@ export const useGameStore = create<GameState>((set, get) => ({
      const metPrereqs = node.prerequisites.every(p => state.researchedNodes.includes(p));
      if (!metPrereqs) return {};
      
-     // Apply research cost multiplier from company perks
-     const researchCostMultiplier = state.getCompanyPerkValue('researchCostMultiplier') || 1;
-     const effectiveScienceCost = Math.round(node.scienceCost * researchCostMultiplier);
-     const effectiveCargoCost = node.cargoCost ? Math.round(node.cargoCost * researchCostMultiplier) : 0;
+      // Apply research cost multiplier from company perks and research effects
+      const researchCostMultiplier = state.getTotalEffectValue('researchCostMultiplier');
+      const effectiveScienceCost = Math.round(node.scienceCost * researchCostMultiplier);
+      const effectiveCargoCost = node.cargoCost ? Math.round(node.cargoCost * researchCostMultiplier) : 0;
      const lunarCost = node.lunarComponentCost || 0;
      const helium3Cost = node.helium3Cost || 0;
      

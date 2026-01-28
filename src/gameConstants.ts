@@ -27,12 +27,11 @@ export type CompanyPerkEffect =
   | 'passiveCargoBonus'
   | 'dockingDurationReduction'
   | 'transitSpeedMultiplier' // Reduces Earth-to-Orbit transit time
-  // Galactic Energy (Fuel)
-  | 'fuelCostMultiplier'
-  | 'refineryOutputMultiplier'
-  | 'fuelCapacityBonus'
-  | 'refineryCostMultiplier'
-   | 'passiveFuelBonus'
+   // Galactic Energy (Fuel)
+   | 'fuelCostMultiplier'
+   | 'refineryOutputMultiplier'
+   | 'fuelCapacityBonus'
+   | 'refineryCostMultiplier'
    // Aegis Security (Safety)
   | 'explosionChanceMultiplier'
   | 'salvageSpeedMultiplier'
