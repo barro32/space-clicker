@@ -10,7 +10,6 @@ import { ResearchTreeView } from "./ResearchTreeView.js"
 import { MoonView } from "./MoonView.js"
 import { ResearchSidebar } from "./components/ResearchSidebar.js"
 import { SettingsPanel } from "./components/SettingsPanel.js"
-import { DevConsole } from './DevConsole.js'
 import { INITIAL_STATE, TIME, DEFAULT_COMPANIES, DEFAULT_SETTINGS } from './gameConstants.js'
 import { researchTree, ResearchNode, EffectType } from './researchTree.js'
 import { loadGameStateSync, loadGameStateAsync, saveGameState } from './persistence.js'
@@ -1029,8 +1028,6 @@ export function App() {
 
       {/* Settings Panel Modal */}
       {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
-
-      <DevConsole />
     </div>
   )
 }

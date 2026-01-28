@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useGameStore } from '../useGameStore.js'
-import { DEFAULT_SETTINGS } from '../gameConstants.js'
+import { INITIAL_STATE, DEFAULT_SETTINGS, DEFAULT_COMPANIES } from '../gameConstants.js'
 import { MdClose } from 'react-icons/md'
+import { deleteGameState } from '../persistence.js'
 
 interface SettingsPanelProps {
   onClose: () => void
@@ -18,6 +19,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const resetSettings = useGameStore(state => state.resetSettings)
   const [isFullscreenSupported, setIsFullscreenSupported] = useState(false)
   const [isCurrentlyFullscreen, setIsCurrentlyFullscreen] = useState(false)
+  const [showDevConsole, setShowDevConsole] = useState(false)
 
   // Initialize fullscreen support
   useEffect(() => {
@@ -53,68 +55,124 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
     }
   }
 
-  const handleResetGame = () => {
+  const handleResetGame = async () => {
     if (confirm('Are you sure you want to reset your game progress? This cannot be undone.')) {
-      // Reset the game by creating a new store instance
-      useGameStore.setState(state => {
-        // Return initial state from INITIAL_STATE
-        return {
-          money: 10,
-          science: 0,
-          fuel: 100,
-          cargo: 0,
-          lunarComponents: 0,
-          tickCount: 0,
-          notifications: [],
-          totalSuccessfulLaunches: 0,
-          orbitLayerUnlocked: false,
-          contractsLayerUnlocked: false,
-          companies: [],
-          availableContracts: [],
-          activeContracts: [],
-          contractRefreshTimer: 0,
-          rockets: [],
-          nextRocketId: 0,
-          rocketCost: 1,
-          profitPerRocket: 1,
-          spaceportCapacity: 1,
-          spaceports: [],
-          spaceStations: [],
-          spaceportCost: 200,
-          fuelRefineries: 0,
-          fuelProductionPerRefinery: 1,
-          fuelCostPerRocket: 1,
-          fuelRefineryCost: 20,
-          explodedRocketIds: [],
-          rocketExplosionChance: 0.5,
-          recentlyLaunchedRocketIds: [],
-          newlyAvailableResearchIds: [],
-          satellites: 0,
-          maxSatellites: 10,
-          spaceDebris: [],
-          transitRockets: [],
-          dockedRockets: [],
-          moonStatus: 'locked' as const,
-          moonMissionTicksRemaining: 0,
-          moonBuildings: { extractors: 0, refineries: 0, silos: 0, maintenance: 0, massDrivers: 0, solarArray: 0, nuclearReactor: 0, battery: 0, fabricator: 0 },
-          moonResources: { regolith: 0, helium3: 0, alloys: 0 },
-          earthResources: { regolith: 0, helium3: 0, alloys: 0 },
-          activeHazard: null,
-          moonLog: [],
-          moonSectors: [{ id: 'starting-sector', name: 'Landing Zone', traits: {}, buildings: {}, slots: 4, slotsUsed: 0 }],
-          moonPowerSystem: { dayNightTick: 0, isDay: true, currentEnergy: 200, maxEnergy: 200, energyGeneration: 0, energyDemand: 0 },
-          moonBounties: [],
-           moonBountyRefreshTimer: 120,
-           researchedNodes: [],
-           previouslyAvailableResearch: [],
-           autoBuildActive: false,
-           autoSalvageActive: false,
-           bonusFuelCapacity: 0,
-           currentView: 'surface' as const,
-         }
+      // Clear game state (localStorage or Electron file)
+      await deleteGameState();
+      
+      // Reset the Zustand store to initial defaults
+      useGameStore.setState({
+        money: INITIAL_STATE.MONEY,
+        science: INITIAL_STATE.SCIENCE,
+        fuel: INITIAL_STATE.FUEL,
+        bonusFuelCapacity: 0,
+        cargo: INITIAL_STATE.CARGO,
+        tickCount: 0,
+        currentView: "surface",
+        notifications: [],
+        // Layer unlock tracking
+        totalSuccessfulLaunches: 0,
+        orbitLayerUnlocked: false,
+        contractsLayerUnlocked: false,
+        rockets: [],
+        nextRocketId: 0,
+        rocketCost: INITIAL_STATE.ROCKET_COST,
+        profitPerRocket: INITIAL_STATE.PROFIT_PER_ROCKET,
+        spaceportCapacity: INITIAL_STATE.SPACEPORT_CAPACITY,
+        spaceports: [{ id: 1 }],
+        spaceStations: [],
+        spaceportCost: INITIAL_STATE.SPACEPORT_COST,
+        fuelRefineries: 0,
+        fuelProductionPerRefinery: INITIAL_STATE.FUEL_PRODUCTION_PER_REFINERY,
+        fuelCostPerRocket: INITIAL_STATE.FUEL_COST_PER_ROCKET,
+        fuelRefineryCost: INITIAL_STATE.FUEL_REFINERY_COST,
+        explodedRocketIds: [],
+        rocketExplosionChance: INITIAL_STATE.ROCKET_EXPLOSION_CHANCE,
+        recentlyLaunchedRocketIds: [],
+        newlyAvailableResearchIds: [],
+        researchedNodes: [],
+        previouslyAvailableResearch: [],
+        autoBuildActive: false,
+        autoSalvageActive: false,
+        companies: DEFAULT_COMPANIES.map(c => ({ ...c })),
+        availableContracts: [],
+        activeContracts: [],
+        contractRefreshTimer: INITIAL_STATE.CONTRACT_REFRESH_INTERVAL,
       })
       onClose()
     }
+  }
+
+  // Dev console handlers
+  const handleDevReset = async () => {
+    // Clear game state (localStorage or Electron file)
+    await deleteGameState();
+    
+    // Reset the Zustand store to initial defaults
+    useGameStore.setState({
+      money: INITIAL_STATE.MONEY,
+      science: INITIAL_STATE.SCIENCE,
+      fuel: INITIAL_STATE.FUEL,
+      bonusFuelCapacity: 0,
+      cargo: INITIAL_STATE.CARGO,
+      tickCount: 0,
+      currentView: "surface",
+      notifications: ['Game state reset to defaults'],
+      // Layer unlock tracking
+      totalSuccessfulLaunches: 0,
+      orbitLayerUnlocked: false,
+      contractsLayerUnlocked: false,
+      rockets: [],
+      nextRocketId: 0,
+      rocketCost: INITIAL_STATE.ROCKET_COST,
+      profitPerRocket: INITIAL_STATE.PROFIT_PER_ROCKET,
+      spaceportCapacity: INITIAL_STATE.SPACEPORT_CAPACITY,
+      spaceports: [{ id: 1 }],
+      spaceStations: [],
+      spaceportCost: INITIAL_STATE.SPACEPORT_COST,
+      fuelRefineries: 0,
+      fuelProductionPerRefinery: INITIAL_STATE.FUEL_PRODUCTION_PER_REFINERY,
+      fuelCostPerRocket: INITIAL_STATE.FUEL_COST_PER_ROCKET,
+      fuelRefineryCost: INITIAL_STATE.FUEL_REFINERY_COST,
+      explodedRocketIds: [],
+      rocketExplosionChance: INITIAL_STATE.ROCKET_EXPLOSION_CHANCE,
+      recentlyLaunchedRocketIds: [],
+      newlyAvailableResearchIds: [],
+      researchedNodes: [],
+      previouslyAvailableResearch: [],
+      autoBuildActive: false,
+      autoSalvageActive: false,
+      companies: DEFAULT_COMPANIES.map(c => ({ ...c })),
+      availableContracts: [],
+      activeContracts: [],
+      contractRefreshTimer: INITIAL_STATE.CONTRACT_REFRESH_INTERVAL,
+    });
+  }
+
+  const handleDevSetExplosionChance = () => {
+    useGameStore.setState({ rocketExplosionChance: 0 });
+  }
+
+  const handleDevAddMoney = () => {
+    const currentMoney = useGameStore.getState().money;
+    useGameStore.setState({ money: currentMoney + 1000 });
+  }
+
+  const handleDevAddScience = () => {
+    const currentScience = useGameStore.getState().science;
+    useGameStore.setState({ science: currentScience + 1000 });
+  }
+
+  const handleDevRefreshContracts = () => {
+    useGameStore.getState().generateContracts();
+  }
+
+  const handleDevAddFuelAndCapacity = () => {
+    const state = useGameStore.getState();
+    useGameStore.setState({
+      fuel: state.fuel + 1000,
+      bonusFuelCapacity: state.bonusFuelCapacity + 1000,
+    });
   }
 
   return (
@@ -177,6 +235,61 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
 
         {/* Divider */}
         <div className="border-t border-gray-700 my-6"></div>
+
+        {/* Dev Console Toggle */}
+        <div className="mb-6">
+          <button
+            onClick={() => setShowDevConsole(!showDevConsole)}
+            className="w-full px-4 py-2 bg-gray-700/50 hover:bg-gray-700/70 border border-gray-600/50 hover:border-gray-600 text-gray-300 hover:text-gray-200 rounded-lg transition-all font-semibold text-sm"
+          >
+            {showDevConsole ? '▼ Hide Dev Console' : '▶ Show Dev Console'}
+          </button>
+        </div>
+
+        {/* Dev Console */}
+        {showDevConsole && (
+          <div className="mb-6 p-4 bg-gray-800/80 border border-gray-700 rounded-lg">
+            <h3 className="text-sm font-bold text-yellow-400 mb-3">Development Tools</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={handleDevAddMoney}
+                className="px-2 py-1 bg-blue-600/70 hover:bg-blue-600 border border-blue-500/50 text-blue-200 text-xs rounded transition-colors"
+              >
+                +1000 💰
+              </button>
+              <button
+                onClick={handleDevAddScience}
+                className="px-2 py-1 bg-purple-600/70 hover:bg-purple-600 border border-purple-500/50 text-purple-200 text-xs rounded transition-colors"
+              >
+                +1000 🔬
+              </button>
+              <button
+                onClick={handleDevAddFuelAndCapacity}
+                className="px-2 py-1 bg-cyan-600/70 hover:bg-cyan-600 border border-cyan-500/50 text-cyan-200 text-xs rounded transition-colors"
+              >
+                +1000 ⛽
+              </button>
+              <button
+                onClick={handleDevSetExplosionChance}
+                className="px-2 py-1 bg-red-600/70 hover:bg-red-600 border border-red-500/50 text-red-200 text-xs rounded transition-colors"
+              >
+                0% 💥
+              </button>
+              <button
+                onClick={handleDevRefreshContracts}
+                className="px-2 py-1 bg-orange-600/70 hover:bg-orange-600 border border-orange-500/50 text-orange-200 text-xs rounded transition-colors col-span-2"
+              >
+                Refresh Contracts 📋
+              </button>
+              <button
+                onClick={handleDevReset}
+                className="px-2 py-1 bg-red-700/70 hover:bg-red-700 border border-red-600/50 text-red-100 text-xs rounded transition-colors col-span-2"
+              >
+                Reset All 🔄
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Info */}
         <div className="text-sm text-gray-500">
