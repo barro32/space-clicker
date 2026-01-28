@@ -11,9 +11,9 @@ export type EffectType =
   | 'cargoGenerationMultiplier'
   | 'cargoPerLaunchMultiplier'
   | 'passiveCargoBonus'
-  | 'refineryOutputMultiplier'
-  | 'constructionCostMultiplier'
-   | 'profitMultiplier'
+   | 'refineryOutputMultiplier'
+   | 'constructionCostMultiplier'
+   | 'passiveMoneyBonus'
    | 'contractRequirementMultiplier'
    | 'companyXPMultiplier'
    | 'stationLogisticsMultiplier'
@@ -48,19 +48,14 @@ export type EffectType =
    | 'hazardDurationMultiplier'
    | 'massDriverEfficiency'
    | 'unlockPlanetaryExpansion'
-   // Moon Power System effects
-   | 'solarArrayEfficiency'
-   | 'nuclearReactorEfficiency'
-   | 'batteryCapacityMultiplier'
+   // Moon Power System effects - REMOVED (not implemented)
    | 'powerGenerationMultiplier'
    | 'sectorScanCostReduction'
    | 'buildingSlotsPerSectorBonus'
-   | 'massDriverChargeTimeMultiplier'
-    | 'massDriverCapacityBonus'
-    | 'bountyRewardMultiplier'
-    | 'fabricatorOutputMultiplier'
-    | 'fabricatorCostReduction'
-    | 'alloysStorageBonus';
+   | 'massDriverCapacityBonus'
+   | 'fabricatorOutputMultiplier'
+   | 'fabricatorCostReduction'
+   | 'alloysStorageBonus';
 
 // Layer assignment for research sidebar filtering
 export type ResearchLayer = 'surface' | 'orbit' | 'contracts' | 'moon';
@@ -226,11 +221,11 @@ const generateMarketAnalysis = (): ResearchNode[] => {
     nodes.push({
       id: `c1-${i}`,
       name: `Market Analysis ${toRoman(i)}`,
-      description: i === 1 ? 'Better pricing strategies increase contract payouts by 6%.' : 'Stacks with previous levels for +6% contract payouts.',
+      description: i === 1 ? 'Better business acumen increases passive income by +10 per tick.' : 'Further increases passive income by +10 per tick.',
       branch: 'commercial',
       scienceCost: baseCosts[i - 1] || 700 + (i - 5) * 300,
       prerequisites: [],
-      effect: { type: 'profitMultiplier', value: 1.06 },
+      effect: { type: 'passiveMoneyBonus', value: 10 },
       ...(i === 1 ? { maxLevel: levels } : {}),
       levelSuffix: true,
       assignedLayer: 'contracts'
@@ -723,41 +718,9 @@ export const researchTree: ResearchNode[] = [
      prerequisites: ['m3', 'm6'],
      effect: { type: 'unlockPlanetaryExpansion', value: 1 },
      assignedLayer: 'moon'
-   },
+    },
 
-   // POWER SYSTEM RESEARCH
-   {
-     id: 'm8',
-     name: 'Efficient Solar Arrays',
-     description: 'Solar Array output increased by 30%.',
-     branch: 'lunar',
-     scienceCost: 4000,
-     prerequisites: ['o14'],
-     effect: { type: 'solarArrayEfficiency', value: 1.3 },
-     assignedLayer: 'moon'
-   },
-   {
-     id: 'm9',
-     name: 'Enhanced Nuclear Reactors',
-     description: 'Nuclear Reactor output increased by 25%. He-3 consumption reduced by 20%.',
-     branch: 'lunar',
-     scienceCost: 5000,
-     prerequisites: ['o14'],
-     effect: { type: 'nuclearReactorEfficiency', value: 1.25 },
-     assignedLayer: 'moon'
-   },
-   {
-     id: 'm10',
-     name: 'Advanced Battery Tech',
-     description: 'Battery storage capacity doubled.',
-     branch: 'lunar',
-     scienceCost: 3500,
-     prerequisites: ['o14'],
-     effect: { type: 'batteryCapacityMultiplier', value: 2 },
-     assignedLayer: 'moon'
-   },
-   
-   // GRID SYSTEM RESEARCH
+    // GRID SYSTEM RESEARCH
    {
      id: 'm11',
      name: 'Efficient Terraforming',
@@ -777,21 +740,11 @@ export const researchTree: ResearchNode[] = [
      prerequisites: ['m11'],
      effect: { type: 'buildingSlotsPerSectorBonus', value: 2 },
      assignedLayer: 'moon'
-   },
-   
-   // MASS DRIVER LOGISTICS RESEARCH
-   {
-     id: 'm13',
-     name: 'Rapid Launch Protocol',
-     description: 'Mass Driver charge time reduced by 50%.',
-     branch: 'lunar',
-     scienceCost: 3000,
-     prerequisites: ['m6'],
-     effect: { type: 'massDriverChargeTimeMultiplier', value: 0.5 },
-     assignedLayer: 'moon'
-   },
-   {
-     id: 'm14',
+    },
+    
+    // MASS DRIVER LOGISTICS RESEARCH
+    {
+      id: 'm14',
      name: 'Expanded Payload Bays',
      description: 'Mass Driver payload capacity doubled.',
      branch: 'lunar',
@@ -800,18 +753,8 @@ export const researchTree: ResearchNode[] = [
      effect: { type: 'massDriverCapacityBonus', value: 2 },
      assignedLayer: 'moon'
    },
-    {
-      id: 'm15',
-      name: 'Corporate Partnerships',
-      description: 'Bounty rewards increased by 50%.',
-      branch: 'lunar',
-      scienceCost: 5500,
-      prerequisites: ['m13', 'm14'],
-      effect: { type: 'bountyRewardMultiplier', value: 1.5 },
-      assignedLayer: 'moon'
-    },
-    {
-      id: 'm16',
+     {
+       id: 'm16',
       name: 'Alloy Furnaces',
       description: 'Fabricators produce 50% more alloys.',
       branch: 'lunar',

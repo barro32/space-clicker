@@ -458,20 +458,20 @@ describe('Company Perk Effects - Comprehensive Suite', () => {
   describe('getTotalEffectValue Integration', () => {
     it('should combine research and company multiplier effects multiplicatively', () => {
       useGameStore.setState({
-        researchedNodes: ['c1-1'], // profitMultiplier 1.06 from research
+        researchedNodes: ['p1-1'], // fuelCostMultiplier 0.97 from research
         companies: [
-          { id: 'titan', level: 1, contractsCompleted: 0 }, // profitMultiplier 1.05 from company
+          { id: 'titan', level: 0, contractsCompleted: 0 },
           { id: 'nova', level: 0, contractsCompleted: 0 },
           { id: 'zenith', level: 0, contractsCompleted: 0 },
-          { id: 'galactic', level: 0, contractsCompleted: 0 },
+          { id: 'galactic', level: 1, contractsCompleted: 0 }, // fuelCostMultiplier 0.95 from company
           { id: 'aegis', level: 0, contractsCompleted: 0 },
           { id: 'atlas', level: 0, contractsCompleted: 0 },
         ],
       } as unknown as GameState);
 
-      const total = useGameStore.getState().getTotalEffectValue('profitMultiplier');
-      // 1.06 * 1.05 = 1.113
-      expect(total).toBeCloseTo(1.113);
+      const total = useGameStore.getState().getTotalEffectValue('fuelCostMultiplier');
+      // 0.97 * 0.95 = 0.9215
+      expect(total).toBeCloseTo(0.9215);
     });
 
     it('should handle effects with only research nodes', () => {

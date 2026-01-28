@@ -58,8 +58,8 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
 
     describe('Node Structure and Validation', () => {
      it('should have exactly 209 research nodes', () => {
-          // Previous count (210) - 1 removed afterburner node (f2) = 209
-          expect(researchTree).toHaveLength(209);
+          // Previous count (209) - 5 removed unimplemented nodes (m8, m9, m10, m13, m15) = 204
+          expect(researchTree).toHaveLength(204);
         });
 
     it('should have all required branches represented', () => {
@@ -138,10 +138,10 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
         'cargoPerLaunchMultiplier',
         'passiveCargoBonus',
         'spaceportCapacityBonus',
-        'refineryOutputMultiplier',
-        'constructionCostMultiplier',
-        'profitMultiplier',
-        'contractRequirementMultiplier',
+         'refineryOutputMultiplier',
+         'constructionCostMultiplier',
+         'passiveMoneyBonus',
+         'contractRequirementMultiplier',
         'companyXPMultiplier',
         'unlockAfterburner',
         'stationLogisticsMultiplier',
@@ -497,11 +497,11 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
         expect(node?.prerequisites).toEqual([]);
       });
 
-      it('should apply profitMultiplier effect', () => {
-        const node = researchTree.find(n => n.id === 'c1-1');
-        expect(node?.effect.type).toBe('profitMultiplier');
-        expect(node?.effect.value).toBe(1.06);
-      });
+       it('should apply passiveMoneyBonus effect', () => {
+         const node = researchTree.find(n => n.id === 'c1-1');
+         expect(node?.effect.type).toBe('passiveMoneyBonus');
+         expect(node?.effect.value).toBe(10);
+       });
 
       it('should be unlockable without prerequisites', () => {
         useGameStore.setState({ science: 500, researchedNodes: [] } as unknown as GameState);
@@ -509,11 +509,11 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
         expect(useGameStore.getState().researchedNodes).toContain('c1-1');
       });
 
-      it('should apply multiplier in getEffectMultiplier', () => {
-        useGameStore.setState({ science: 1000, researchedNodes: ['c1-1'] } as unknown as GameState);
-        const multiplier = useGameStore.getState().getEffectMultiplier('profitMultiplier');
-        expect(multiplier).toBe(1.06);
-      });
+       it('should apply bonus in getEffectMultiplier', () => {
+         useGameStore.setState({ science: 1000, researchedNodes: ['c1-1'] } as unknown as GameState);
+         const bonus = useGameStore.getState().getEffectMultiplier('passiveMoneyBonus');
+         expect(bonus).toBe(10);
+       });
     });
 
     describe('c2: Lean Logistics', () => {
@@ -804,11 +804,11 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
 
   describe('Effect Application and Multiplier Calculation', () => {
     it('multiplicative effects (ending in Multiplier) should multiply together', () => {
-      useGameStore.setState({ researchedNodes: ['p1-1', 'c1-1'] } as unknown as GameState);
+      useGameStore.setState({ researchedNodes: ['p1-1', 'u1-1'] } as unknown as GameState);
       // p1-1: fuelCostMultiplier = 0.97
-      // c1-1: profitMultiplier = 1.06 (different effect type, not multiplied together)
+      // u1-1: buildRocketMultiplier = 1.2 (different effect type, not multiplied together)
       expect(useGameStore.getState().getEffectMultiplier('fuelCostMultiplier')).toBe(0.97);
-      expect(useGameStore.getState().getEffectMultiplier('profitMultiplier')).toBe(1.06);
+      expect(useGameStore.getState().getEffectMultiplier('buildRocketMultiplier')).toBe(1.2);
     });
 
     it('multiple instances of same multiplicative effect should multiply', () => {

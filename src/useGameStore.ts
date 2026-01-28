@@ -1635,15 +1635,16 @@ export const useGameStore = create<GameState>((set, get) => ({
     * @returns Object with regolith, helium3, and alloys capacity
     */
    getMoonStorageCapacity: () => {
-     const state = get();
-     const siloBonus = state.moonSectors.reduce((total, sector) => total + (sector.buildings.silo || 0), 0);
-     const alloysStorageBonus = state.getEffectMultiplier('alloysStorageBonus' as EffectType) || 0;
-     return {
-       regolith: MOON.STORAGE_BASE.regolith + siloBonus * MOON.STORAGE_PER_SILO.regolith,
-       helium3: MOON.STORAGE_BASE.helium3 + siloBonus * MOON.STORAGE_PER_SILO.helium3,
-       alloys: MOON.STORAGE_BASE.alloys + siloBonus * MOON.STORAGE_PER_SILO.alloys + alloysStorageBonus,
-     };
-   },
+      const state = get();
+      const siloBonus = state.moonSectors.reduce((total, sector) => total + (sector.buildings.silo || 0), 0);
+      const alloysStorageBonus = state.getEffectMultiplier('alloysStorageBonus' as EffectType) || 0;
+      const moonStorageMultiplier = state.getEffectMultiplier('moonStorageMultiplier' as EffectType) || 1;
+      return {
+        regolith: (MOON.STORAGE_BASE.regolith + siloBonus * MOON.STORAGE_PER_SILO.regolith) * moonStorageMultiplier,
+        helium3: (MOON.STORAGE_BASE.helium3 + siloBonus * MOON.STORAGE_PER_SILO.helium3) * moonStorageMultiplier,
+        alloys: (MOON.STORAGE_BASE.alloys + siloBonus * MOON.STORAGE_PER_SILO.alloys + alloysStorageBonus) * moonStorageMultiplier,
+      };
+    },
    
    /**
     * Gets cost to build a specific moon building type.
