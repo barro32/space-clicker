@@ -57,10 +57,9 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
   });
 
      describe('Node Structure and Validation', () => {
-      it('should have exactly 214 research nodes', () => {
-            // Previous count (209) + 5 new High-Energy Fuel levels (p3-1 to p3-5) = 214
-            // Note: p3 was refactored from single level to multi-level (5 levels)
-            expect(researchTree).toHaveLength(214);
+      it('should have exactly 215 research nodes', () => {
+            // Previous count (214) + 1 new node (p5 Boost Initialization) = 215
+            expect(researchTree).toHaveLength(215);
           });
 
     it('should have all required branches represented', () => {
@@ -153,6 +152,7 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
          'unlockSpaceports',
          'unlockRefineries',
          'unlockExplosionClearing',
+         'unlockFreeLaunch',
          'buildRocketMultiplier',
          'clearExplosionMultiplier',
          'buildRocketBatchBonus',

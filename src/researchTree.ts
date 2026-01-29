@@ -24,8 +24,9 @@ export type EffectType =
   | 'unlockScienceRockets'
   | 'unlockSpaceports'
   | 'unlockRefineries'
-  | 'unlockExplosionClearing'
-  | 'buildRocketBatchBonus'
+   | 'unlockExplosionClearing'
+   | 'unlockFreeLaunch'
+   | 'buildRocketBatchBonus'
   | 'clearExplosionCountBonus'
   | 'uiTelemetryFlag'
   | 'autoBuildEnabled'
@@ -360,6 +361,16 @@ export const researchTree: ResearchNode[] = [
     scienceCost: 200,
     prerequisites: ['p2-10'], // Requires Safety Protocols level 10
     effect: { type: 'sciencePerRocketBonus', value: 1 },
+    assignedLayer: 'surface'
+  },
+  {
+    id: 'p5',
+    name: 'Boost Initialization',
+    description: 'New rockets get 1 free launch when built',
+    branch: 'propulsion',
+    scienceCost: 500,
+    prerequisites: ['p2-20'], // Requires Safety Protocols level 20
+    effect: { type: 'unlockFreeLaunch', value: 1 },
     assignedLayer: 'surface'
   },
 

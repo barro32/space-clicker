@@ -156,10 +156,10 @@ export interface GameState {
    contractsLayerUnlocked: boolean;
    companies: Company[];
    availableContracts: Contract[];
-   activeContracts: Contract[]; // Changed from activeContract to array
-   contractRefreshTimer: number; // Countdown to next contract refresh
-   rockets: ({ id: number; type: 'cargo' | 'science' } | null)[];
-   nextRocketId: number;
+    activeContracts: Contract[]; // Changed from activeContract to array
+    contractRefreshTimer: number; // Countdown to next contract refresh
+    rockets: ({ id: number; type: 'cargo' | 'science'; freeLaunches?: number } | null)[];
+    nextRocketId: number;
    rocketCost: number
    profitPerRocket: number;
    spaceportCapacity: number
@@ -350,69 +350,78 @@ export const useGameStore = create<GameState>((set, get) => ({
      const effectiveFuelCost = baseFuelCost;
      const effectiveExplosionChance = baseExplosionChance;
 
-     // Process each rocket launch
-    for (const rocket of activeRockets) {
-      if (fuelAvailable >= effectiveFuelCost) {
-        fuelAvailable -= effectiveFuelCost;
-        
-        // Roll for explosion
-        if (Math.random() < effectiveExplosionChance) {
-          newExplodedRocketIds.push(rocket.id);
-          explosionCount += 1;
-          
-          // Black Box perk: Explosions grant science based on rocket cost
-          const scienceFromExplosions = state.getCompanyPerkValue('scienceFromExplosions');
-          if (scienceFromExplosions > 0) {
-            // Calculate what this rocket cost (approximate based on current rocket count)
-            const currentRocketCount = state.rockets.filter(r => r !== null).length;
-            const rocketIndex = Math.max(0, currentRocketCount - 1);
-            const baseCost = state.rocketCost * Math.pow(COST_SCALING.ROCKET_COST_EXPONENT, rocketIndex);
-            explosionScienceFromCost += Math.floor(baseCost * scienceFromExplosions);
-          }
-          
-          // Handle contract fragility for all active contracts
-          for (const contract of newActiveContracts) {
-            if (contract.status === 'active' && contract.maxExplosions !== -1) {
-              contract.currentExplosions += 1;
-              if (contract.currentExplosions > contract.maxExplosions) {
-                contract.status = 'failed';
-                get().addNotification(`Contract Failed: ${contract.title} (Too many explosions)`);
-              }
-            }
-          }
-        } else {
-          // Track successful launches for animation
-          recentlyLaunchedIds.push(rocket.id);
-          if (rocket.type === 'cargo') {
-            successfulCargoLaunches += 1;
-          } else {
-            successfulScienceLaunches += 1;
-          }
-          
-          // === ORBITAL DOCKING: Send rocket to orbit if there's a free dock ===
-          // Find a station with available docks
-          const stationsWithDocks = state.spaceStations.filter(s => {
-            const dockedCount = state.dockedRockets.filter(d => d.stationId === s.id).length;
-            const transitCount = newTransitRockets.filter(t => t.targetStationId === s.id).length;
-            return dockedCount + transitCount < s.maxDocks;
-          });
-          
-          if (stationsWithDocks.length > 0) {
-            // Pick a random station with available docks
-            const targetStation = stationsWithDocks[Math.floor(Math.random() * stationsWithDocks.length)];
-            // Transit speed multiplier (Zenith perk: Express Transit)
-            const transitSpeedMultiplier = state.getCompanyPerkValue('transitSpeedMultiplier') || 1;
-            const transitDuration = Math.max(1, Math.floor(ORBITAL.TRANSIT_DURATION_TICKS * transitSpeedMultiplier));
-            newTransitRockets.push({
-              id: rocket.id,
-              type: rocket.type,
-              targetStationId: targetStation.id,
-              ticksRemaining: transitDuration,
-            });
-          }
-        }
-      }
-    }
+      // Process each rocket launch
+     for (const rocket of activeRockets) {
+       if (fuelAvailable >= effectiveFuelCost) {
+         fuelAvailable -= effectiveFuelCost;
+         
+         // Check if rocket has free launches
+         const rocketData = state.rockets.find(r => r?.id === rocket.id);
+         const hasFreeLaunch = rocketData && rocketData.freeLaunches && rocketData.freeLaunches > 0;
+         
+         // Roll for explosion (unless rocket has free launch)
+         if (hasFreeLaunch || Math.random() >= effectiveExplosionChance) {
+           // Consume free launch if used
+           if (hasFreeLaunch && rocketData) {
+             rocketData.freeLaunches = (rocketData.freeLaunches || 1) - 1;
+           }
+           
+           // Track successful launches for animation
+           recentlyLaunchedIds.push(rocket.id);
+           if (rocket.type === 'cargo') {
+             successfulCargoLaunches += 1;
+           } else {
+             successfulScienceLaunches += 1;
+           }
+           
+           // === ORBITAL DOCKING: Send rocket to orbit if there's a free dock ===
+           // Find a station with available docks
+           const stationsWithDocks = state.spaceStations.filter(s => {
+             const dockedCount = state.dockedRockets.filter(d => d.stationId === s.id).length;
+             const transitCount = newTransitRockets.filter(t => t.targetStationId === s.id).length;
+             return dockedCount + transitCount < s.maxDocks;
+           });
+           
+           if (stationsWithDocks.length > 0) {
+             // Pick a random station with available docks
+             const targetStation = stationsWithDocks[Math.floor(Math.random() * stationsWithDocks.length)];
+             // Transit speed multiplier (Zenith perk: Express Transit)
+             const transitSpeedMultiplier = state.getCompanyPerkValue('transitSpeedMultiplier') || 1;
+             const transitDuration = Math.max(1, Math.floor(ORBITAL.TRANSIT_DURATION_TICKS * transitSpeedMultiplier));
+             newTransitRockets.push({
+               id: rocket.id,
+               type: rocket.type,
+               targetStationId: targetStation.id,
+               ticksRemaining: transitDuration,
+             });
+           }
+         } else {
+           newExplodedRocketIds.push(rocket.id);
+           explosionCount += 1;
+           
+           // Black Box perk: Explosions grant science based on rocket cost
+           const scienceFromExplosions = state.getCompanyPerkValue('scienceFromExplosions');
+           if (scienceFromExplosions > 0) {
+             // Calculate what this rocket cost (approximate based on current rocket count)
+             const currentRocketCount = state.rockets.filter(r => r !== null).length;
+             const rocketIndex = Math.max(0, currentRocketCount - 1);
+             const baseCost = state.rocketCost * Math.pow(COST_SCALING.ROCKET_COST_EXPONENT, rocketIndex);
+             explosionScienceFromCost += Math.floor(baseCost * scienceFromExplosions);
+           }
+           
+           // Handle contract fragility for all active contracts
+           for (const contract of newActiveContracts) {
+             if (contract.status === 'active' && contract.maxExplosions !== -1) {
+               contract.currentExplosions += 1;
+               if (contract.currentExplosions > contract.maxExplosions) {
+                 contract.status = 'failed';
+                 get().addNotification(`Contract Failed: ${contract.title} (Too many explosions)`);
+               }
+             }
+           }
+         }
+       }
+     }
     
     // === ORBITAL MECHANICS ===
     
@@ -1087,24 +1096,29 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
       }
 
-      if (affordableCount > 0) {
-        const newRockets = [...state.rockets];
-        for (let i = 0; i < affordableCount; i++) {
-          const newRocket = { id: state.nextRocketId + i, type: 'cargo' as const };
-          const firstNullIndex = newRockets.findIndex(r => r === null);
-          if (firstNullIndex !== -1) {
-            newRockets[firstNullIndex] = newRocket;
-          } else {
-            newRockets.push(newRocket);
-          }
-        }
-        return {
-          money: state.money - totalBatchCost,
-          rockets: newRockets,
-          nextRocketId: state.nextRocketId + affordableCount,
-        };
-      }
-      return {};
+       if (affordableCount > 0) {
+         const newRockets = [...state.rockets];
+         const hasFreeLaunch = state.researchedNodes.indexOf('p5') !== -1;
+         for (let i = 0; i < affordableCount; i++) {
+           const newRocket = { 
+             id: state.nextRocketId + i, 
+             type: 'cargo' as const,
+             freeLaunches: hasFreeLaunch ? 1 : undefined
+           };
+           const firstNullIndex = newRockets.findIndex(r => r === null);
+           if (firstNullIndex !== -1) {
+             newRockets[firstNullIndex] = newRocket;
+           } else {
+             newRockets.push(newRocket);
+           }
+         }
+         return {
+           money: state.money - totalBatchCost,
+           rockets: newRockets,
+           nextRocketId: state.nextRocketId + affordableCount,
+         };
+       }
+       return {};
     }),
     
   buildScienceRocket: () =>
@@ -1142,24 +1156,29 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
       }
 
-      if (affordableCount > 0) {
-        const newRockets = [...state.rockets];
-        for (let i = 0; i < affordableCount; i++) {
-          const newRocket = { id: state.nextRocketId + i, type: 'science' as const };
-          const firstNullIndex = newRockets.findIndex(r => r === null);
-          if (firstNullIndex !== -1) {
-            newRockets[firstNullIndex] = newRocket;
-          } else {
-            newRockets.push(newRocket);
-          }
-        }
-        return {
-          money: state.money - totalBatchCost,
-          rockets: newRockets,
-          nextRocketId: state.nextRocketId + affordableCount,
-        };
-      }
-      return {};
+       if (affordableCount > 0) {
+         const newRockets = [...state.rockets];
+         const hasFreeLaunch = state.researchedNodes.indexOf('p5') !== -1;
+         for (let i = 0; i < affordableCount; i++) {
+           const newRocket = { 
+             id: state.nextRocketId + i, 
+             type: 'science' as const,
+             freeLaunches: hasFreeLaunch ? 1 : undefined
+           };
+           const firstNullIndex = newRockets.findIndex(r => r === null);
+           if (firstNullIndex !== -1) {
+             newRockets[firstNullIndex] = newRocket;
+           } else {
+             newRockets.push(newRocket);
+           }
+         }
+         return {
+           money: state.money - totalBatchCost,
+           rockets: newRockets,
+           nextRocketId: state.nextRocketId + affordableCount,
+         };
+       }
+       return {};
     }),
     
   buildSpaceport: () =>
