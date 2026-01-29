@@ -34,12 +34,19 @@ export function ResearchTreeView() {
   const preferredOrder = ['propulsion', 'infrastructure', 'commercial', 'orbital', 'control'] as ResearchBranch[];
   branches.sort((a, b) => preferredOrder.indexOf(a) - preferredOrder.indexOf(b));
 
-  const isUnlocked = (id: string) => researchedNodes.includes(id);
-  const canUnlock = (node: ResearchNode) => {
-    if (isUnlocked(node.id)) return false;
-    if (science < node.scienceCost) return false;
-    return node.prerequisites.every((pId: string) => isUnlocked(pId));
-  };
+   const isUnlocked = (id: string) => researchedNodes.includes(id);
+   const prerequisitesMet = (node: ResearchNode): boolean => {
+     return node.prerequisites.every((pId: string) => isUnlocked(pId));
+   };
+   const isVisible = (node: ResearchNode): boolean => {
+     if (isUnlocked(node.id)) return false; // Already researched nodes shown elsewhere
+     return prerequisitesMet(node); // Show if prerequisites are met (regardless of affordability)
+   };
+   const canUnlock = (node: ResearchNode) => {
+     if (isUnlocked(node.id)) return false;
+     if (science < node.scienceCost) return false;
+     return prerequisitesMet(node);
+   };
 
   // ===== HELPER FUNCTIONS FOR MULTI-LEVEL RESEARCH =====
 
@@ -206,7 +213,7 @@ export function ResearchTreeView() {
               <div className="flex flex-col gap-3 flex-1 overflow-y-auto scrollbar-thin pr-1 pb-4">
               {/* Single-Level Research Nodes */}
               {surfaceResearchTree
-                .filter(node => node.branch === branch && !node.levelSuffix && !isUnlocked(node.id))
+                 .filter(node => node.branch === branch && !node.levelSuffix && isVisible(node))
                 .sort((a, b) => (canUnlock(b) ? 1 : 0) - (canUnlock(a) ? 1 : 0))
                 .map(node => {
                   const available = canUnlock(node);
@@ -250,17 +257,20 @@ export function ResearchTreeView() {
                   .map(node => getBaseId(node.id))
                   .filter((id): id is string => id !== null)
               )).map(baseId => {
-                const totalLevels = getTotalLevels(baseId);
-                const currentLevel = getCurrentLevel(baseId);
-                const nextNode = getNextAvailableNode(baseId);
-                const firstNode = getMultiLevelGroup(baseId)[0];
-                const isFullyUnlocked = currentLevel === totalLevels;
+                 const totalLevels = getTotalLevels(baseId);
+                 const currentLevel = getCurrentLevel(baseId);
+                 const nextNode = getNextAvailableNode(baseId);
+                 const firstNode = getMultiLevelGroup(baseId)[0];
+                 const isFullyUnlocked = currentLevel === totalLevels;
 
-                if (isFullyUnlocked) return null;
+                 if (isFullyUnlocked) return null;
+                 
+                 // Hide if not started and prerequisites not met for first level
+                 if (currentLevel === 0 && firstNode && !prerequisitesMet(firstNode)) return null;
 
-                const canUnlockNext = nextNode && canUnlock(nextNode);
-                const canAffordNext = nextNode && science >= nextNode.scienceCost;
-                const cleanName = getCleanName(firstNode.name);
+                 const canUnlockNext = nextNode && canUnlock(nextNode);
+                 const canAffordNext = nextNode && science >= nextNode.scienceCost;
+                 const cleanName = getCleanName(firstNode.name);
 
                 return (
                   <div
