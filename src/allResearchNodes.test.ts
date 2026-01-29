@@ -988,7 +988,7 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
 
      it('should unlock full Infrastructure chain', () => {
        useGameStore.setState({
-         science: 10000,
+         science: 20000,
          researchedNodes: [],
        } as unknown as GameState);
 
@@ -997,7 +997,7 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
          useGameStore.getState().unlockNode(id);
          expect(useGameStore.getState().researchedNodes).toContain(id);
       });
-    });
+     });
 
     it('should unlock full Commercial chain', () => {
       useGameStore.setState({
