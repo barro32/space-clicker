@@ -1,17 +1,16 @@
 import { useGameStore } from "./useGameStore.js"
-import { FaRegBuilding, FaRocket, FaBomb, FaGasPump, FaFlask } from "react-icons/fa"
+import { FaRegBuilding, FaRocket, FaBomb, FaFlask } from "react-icons/fa"
 import { COST_SCALING } from "./gameConstants.js"
 import { AUTOMATION } from "./gameConstants.js"
 
 export function SpaceportView() {
-     const { rockets, spaceports, buildSpaceport, buildRocket, explodedRocketIds, clearExplosion, fuelRefineries, buildFuelRefinery, fuelRefineryCost, autoBuildActive, autoSalvageActive, toggleAutoBuild, toggleAutoSalvage, buildScienceRocket, fuel, tickCount } = useGameStore()
+     const { rockets, spaceports, buildSpaceport, buildRocket, explodedRocketIds, clearExplosion, autoBuildActive, autoSalvageActive, toggleAutoBuild, toggleAutoSalvage, buildScienceRocket, fuel, tickCount } = useGameStore()
      
       // use effective capacity from research
       const effectiveCapacity = useGameStore(state => Math.max(1, state.spaceportCapacity + state.getEffectMultiplier('spaceportCapacityBonus')));
-      const currentRocketCost = useGameStore(state => state.getCurrentRocketCost());
-      const currentSpaceportCost = useGameStore(state => state.getCurrentSpaceportCost());
-      const currentFuelRefineryCost = useGameStore(state => Math.round(state.fuelRefineryCost * Math.pow(COST_SCALING.FUEL_REFINERY_COST_EXPONENT, state.fuelRefineries)));
-      const fuelCostPerRocket = useGameStore(state => state.fuelCostPerRocket * state.getEffectMultiplier('fuelCostMultiplier'));
+       const currentRocketCost = useGameStore(state => state.getCurrentRocketCost());
+       const currentSpaceportCost = useGameStore(state => state.getCurrentSpaceportCost());
+       const fuelCostPerRocket = useGameStore(state => state.fuelCostPerRocket * state.getEffectMultiplier('fuelCostMultiplier'));
       
       // Calculate how many rockets can launch with available fuel
       const activeRocketCount = rockets.filter((r, i) => r !== null && !explodedRocketIds.includes(r.id)).length;
@@ -22,10 +21,9 @@ export function SpaceportView() {
         .filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null && !explodedRocketIds.includes(r.id))
         .slice(0, rocketsWithFuel)
         .map(r => r.id);
-     const scienceRocketsUnlocked = useGameStore(state => state.researchedNodes.includes('o4'));
-     const spaceportsUnlocked = useGameStore(state => state.researchedNodes.includes('o5'));
-     const refineriesUnlocked = useGameStore(state => state.researchedNodes.includes('o6'));
-     const explosionClearingUnlocked = useGameStore(state => state.researchedNodes.includes('o7'));
+      const scienceRocketsUnlocked = useGameStore(state => state.researchedNodes.includes('o4'));
+      const spaceportsUnlocked = useGameStore(state => state.researchedNodes.includes('o5'));
+      const explosionClearingUnlocked = useGameStore(state => state.researchedNodes.includes('o7'));
      
      // Auto-build progress calculation
      const autoBuildEnabled = useGameStore(state => state.getEffectMultiplier('autoBuildEnabled') > 0);
@@ -224,20 +222,8 @@ export function SpaceportView() {
                <div className="text-lg font-bold text-green-400 font-mono text-center">${currentSpaceportCost.toLocaleString()}</div>
                <div className="text-xs text-gray-500 font-mono text-center">Capacity +{effectiveCapacity}</div>
              </div>
-             )}
-
-            {/* Build Fuel Refinery */}
-             {refineriesUnlocked && (
-               <div className="bg-black/30 border-2 border-orange-500/50 rounded p-4 hover:border-orange-500/80 hover:bg-orange-900/20 transition-all cursor-pointer" onClick={buildFuelRefinery} title="Build fuel refinery">
-                 <div className="flex items-center justify-center mb-2">
-                   <FaGasPump className="text-2xl text-orange-400" />
-                 </div>
-                 <div className="text-xs text-gray-400 font-mono text-center mb-1">FUEL REFINERY</div>
-                 <div className="text-lg font-bold text-green-400 font-mono text-center">${currentFuelRefineryCost.toLocaleString()}</div>
-                 <div className="text-xs text-cyan-400 font-mono text-center">Total: {fuelRefineries}</div>
-               </div>
-             )}
-           </div>
+              )}
+            </div>
          </div>
        </div>
     )

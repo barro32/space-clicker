@@ -10,7 +10,7 @@ import { ResearchTreeView } from "./ResearchTreeView.js"
 import { MoonView } from "./MoonView.js"
 import { ResearchSidebar } from "./components/ResearchSidebar.js"
 import { SettingsPanel } from "./components/SettingsPanel.js"
-import { INITIAL_STATE, TIME, DEFAULT_COMPANIES, DEFAULT_SETTINGS } from './gameConstants.js'
+import { INITIAL_STATE, TIME, DEFAULT_COMPANIES, DEFAULT_SETTINGS, PRODUCTION } from './gameConstants.js'
 import { researchTree, ResearchNode, EffectType } from './researchTree.js'
 import { loadGameStateSync, loadGameStateAsync, saveGameState } from './persistence.js'
 
@@ -84,9 +84,9 @@ function calculateGameMetrics(state: GameState): GameMetrics {
   const scienceRockets = activeRockets.filter(r => r.type === 'science').length;
   const totalRockets = activeRockets.length;
   const explodedRockets = explodedIds.length;
-  
-  // Fuel calculations
-  const fuelProduction = (state.fuelRefineries || 0) * (state.fuelProductionPerRefinery || 1) * getEffectMultiplier('refineryOutputMultiplier', researchedNodes);
+   
+   // Fuel calculations
+   const fuelProduction = PRODUCTION.PASSIVE_FUEL_PER_TICK;
   const effectiveFuelCost = (state.fuelCostPerRocket || 1) * getEffectMultiplier('fuelCostMultiplier', researchedNodes);
   const fuelConsumption = totalRockets * effectiveFuelCost;
   const fuelNet = fuelProduction - fuelConsumption;
@@ -120,7 +120,7 @@ function calculateGameMetrics(state: GameState): GameMetrics {
     successRate,
     hasTelemetry,
     spaceportCount: (state.spaceports || []).length,
-    refineryCount: state.fuelRefineries || 0,
+     refineryCount: 0, // No more fuel refineries - now just passive fuel production
     stationCount: (state.spaceStations || []).length,
     activeContracts: (state.activeContracts || []).length,
     maxActiveContracts: state.getMaxActiveContracts ? state.getMaxActiveContracts() : 1,
@@ -162,11 +162,8 @@ const loadInitialState = () => {
           if (parsed.profitPerRocket === undefined) parsed.profitPerRocket = INITIAL_STATE.PROFIT_PER_ROCKET;
           parsed.spaceportCapacity = INITIAL_STATE.SPACEPORT_CAPACITY;
           if (!parsed.spaceports) parsed.spaceports = [{ id: 1 }];
-          if (parsed.spaceportCost === undefined) parsed.spaceportCost = INITIAL_STATE.SPACEPORT_COST;
-           if (parsed.fuelRefineries === undefined) parsed.fuelRefineries = 1;
-          if (parsed.fuelProductionPerRefinery === undefined) parsed.fuelProductionPerRefinery = INITIAL_STATE.FUEL_PRODUCTION_PER_REFINERY;
-          if (parsed.fuelCostPerRocket === undefined) parsed.fuelCostPerRocket = INITIAL_STATE.FUEL_COST_PER_ROCKET;
-          if (parsed.fuelRefineryCost === undefined) parsed.fuelRefineryCost = INITIAL_STATE.FUEL_REFINERY_COST;
+           if (parsed.spaceportCost === undefined) parsed.spaceportCost = INITIAL_STATE.SPACEPORT_COST;
+           if (parsed.fuelCostPerRocket === undefined) parsed.fuelCostPerRocket = INITIAL_STATE.FUEL_COST_PER_ROCKET;
           if (!parsed.explodedRocketIds) parsed.explodedRocketIds = [];
           if (parsed.rocketExplosionChance === undefined) parsed.rocketExplosionChance = INITIAL_STATE.ROCKET_EXPLOSION_CHANCE;
           
@@ -388,8 +385,7 @@ export function App() {
   const researchedNodes = useGameStore(state => state.researchedNodes);
   const rockets = useGameStore(state => state.rockets);
   const explodedRocketIds = useGameStore(state => state.explodedRocketIds);
-  const fuelRefineries = useGameStore(state => state.fuelRefineries);
-  const spaceports = useGameStore(state => state.spaceports);
+   const spaceports = useGameStore(state => state.spaceports);
   const spaceStations = useGameStore(state => state.spaceStations);
   const activeContracts = useGameStore(state => state.activeContracts);
   const satellites = useGameStore(state => state.satellites);
@@ -404,7 +400,7 @@ export function App() {
   const metrics = useMemo(() => {
     const state = useGameStore.getState();
     return calculateGameMetrics(state);
-  }, [researchedNodes, rockets, explodedRocketIds, fuelRefineries, fuel, spaceports, spaceStations, activeContracts, satellites, spaceDebris]);
+   }, [researchedNodes, rockets, explodedRocketIds, fuel, spaceports, spaceStations, activeContracts, satellites, spaceDebris]);
 
   // Check if there's affordable research available
   const hasAffordableResearch = useMemo(() => {
@@ -590,10 +586,9 @@ export function App() {
         availableContracts: state.availableContracts, activeContracts: state.activeContracts,
         contractRefreshTimer: state.contractRefreshTimer,
         rockets: state.rockets, nextRocketId: state.nextRocketId, rocketCost: state.rocketCost,
-        profitPerRocket: state.profitPerRocket, spaceportCapacity: state.spaceportCapacity,
-        spaceports: state.spaceports, spaceStations: state.spaceStations, spaceportCost: state.spaceportCost,
-        fuelRefineries: state.fuelRefineries, fuelProductionPerRefinery: state.fuelProductionPerRefinery,
-        fuelCostPerRocket: state.fuelCostPerRocket, fuelRefineryCost: state.fuelRefineryCost,
+         profitPerRocket: state.profitPerRocket, spaceportCapacity: state.spaceportCapacity,
+         spaceports: state.spaceports, spaceStations: state.spaceStations, spaceportCost: state.spaceportCost,
+         fuelCostPerRocket: state.fuelCostPerRocket,
         explodedRocketIds: state.explodedRocketIds, rocketExplosionChance: state.rocketExplosionChance,
         researchedNodes: state.researchedNodes, autoBuildActive: state.autoBuildActive,
         autoSalvageActive: state.autoSalvageActive,
