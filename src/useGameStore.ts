@@ -321,7 +321,7 @@ export const useGameStore = create<GameState>((set, get) => ({
    
    tick: () => set(state => {
     // Clear animation flags at start of each tick
-    const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
+    const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
     
        const passiveFuelProduction = PRODUCTION.PASSIVE_FUEL_PER_TICK;
        const refineryFuelProduction = state.fuelRefineries * PRODUCTION.FUEL_REFINERY_PRODUCTION_PER_TICK;
