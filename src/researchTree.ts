@@ -358,8 +358,8 @@ export const researchTree: ResearchNode[] = [
     name: 'Flight Recorder System',
     description: '+1 science per rocket launch',
     branch: 'propulsion',
-    scienceCost: 200,
-    prerequisites: ['p2-10'], // Requires Safety Protocols level 10
+    scienceCost: 10,
+    prerequisites: ['p2-5'], // Requires Safety Protocols level 5
     effect: { type: 'sciencePerRocketBonus', value: 1 },
     assignedLayer: 'surface'
   },
