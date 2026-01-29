@@ -38,11 +38,10 @@ function hasResearch(type: EffectType, researchedNodes: string[]): boolean {
 
 // Comprehensive game metrics for the info panel
 interface GameMetrics {
-  // Fleet
-  totalRockets: number;
-  cargoRockets: number;
-  scienceRockets: number;
-  explodedRockets: number;
+   // Fleet
+   totalRockets: number;
+   cargoRockets: number;
+   explodedRockets: number;
   // Production
   fuelProduction: number;
   fuelConsumption: number;
@@ -76,14 +75,13 @@ interface GameMetrics {
 function calculateGameMetrics(state: GameState): GameMetrics {
   const researchedNodes = state.researchedNodes || [];
   
-  // Fleet counts
-  const allRockets = (state.rockets || []).filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null);
-  const explodedIds = state.explodedRocketIds || [];
-  const activeRockets = allRockets.filter(r => !explodedIds.includes(r.id));
-  const cargoRockets = activeRockets.filter(r => r.type === 'cargo').length;
-  const scienceRockets = activeRockets.filter(r => r.type === 'science').length;
-  const totalRockets = activeRockets.length;
-  const explodedRockets = explodedIds.length;
+   // Fleet counts
+   const allRockets = (state.rockets || []).filter((r): r is { id: number; type: 'cargo' } => r !== null);
+   const explodedIds = state.explodedRocketIds || [];
+   const activeRockets = allRockets.filter(r => !explodedIds.includes(r.id));
+   const cargoRockets = activeRockets.length;
+   const totalRockets = activeRockets.length;
+   const explodedRockets = explodedIds.length;
    
    // Fuel calculations
    const fuelProduction = PRODUCTION.PASSIVE_FUEL_PER_TICK;
@@ -95,22 +93,20 @@ function calculateGameMetrics(state: GameState): GameMetrics {
   const explosionChance = (state.rocketExplosionChance || 0.5) * getEffectMultiplier('explosionChanceMultiplier', researchedNodes);
   const successRate = Math.max(0, 1 - explosionChance);
   
-  // Estimated production
-  const estimatedLaunches = Math.min(totalRockets, Math.floor((state.fuel || 0) / Math.max(1, effectiveFuelCost)));
-  const successfulCargo = Math.floor(cargoRockets * estimatedLaunches * successRate / Math.max(1, totalRockets));
-  const successfulScience = Math.floor(scienceRockets * estimatedLaunches * successRate / Math.max(1, totalRockets));
-  const moneyPerSec = successfulCargo * (state.profitPerRocket || 1) * getEffectMultiplier('profitMultiplier', researchedNodes);
-  const passiveScience = (state.spaceports || []).length;
-  const sciencePerSec = successfulScience + passiveScience;
+   // Estimated production
+   const estimatedLaunches = Math.min(totalRockets, Math.floor((state.fuel || 0) / Math.max(1, effectiveFuelCost)));
+   const successfulCargo = Math.floor(cargoRockets * estimatedLaunches * successRate / Math.max(1, totalRockets));
+   const moneyPerSec = successfulCargo * (state.profitPerRocket || 1) * getEffectMultiplier('profitMultiplier', researchedNodes);
+   const passiveScience = (state.spaceports || []).length;
+   const sciencePerSec = passiveScience;
   
   // Telemetry check
   const hasTelemetry = hasResearch('uiTelemetryFlag', researchedNodes);
   
-  return {
-    totalRockets,
-    cargoRockets,
-    scienceRockets,
-    explodedRockets,
+   return {
+     totalRockets,
+     cargoRockets,
+     explodedRockets,
     fuelProduction,
     fuelConsumption,
     fuelNet,

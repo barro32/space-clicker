@@ -94,12 +94,12 @@ export interface SpaceStation {
 }
 
 export interface TransitRocket {
-  id: number;
-  type: 'cargo' | 'science' | 'fuel';
-  targetStationId: string;
-  ticksRemaining: number;
-  fuel?: number; // NEW - fuel remaining for journey
-  cargoAmount?: number; // NEW - cargo being transported (for supply missions)
+   id: number;
+   type: 'cargo' | 'fuel';
+   targetStationId: string;
+   ticksRemaining: number;
+   fuel?: number; // NEW - fuel remaining for journey
+   cargoAmount?: number; // NEW - cargo being transported (for supply missions)
 }
 
 export interface DockedRocket {
@@ -208,11 +208,10 @@ export interface GameState {
   acceptContract: (contractId: string) => void;
   forfeitContract: (contractId: string) => void;
   tick: () => void
-    buildRocket: () => void
-    buildScienceRocket: () => void
-    buildSpaceport: () => void
-    buildFuelRefinery: () => void
-    buildSpaceStation: (type: SpaceStation['type']) => void
+     buildRocket: () => void
+     buildSpaceport: () => void
+     buildFuelRefinery: () => void
+     buildSpaceStation: (type: SpaceStation['type']) => void
     clearExplosion: (rocketId: number) => void;
    // Orbital layer actions
    launchSatellite: () => void;
@@ -331,7 +330,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       const maxFuel = state.getMaxFuel();
       let fuelAvailable = Math.min(maxFuel, state.fuel + fuelProduction);
      let successfulCargoLaunches = 0;
-     let successfulScienceLaunches = 0;
      let explosionCount = 0;
      let explosionScienceFromCost = 0; // Track science from Black Box perk
      let newExplodedRocketIds = [...state.explodedRocketIds];
@@ -365,15 +363,11 @@ export const useGameStore = create<GameState>((set, get) => ({
              rocketData.freeLaunches = (rocketData.freeLaunches || 1) - 1;
            }
            
-           // Track successful launches for animation
-           recentlyLaunchedIds.push(rocket.id);
-           if (rocket.type === 'cargo') {
-             successfulCargoLaunches += 1;
-           } else {
-             successfulScienceLaunches += 1;
-           }
-           
-           // === ORBITAL DOCKING: Send rocket to orbit if there's a free dock ===
+            // Track successful launches for animation
+            recentlyLaunchedIds.push(rocket.id);
+            successfulCargoLaunches += 1;
+            
+            // === ORBITAL DOCKING: Send rocket to orbit if there's a free dock ===
            // Find a station with available docks
            const stationsWithDocks = state.spaceStations.filter(s => {
              const dockedCount = state.dockedRockets.filter(d => d.stationId === s.id).length;
@@ -487,16 +481,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     const debrisPenalty = hasDebrisImmunity ? 1 : Math.max(1 - ORBITAL.MAX_DEBRIS_PENALTY, 1 - (newDebris.length * ORBITAL.DEBRIS_PENALTY_PER_PIECE));
 
       // Calculate production with company perk bonuses
-      const profitMultiplier = state.getTotalEffectValue('profitMultiplier');
-      let moneyProduction = successfulCargoLaunches * state.profitPerRocket * profitMultiplier;
-     
-       // Science production with company perks
-       const sciencePerRocketBonus = state.getCompanyPerkValue('sciencePerRocketBonus') + state.getTotalEffectValue('sciencePerRocketBonus');
-       const sciencePerExplosionBonus = state.getCompanyPerkValue('sciencePerExplosionBonus');
-       const totalSuccessfulLaunches = successfulCargoLaunches + successfulScienceLaunches;
-       let sciProd = successfulScienceLaunches * PRODUCTION.SCIENCE_PER_SCIENCE_ROCKET + totalSuccessfulLaunches * sciencePerRocketBonus + explosionCount * (PRODUCTION.SCIENCE_PER_EXPLOSION + sciencePerExplosionBonus) + explosionScienceFromCost;
-     
-      // Cargo generation - combine research multipliers and company perks
+       const profitMultiplier = state.getTotalEffectValue('profitMultiplier');
+       let moneyProduction = successfulCargoLaunches * state.profitPerRocket * profitMultiplier;
+      
+        // Science production with company perks
+        const sciencePerExplosionBonus = state.getCompanyPerkValue('sciencePerExplosionBonus');
+        let sciProd = explosionCount * (PRODUCTION.SCIENCE_PER_EXPLOSION + sciencePerExplosionBonus) + explosionScienceFromCost;
+      
+       // Cargo generation - combine research multipliers and company perks
       const cargoPerLaunchMultiplier = state.getTotalEffectValue('cargoPerLaunchMultiplier');
       const cargoPerLaunchBonus = state.getTotalEffectValue('cargoPerLaunchBonus');
       const cargoGenerationMultiplier = state.getEffectMultiplier('cargoGenerationMultiplier');
@@ -1033,7 +1025,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       cargo: state.cargo + cargoResourceProd,
       lunarComponents: state.lunarComponents + lunarProd,
       // Track successful launches for layer unlock
-      totalSuccessfulLaunches: state.totalSuccessfulLaunches + successfulCargoLaunches + successfulScienceLaunches,
+       totalSuccessfulLaunches: state.totalSuccessfulLaunches + successfulCargoLaunches,
       activeContracts: newActiveContracts,
       availableContracts: newAvailableContracts,
       contractRefreshTimer: newContractRefreshTimer,
@@ -1118,71 +1110,11 @@ export const useGameStore = create<GameState>((set, get) => ({
            nextRocketId: state.nextRocketId + affordableCount,
          };
        }
-       return {};
-    }),
-    
-  buildScienceRocket: () =>
-    set(state => {
-      if (state.researchedNodes.indexOf('o4') === -1) {
         return {};
-      }
-      
-      const effectiveCapacity = state.spaceportCapacity + state.getTotalEffectValue('spaceportCapacityBonus');
-      const maxRockets = state.spaceports.length * effectiveCapacity;
-      const currentTotalRockets = state.rockets.filter(r => r !== null).length;
-
-      const buildMultiplier = state.getEffectMultiplier('buildRocketMultiplier');
-      const batchBonus = state.getEffectMultiplier('buildRocketBatchBonus') + state.getCompanyPerkValue('batchBuildBonus');
-      const desiredCountFloat = 1 * (buildMultiplier || 1) + batchBonus;
-      let desiredCount = Math.max(1, Math.floor(desiredCountFloat));
-      desiredCount = Math.min(desiredCount, maxRockets - currentTotalRockets);
-
-      if (desiredCount <= 0) return {};
-
-      const constructionMultiplier = state.getEffectMultiplier('constructionCostMultiplier');
-      const rocketCostMultiplier = state.getCompanyPerkValue('rocketCostMultiplier') || 1;
-
-      let affordableCount = 0;
-      let totalBatchCost = 0;
-      for (let i = 0; i < desiredCount; i++) {
-        const idx = currentTotalRockets + i;
-        const baseCost = state.rocketCost * Math.pow(COST_SCALING.ROCKET_COST_EXPONENT, idx);
-        const cost = Math.round(baseCost * constructionMultiplier * rocketCostMultiplier);
-        if (state.money >= totalBatchCost + cost) {
-          totalBatchCost += cost;
-          affordableCount += 1;
-        } else {
-          break;
-        }
-      }
-
-       if (affordableCount > 0) {
-         const newRockets = [...state.rockets];
-         const hasFreeLaunch = state.researchedNodes.indexOf('p5') !== -1;
-         for (let i = 0; i < affordableCount; i++) {
-           const newRocket = { 
-             id: state.nextRocketId + i, 
-             type: 'science' as const,
-             freeLaunches: hasFreeLaunch ? 1 : undefined
-           };
-           const firstNullIndex = newRockets.findIndex(r => r === null);
-           if (firstNullIndex !== -1) {
-             newRockets[firstNullIndex] = newRocket;
-           } else {
-             newRockets.push(newRocket);
-           }
-         }
-         return {
-           money: state.money - totalBatchCost,
-           rockets: newRockets,
-           nextRocketId: state.nextRocketId + affordableCount,
-         };
-       }
-       return {};
-    }),
-    
-  buildSpaceport: () =>
-    set(state => {
+     }),
+     
+   buildSpaceport: () =>
+     set(state => {
       if (state.researchedNodes.indexOf('o5') === -1) {
         return {};
       }

@@ -12,10 +12,9 @@ export type CompanyPerkEffect =
   | 'passiveMoneyBonus'
   | 'fuelToMoneyBonus' // Money gen scales with fuel %
   | 'globalMoneyMultiplier' // Flat global money multiplier
-  // Nova Research (Science)
-  | 'sciencePerRocketBonus'
-  | 'sciencePerSalvageBonus'
-  | 'researchCostMultiplier'
+   // Nova Research (Science)
+   | 'sciencePerSalvageBonus'
+   | 'researchCostMultiplier'
   | 'passiveScienceBonus'
   | 'sciencePerExplosionBonus'
   | 'satelliteScienceBonus' // Satellites generate passive science
@@ -89,10 +88,10 @@ export const COMPANY_DEFINITIONS: CompanyDefinition[] = [
     focus: 'Science & Tech',
     color: 'blue',
     perks: [
-      { level: 1, name: 'Lab Assistant', description: '+1 science per explosion', effect: 'sciencePerExplosionBonus', value: 1 },
-      { level: 2, name: 'Data Collection', description: '+1 science per science rocket', effect: 'sciencePerRocketBonus', value: 1 },
-      { level: 3, name: 'Field Notes', description: '+1 science per salvage', effect: 'sciencePerSalvageBonus', value: 1 },
-      { level: 4, name: 'Debris Analysis', description: '+2 science per salvage', effect: 'sciencePerSalvageBonus', value: 2 },
+       { level: 1, name: 'Lab Assistant', description: '+1 science per explosion', effect: 'sciencePerExplosionBonus', value: 1 },
+       { level: 2, name: 'Debris Collection', description: '+2 science per salvage', effect: 'sciencePerSalvageBonus', value: 2 },
+       { level: 3, name: 'Field Notes', description: '+1 science per salvage', effect: 'sciencePerSalvageBonus', value: 1 },
+       { level: 4, name: 'Debris Analysis', description: '+2 science per salvage', effect: 'sciencePerSalvageBonus', value: 2 },
       { level: 5, name: 'Telemetry Link', description: 'Satellites generate +1 science/tick each', effect: 'satelliteScienceBonus', value: 1 },
       { level: 6, name: 'Orbital Labs', description: 'Each station level adds +2% global science', effect: 'stationScienceScale', value: 0.02 },
       { level: 7, name: 'Tech Transfer', description: '-10% research costs', effect: 'researchCostMultiplier', value: 0.90 },

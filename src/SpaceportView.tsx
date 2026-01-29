@@ -1,10 +1,10 @@
 import { useGameStore } from "./useGameStore.js"
-import { FaRegBuilding, FaRocket, FaBomb, FaFlask, FaGasPump } from "react-icons/fa"
+import { FaRegBuilding, FaRocket, FaBomb, FaGasPump } from "react-icons/fa"
 import { COST_SCALING } from "./gameConstants.js"
 import { AUTOMATION } from "./gameConstants.js"
 
 export function SpaceportView() {
-      const { rockets, spaceports, buildSpaceport, buildRocket, explodedRocketIds, clearExplosion, autoBuildActive, autoSalvageActive, toggleAutoBuild, toggleAutoSalvage, buildScienceRocket, fuel, tickCount, buildFuelRefinery, fuelRefineries } = useGameStore()
+       const { rockets, spaceports, buildSpaceport, buildRocket, explodedRocketIds, clearExplosion, autoBuildActive, autoSalvageActive, toggleAutoBuild, toggleAutoSalvage, fuel, tickCount, buildFuelRefinery, fuelRefineries } = useGameStore()
      
       // use effective capacity from research
       const effectiveCapacity = useGameStore(state => Math.max(1, state.spaceportCapacity + state.getEffectMultiplier('spaceportCapacityBonus')));
@@ -17,12 +17,11 @@ export function SpaceportView() {
       const rocketsWithFuel = Math.floor(fuel / fuelCostPerRocket);
       
       // Get ordered list of active rocket IDs (to determine which ones get fuel)
-      const activeRocketIds = rockets
-        .filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null && !explodedRocketIds.includes(r.id))
-        .slice(0, rocketsWithFuel)
-        .map(r => r.id);
-       const scienceRocketsUnlocked = useGameStore(state => state.researchedNodes.includes('o4'));
-       const spaceportsUnlocked = useGameStore(state => state.researchedNodes.includes('o5'));
+       const activeRocketIds = rockets
+         .filter((r): r is { id: number; type: 'cargo' } => r !== null && !explodedRocketIds.includes(r.id))
+         .slice(0, rocketsWithFuel)
+         .map(r => r.id);
+        const spaceportsUnlocked = useGameStore(state => state.researchedNodes.includes('o5'));
        const fuelRefineriesUnlocked = useGameStore(state => state.researchedNodes.includes('o6'));
        const explosionClearingUnlocked = useGameStore(state => state.researchedNodes.includes('o7'));
        const currentFuelRefineryCost = useGameStore(state => Math.round(COST_SCALING.FUEL_REFINERY_COST_BASE * Math.pow(COST_SCALING.FUEL_REFINERY_COST_EXPONENT, state.fuelRefineries)));
@@ -61,44 +60,37 @@ export function SpaceportView() {
                {/* Rocket Slots Grid */}
                <div className="grid gap-1.5 p-3 bg-black/30 rounded border border-gray-700/50" style={{ gridTemplateColumns: `repeat(${Math.min(6, effectiveCapacity)}, minmax(0, 1fr))` }}>
                 {Array.from({ length: effectiveCapacity }).map((_, i) => {
-                    const rocketIndex = spIndex * effectiveCapacity + i;
-                    const rocket = rockets[rocketIndex];
-                    if (rocket) {
-                      const isExploded = explodedRocketIds.includes(rocket.id);
-                      const isScience = rocket.type === 'science';
-                      const hasFuel = activeRocketIds.includes(rocket.id);
-                      const isActive = !isExploded && hasFuel;
-                      
-                      if (isExploded) {
-                        return (
-                          <div 
-                            key={i} 
-                            className="w-8 h-8 flex items-center justify-center bg-red-900/30 border-2 border-red-500/50 rounded cursor-pointer hover:bg-red-900/50 transition-all"
-                            onClick={(e) => { e.stopPropagation(); clearExplosion(rocket.id); }}
-                            title="Click to clear explosion"
-                          >
-                            <FaBomb className="text-sm text-red-400 animate-pulse" />
-                          </div>
-                        );
-                      } else {
-                        return (
-                          <div 
-                            key={i} 
-                            className={`w-8 h-8 flex items-center justify-center border-2 rounded transition-all ${
-                              isScience 
-                                ? (isActive ? 'bg-purple-900/30 border-purple-500/50' : 'bg-gray-800/30 border-gray-600/50')
-                                : (isActive ? 'bg-blue-900/30 border-blue-500/50' : 'bg-gray-800/30 border-gray-600/50')
-                            }`}
-                            title={isActive ? 'Launching!' : 'Waiting for fuel'}
-                          >
-                            {isScience ? (
-                              <FaFlask className={`text-sm ${isActive ? 'text-purple-400 animate-science-launch' : 'text-gray-500'}`} />
-                            ) : (
-                              <FaRocket className={`text-sm ${isActive ? 'text-blue-400 animate-cargo-launch' : 'text-gray-500'}`} style={{ transform: 'rotate(-45deg)' }} />
-                            )}
-                          </div>
-                        );
-                      }
+                     const rocketIndex = spIndex * effectiveCapacity + i;
+                     const rocket = rockets[rocketIndex];
+                     if (rocket) {
+                       const isExploded = explodedRocketIds.includes(rocket.id);
+                       const hasFuel = activeRocketIds.includes(rocket.id);
+                       const isActive = !isExploded && hasFuel;
+                       
+                       if (isExploded) {
+                         return (
+                           <div 
+                             key={i} 
+                             className="w-8 h-8 flex items-center justify-center bg-red-900/30 border-2 border-red-500/50 rounded cursor-pointer hover:bg-red-900/50 transition-all"
+                             onClick={(e) => { e.stopPropagation(); clearExplosion(rocket.id); }}
+                             title="Click to clear explosion"
+                           >
+                             <FaBomb className="text-sm text-red-400 animate-pulse" />
+                           </div>
+                         );
+                       } else {
+                         return (
+                           <div 
+                             key={i} 
+                             className={`w-8 h-8 flex items-center justify-center border-2 rounded transition-all ${
+                               isActive ? 'bg-blue-900/30 border-blue-500/50' : 'bg-gray-800/30 border-gray-600/50'
+                             }`}
+                             title={isActive ? 'Launching!' : 'Waiting for fuel'}
+                           >
+                             <FaRocket className={`text-sm ${isActive ? 'text-blue-400 animate-cargo-launch' : 'text-gray-500'}`} style={{ transform: 'rotate(-45deg)' }} />
+                           </div>
+                         );
+                       }
                      } else {
                      return (
                        <div 
@@ -159,21 +151,9 @@ export function SpaceportView() {
                  )}
                </div>
              )}
-           </div>
+            </div>
 
-           {/* Build Science Rocket */}
-           {scienceRocketsUnlocked && (
-             <div className="bg-black/30 border-2 border-purple-500/50 rounded p-4 hover:border-purple-500/80 hover:bg-purple-900/20 transition-all cursor-pointer" onClick={buildScienceRocket} title="Science Rocket: +1 science per launch">
-               <div className="flex items-center justify-center mb-2">
-                 <FaFlask className="text-2xl text-purple-400" />
-               </div>
-               <div className="text-xs text-gray-400 font-mono text-center mb-1">SCIENCE ROCKET</div>
-                <div className="text-lg font-bold text-green-400 font-mono text-center">${currentRocketCost.toLocaleString()}</div>
-                <div className="text-xs text-orange-400 font-mono text-center">Fuel: {Math.floor(fuelCostPerRocket).toLocaleString()}</div>
-             </div>
-           )}
-
-           {/* Clear Explosion */}
+            {/* Clear Explosion */}
            {explosionClearingUnlocked && (
              <div className="bg-black/30 border-2 border-red-500/50 rounded p-4 hover:border-red-500/80 hover:bg-red-900/20 transition-all cursor-pointer" onClick={() => {
                if (explodedRocketIds.length > 0) {

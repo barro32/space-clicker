@@ -21,7 +21,6 @@ export type EffectType =
    | 'stationLogisticsMultiplier'
   | 'stationScienceMultiplier'
    | 'unlockMoonMissions'
-   | 'unlockScienceRockets'
    | 'unlockSpaceports'
    | 'unlockRefineries'
     | 'unlockExplosionClearing'
@@ -520,23 +519,13 @@ export const researchTree: ResearchNode[] = [
     prerequisites: [],
     effect: { type: 'unlockMoonMissions', value: 1 },
     assignedLayer: 'orbit'
-  },
-  {
-    id: 'o4',
-    name: 'Science Laboratories',
-    description: 'Unlocks Science Rockets',
-    branch: 'orbital',
-    scienceCost: 750,
-    prerequisites: [],
-    effect: { type: 'unlockScienceRockets', value: 1 },
-    assignedLayer: 'orbit'
-  },
-  {
-    id: 'o5',
-    name: 'Expanded Facilities',
-    description: 'Unlocks Spaceports',
-    branch: 'orbital',
-    scienceCost: 200,
+   },
+   {
+     id: 'o5',
+     name: 'Expanded Facilities',
+     description: 'Unlocks Spaceports',
+     branch: 'orbital',
+     scienceCost: 200,
     prerequisites: [],
     effect: { type: 'unlockSpaceports', value: 1 },
     assignedLayer: 'surface'
