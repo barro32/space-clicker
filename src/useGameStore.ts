@@ -2109,7 +2109,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       };
     }),
 
-    constructBuildingOnMoon: (sectorId: string, buildingType: MoonBuildingType | 'solarArray' | 'nuclearReactor' | 'battery') => set(state => {
+    constructBuildingOnMoon: (sectorId: string, buildingType: MoonBuildingType) => set(state => {
       if (state.moonStatus !== 'unlocked') return {};
       
       const sector = state.moonSectors.find(s => s.id === sectorId);

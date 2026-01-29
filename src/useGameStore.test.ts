@@ -52,6 +52,56 @@ describe('Auto-build (Auto-Queue)', () => {
      // After tick, some rockets should have been queued/built
      expect(s.rockets.filter(r => r !== null).length).toBeGreaterThan(0);
    });
+
+   describe('Moon - Building Construction with Limited Resources', () => {
+     beforeEach(() => {
+       // Set up with just enough resources to build (100 cargo)
+       useGameStore.setState({
+         cargo: 100,
+         science: 50000,
+         fuel: 1000,
+         money: 100000,
+         moonStatus: 'unlocked',
+         moonResources: { regolith: 10000, helium3: 0, alloys: 0 },
+         earthResources: { helium3: 0, alloys: 0 },
+         moonSectors: [
+           {
+             id: 'sector-1',
+             name: 'Landing Zone',
+             slots: 4,
+             slotsUsed: 0,
+             unlocked: true,
+             scanned: true,
+             traits: {},
+             buildings: {
+               extractors: 0,
+               refineries: 0,
+               silos: 0,
+               maintenance: 0,
+               massDrivers: 0,
+               solarArray: 0,
+               nuclearReactor: 0,
+               battery: 0,
+               fabricators: 0,
+               cargoStorage: 0,
+             },
+           }
+         ],
+         researchedNodes: [],
+         notifications: [],
+         companies: DEFAULT_COMPANIES.map(c => ({ ...c })),
+       } as unknown as GameState);
+     });
+
+     it('builds extractor with 100 cargo (costs 50)', () => {
+       useGameStore.getState().constructBuildingOnMoon('sector-1', 'extractor');
+       
+       const state = useGameStore.getState();
+       expect(state.cargo).toBe(50);
+       expect(state.moonSectors[0].buildings.extractors).toBe(1);
+       expect(state.moonSectors[0].slotsUsed).toBe(1);
+     });
+   });
 });
 
 
