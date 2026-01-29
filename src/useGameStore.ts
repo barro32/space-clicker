@@ -491,10 +491,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       const profitMultiplier = state.getTotalEffectValue('profitMultiplier');
       let moneyProduction = successfulCargoLaunches * state.profitPerRocket * profitMultiplier;
      
-      // Science production with company perks
-      const sciencePerRocketBonus = state.getCompanyPerkValue('sciencePerRocketBonus') + state.getTotalEffectValue('sciencePerRocketBonus');
-      const sciencePerExplosionBonus = state.getCompanyPerkValue('sciencePerExplosionBonus');
-      let sciProd = successfulScienceLaunches * (PRODUCTION.SCIENCE_PER_SCIENCE_ROCKET + sciencePerRocketBonus) + explosionCount * (PRODUCTION.SCIENCE_PER_EXPLOSION + sciencePerExplosionBonus) + explosionScienceFromCost;
+       // Science production with company perks
+       const sciencePerRocketBonus = state.getCompanyPerkValue('sciencePerRocketBonus') + state.getTotalEffectValue('sciencePerRocketBonus');
+       const sciencePerExplosionBonus = state.getCompanyPerkValue('sciencePerExplosionBonus');
+       const totalSuccessfulLaunches = successfulCargoLaunches + successfulScienceLaunches;
+       let sciProd = successfulScienceLaunches * PRODUCTION.SCIENCE_PER_SCIENCE_ROCKET + totalSuccessfulLaunches * sciencePerRocketBonus + explosionCount * (PRODUCTION.SCIENCE_PER_EXPLOSION + sciencePerExplosionBonus) + explosionScienceFromCost;
      
       // Cargo generation - combine research multipliers and company perks
       const cargoPerLaunchMultiplier = state.getTotalEffectValue('cargoPerLaunchMultiplier');
