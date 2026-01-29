@@ -1634,23 +1634,25 @@ export const useGameStore = create<GameState>((set, get) => ({
   }),
    
    // Moon layer helper methods
-   /**
-    * Gets current moon storage capacity for all lunar resource types.
-    * Storage increases with silo buildings and research effects.
-    * 
-    * @returns Object with regolith, helium3, and alloys capacity
-    */
+    /**
+     * Gets current moon storage capacity for all lunar resource types.
+     * Storage increases with silo/cargoStorage buildings and research effects.
+     * 
+     * @returns Object with regolith, helium3, alloys, and cargo capacity
+     */
     getMoonStorageCapacity: () => {
        const state = get();
        const siloBonus = state.moonSectors.reduce((total, sector) => total + (sector.buildings.silos || 0), 0);
-      const alloysStorageBonus = state.getEffectMultiplier('alloysStorageBonus' as EffectType) || 0;
-      const moonStorageMultiplier = state.getEffectMultiplier('moonStorageMultiplier' as EffectType) || 1;
-      return {
-        regolith: (MOON.STORAGE_BASE.regolith + siloBonus * MOON.STORAGE_PER_SILO.regolith) * moonStorageMultiplier,
-        helium3: (MOON.STORAGE_BASE.helium3 + siloBonus * MOON.STORAGE_PER_SILO.helium3) * moonStorageMultiplier,
-        alloys: (MOON.STORAGE_BASE.alloys + siloBonus * MOON.STORAGE_PER_SILO.alloys + alloysStorageBonus) * moonStorageMultiplier,
-       };
-     },
+       const cargoStorageBonus = state.moonSectors.reduce((total, sector) => total + (sector.buildings.cargoStorage || 0), 0);
+       const alloysStorageBonus = state.getEffectMultiplier('alloysStorageBonus' as EffectType) || 0;
+       const moonStorageMultiplier = state.getEffectMultiplier('moonStorageMultiplier' as EffectType) || 1;
+       return {
+         regolith: (MOON.STORAGE_BASE.regolith + siloBonus * MOON.STORAGE_PER_SILO.regolith) * moonStorageMultiplier,
+         helium3: (MOON.STORAGE_BASE.helium3 + siloBonus * MOON.STORAGE_PER_SILO.helium3) * moonStorageMultiplier,
+         alloys: (MOON.STORAGE_BASE.alloys + siloBonus * MOON.STORAGE_PER_SILO.alloys + alloysStorageBonus) * moonStorageMultiplier,
+         cargo: MOON.MOON_CARGO_BASE_STORAGE + cargoStorageBonus * MOON.TIER1_CARGO_STORAGE_CAPACITY,
+        };
+      },
      
      getMoonBuildingDescription: (buildingType: string) => {
        const descriptions: Record<string, string> = {
