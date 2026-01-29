@@ -23,6 +23,7 @@ export type EffectType =
    | 'unlockMoonMissions'
    | 'unlockScienceRockets'
    | 'unlockSpaceports'
+   | 'unlockRefineries'
     | 'unlockExplosionClearing'
    | 'unlockFreeLaunch'
    | 'buildRocketBatchBonus'
@@ -540,16 +541,26 @@ export const researchTree: ResearchNode[] = [
     effect: { type: 'unlockSpaceports', value: 1 },
     assignedLayer: 'surface'
   },
-  {
-    id: 'o7',
-    name: 'Salvage Operations',
-    description: 'Unlocks explosion clearing',
-    branch: 'orbital',
-    scienceCost: 1,
-    prerequisites: [],
-    effect: { type: 'unlockExplosionClearing', value: 1 },
-    assignedLayer: 'surface'
-  },
+   {
+     id: 'o6',
+     name: 'Fuel Production',
+     description: 'Unlocks Fuel Refineries',
+     branch: 'orbital',
+     scienceCost: 100,
+     prerequisites: [],
+     effect: { type: 'unlockRefineries', value: 1 },
+     assignedLayer: 'surface'
+   },
+   {
+     id: 'o7',
+     name: 'Salvage Operations',
+     description: 'Unlocks explosion clearing',
+     branch: 'orbital',
+     scienceCost: 1,
+     prerequisites: [],
+     effect: { type: 'unlockExplosionClearing', value: 1 },
+     assignedLayer: 'surface'
+   },
   {
     id: 'o8',
     name: 'Satellite Constellation',

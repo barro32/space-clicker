@@ -161,13 +161,14 @@ export interface GameState {
     contractRefreshTimer: number; // Countdown to next contract refresh
     rockets: ({ id: number; type: 'cargo' | 'science'; freeLaunches?: number } | null)[];
     nextRocketId: number;
-   rocketCost: number
-   profitPerRocket: number;
-   spaceportCapacity: number
-   spaceports: Spaceport[]
-   spaceStations: SpaceStation[]
-   spaceportCost: number
-   fuelCostPerRocket: number;
+    rocketCost: number
+    profitPerRocket: number;
+    spaceportCapacity: number
+    spaceports: Spaceport[]
+    fuelRefineries: number; // Number of fuel refinery buildings
+    spaceStations: SpaceStation[]
+    spaceportCost: number
+    fuelCostPerRocket: number;
     explodedRocketIds: number[];
    rocketExplosionChance: number;
    recentlyLaunchedRocketIds: number[]; // Rockets that launched this tick (for animation)
@@ -207,10 +208,11 @@ export interface GameState {
   acceptContract: (contractId: string) => void;
   forfeitContract: (contractId: string) => void;
   tick: () => void
-   buildRocket: () => void
-   buildScienceRocket: () => void
-   buildSpaceport: () => void
-   buildSpaceStation: (type: SpaceStation['type']) => void
+    buildRocket: () => void
+    buildScienceRocket: () => void
+    buildSpaceport: () => void
+    buildFuelRefinery: () => void
+    buildSpaceStation: (type: SpaceStation['type']) => void
     clearExplosion: (rocketId: number) => void;
    // Orbital layer actions
    launchSatellite: () => void;
@@ -268,10 +270,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   nextRocketId: 0,
   rocketCost: INITIAL_STATE.ROCKET_COST,
   profitPerRocket: INITIAL_STATE.PROFIT_PER_ROCKET,
-  spaceportCapacity: INITIAL_STATE.SPACEPORT_CAPACITY,
-  spaceports: [{ id: 1 }],
-   spaceStations: [],
-   spaceportCost: INITIAL_STATE.SPACEPORT_COST,
+   spaceportCapacity: INITIAL_STATE.SPACEPORT_CAPACITY,
+   spaceports: [{ id: 1 }],
+    fuelRefineries: 0,
+    spaceStations: [],
+    spaceportCost: INITIAL_STATE.SPACEPORT_COST,
    fuelCostPerRocket: INITIAL_STATE.FUEL_COST_PER_ROCKET,
    explodedRocketIds: [],
   rocketExplosionChance: INITIAL_STATE.ROCKET_EXPLOSION_CHANCE,
@@ -320,16 +323,18 @@ export const useGameStore = create<GameState>((set, get) => ({
    tick: () => set(state => {
     // Clear animation flags at start of each tick
     const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
-   
-      const fuelProduction = PRODUCTION.PASSIVE_FUEL_PER_TICK;
-     // Apply fuel capacity bonus from research, company perks, and dev bonus
-     const maxFuel = state.getMaxFuel();
-     let fuelAvailable = Math.min(maxFuel, state.fuel + fuelProduction);
-    let successfulCargoLaunches = 0;
-    let successfulScienceLaunches = 0;
-    let explosionCount = 0;
-    let explosionScienceFromCost = 0; // Track science from Black Box perk
-    let newExplodedRocketIds = [...state.explodedRocketIds];
+    
+       const passiveFuelProduction = PRODUCTION.PASSIVE_FUEL_PER_TICK;
+       const refineryFuelProduction = state.fuelRefineries * PRODUCTION.FUEL_REFINERY_PRODUCTION_PER_TICK;
+       const fuelProduction = passiveFuelProduction + refineryFuelProduction;
+      // Apply fuel capacity bonus from research, company perks, dev bonus, and refineries
+      const maxFuel = state.getMaxFuel();
+      let fuelAvailable = Math.min(maxFuel, state.fuel + fuelProduction);
+     let successfulCargoLaunches = 0;
+     let successfulScienceLaunches = 0;
+     let explosionCount = 0;
+     let explosionScienceFromCost = 0; // Track science from Black Box perk
+     let newExplodedRocketIds = [...state.explodedRocketIds];
     let newActiveContracts = state.activeContracts.map(c => ({ ...c }));
     let newCompanies = [...state.companies];
     let recentlyLaunchedIds: number[] = [];
@@ -1188,9 +1193,27 @@ export const useGameStore = create<GameState>((set, get) => ({
         return { money: state.money - currentSpaceportCost, spaceports: [...state.spaceports, { id: newId }] }
       }
       return {}
-    }),
-    
-  buildSpaceStation: (type: SpaceStation['type']) => set(state => {
+     }),
+     
+   buildFuelRefinery: () =>
+     set(state => {
+       // Check if Fuel Production research is unlocked
+       if (state.researchedNodes.indexOf('o6') === -1) {
+         get().addNotification('Unlock Fuel Production research first');
+         return {};
+       }
+       const currentRefineryCost = Math.round(COST_SCALING.FUEL_REFINERY_COST_BASE * Math.pow(COST_SCALING.FUEL_REFINERY_COST_EXPONENT, state.fuelRefineries));
+       if (state.money >= currentRefineryCost) {
+         return { 
+           money: state.money - currentRefineryCost, 
+           fuelRefineries: state.fuelRefineries + 1,
+           notifications: [`Built fuel refinery! (+${PRODUCTION.FUEL_REFINERY_PRODUCTION_PER_TICK}/tick, +${PRODUCTION.FUEL_REFINERY_CAPACITY_BONUS} capacity)`, ...state.notifications].slice(0, GAME.MAX_NOTIFICATIONS)
+         }
+       }
+       return {}
+     }),
+     
+   buildSpaceStation: (type: SpaceStation['type']) => set(state => {
     const constructionMultiplier = state.getEffectMultiplier('constructionCostMultiplier');
     const stationCostMultiplier = state.getCompanyPerkValue('stationCostMultiplier') || 1;
     const costCargo = Math.round(ORBITAL.STATION_COST_CARGO * constructionMultiplier * stationCostMultiplier);
@@ -1425,12 +1448,13 @@ export const useGameStore = create<GameState>((set, get) => ({
     * 
     * @returns Maximum fuel tank capacity
      */
-     getMaxFuel: () => {
-       const state = get();
-       const researchFuelCapacityBonus = state.getEffectMultiplier('fuelCapacityBonus');
-       const perkFuelCapacityBonus = state.getCompanyPerkValue('fuelCapacityBonus');
-       return INITIAL_STATE.FUEL + researchFuelCapacityBonus + state.bonusFuelCapacity + perkFuelCapacityBonus;
-     },
+      getMaxFuel: () => {
+        const state = get();
+        const researchFuelCapacityBonus = state.getEffectMultiplier('fuelCapacityBonus');
+        const perkFuelCapacityBonus = state.getCompanyPerkValue('fuelCapacityBonus');
+        const refineryCapacityBonus = state.fuelRefineries * PRODUCTION.FUEL_REFINERY_CAPACITY_BONUS;
+        return INITIAL_STATE.FUEL + researchFuelCapacityBonus + state.bonusFuelCapacity + perkFuelCapacityBonus + refineryCapacityBonus;
+      },
   
   getAvailableNodes: () => {
     const state = get();

@@ -57,9 +57,9 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
   });
 
      describe('Node Structure and Validation', () => {
-       it('should have exactly 214 research nodes', () => {
-             // Previous count (215) - 1 removed node (o6 Fuel Production) = 214
-             expect(researchTree).toHaveLength(214);
+       it('should have exactly 215 research nodes', () => {
+             // 214 nodes + 1 restored node (o6 Fuel Production) = 215
+             expect(researchTree).toHaveLength(215);
            });
 
     it('should have all required branches represented', () => {
@@ -234,7 +234,7 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
     });
 
     it('single-level nodes should not have maxLevel', () => {
-       const singleLevelIds = ['p4', 'i3', 'f2', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'l2', 'l3', 'l4', 'o1', 'o2', 'o3', 'o4', 'o5', 'o7', 'o8', 'o9', 'o10', 'o11', 'o12', 'o13', 'o14', 'o15', 'u3', 'u4', 'u6', 'u7', 'u8', 'u9', 'm1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7'];
+       const singleLevelIds = ['p4', 'i3', 'f2', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'l2', 'l3', 'l4', 'o1', 'o2', 'o3', 'o4', 'o5', 'o6', 'o7', 'o8', 'o9', 'o10', 'o11', 'o12', 'o13', 'o14', 'o15', 'u3', 'u4', 'u6', 'u7', 'u8', 'u9', 'm1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7'];
        singleLevelIds.forEach(id => {
          const node = researchTree.find(n => n.id === id);
          expect(node?.maxLevel).toBeUndefined();
@@ -242,7 +242,7 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
      });
 
      it('single-level nodes should not have levelSuffix=true', () => {
-       const singleLevelIds = ['p4', 'i3', 'f2', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'l2', 'l3', 'l4', 'o1', 'o2', 'o3', 'o4', 'o5', 'o7', 'o8', 'o9', 'o10', 'o11', 'o12', 'o13', 'o14', 'o15', 'u3', 'u4', 'u6', 'u7', 'u8', 'u9', 'm1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7'];
+       const singleLevelIds = ['p4', 'i3', 'f2', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'l2', 'l3', 'l4', 'o1', 'o2', 'o3', 'o4', 'o5', 'o6', 'o7', 'o8', 'o9', 'o10', 'o11', 'o12', 'o13', 'o14', 'o15', 'u3', 'u4', 'u6', 'u7', 'u8', 'u9', 'm1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7'];
       singleLevelIds.forEach(id => {
         const node = researchTree.find(n => n.id === id);
         expect(node?.levelSuffix).not.toBe(true);
@@ -871,9 +871,9 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
       const available = useGameStore.getState().getAvailableNodes();
       const availableIds = new Set(available.map(n => n.id));
 
-       // Root nodes: p1-1, p2-1, i1-1, i2-1, i3, f1-1, c1-1, c2, c3, c4, c6, o1, o2, o3, o4, o5, o7, o8, o10, u3, u4, u6, u7, u9, l1-1, l2, l3
+       // Root nodes: p1-1, p2-1, i1-1, i2-1, i3, f1-1, c1-1, c2, c3, c4, c6, o1, o2, o3, o4, o5, o6, o7, o8, o10, u3, u4, u6, u7, u9, l1-1, l2, l3
        // Note: u1-1 requires u7, u2-1 requires u8, u8 requires o7 - they are not roots
-       const expectedRoots = ['p1-1', 'p2-1', 'p3-1', 'i1-1', 'i2-1', 'i3', 'f1-1', 'c1-1', 'c2', 'c3', 'c4', 'c6', 'o1', 'o2', 'o3', 'o4', 'o5', 'o7', 'o8', 'o10', 'u3', 'u4', 'u6', 'u7', 'u9', 'l1-1', 'l2', 'l3'];
+       const expectedRoots = ['p1-1', 'p2-1', 'p3-1', 'i1-1', 'i2-1', 'i3', 'f1-1', 'c1-1', 'c2', 'c3', 'c4', 'c6', 'o1', 'o2', 'o3', 'o4', 'o5', 'o6', 'o7', 'o8', 'o10', 'u3', 'u4', 'u6', 'u7', 'u9', 'l1-1', 'l2', 'l3'];
       expectedRoots.forEach(id => {
         expect(availableIds).toContain(id);
       });
