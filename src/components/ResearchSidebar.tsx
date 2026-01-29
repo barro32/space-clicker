@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react"
 import { useGameStore } from "../useGameStore.js"
 import { researchTree, ResearchNode, ResearchLayer, ResearchBranch } from "../researchTree.js"
+import { renderNodeDescription } from "../renderNodeDescription.js"
 import { FaFlask, FaLock, FaCheckCircle, FaRocket, FaCogs, FaHandHoldingUsd, FaSatellite, FaBolt, FaMoon, FaChevronLeft, FaChevronRight } from "react-icons/fa"
 
 interface ResearchSidebarProps {
@@ -247,9 +248,9 @@ export function ResearchSidebar({ layer }: ResearchSidebarProps) {
                          {!available && <FaLock className="text-gray-500 text-xs" />}
                        </div>
                      </div>
-                     <p className="research-item-description">
-                      {node.description}
-                    </p>
+                      <p className="research-item-description">
+                       {renderNodeDescription(node)}
+                     </p>
                     {/* Show additional costs */}
                      {(node.cargoCost || node.lunarComponentCost || node.helium3Cost) && (
                        <div className="flex gap-2 mt-1">
@@ -332,9 +333,9 @@ export function ResearchSidebar({ layer }: ResearchSidebarProps) {
                     </div>
                   </div>
 
-                   <p className="research-item-description">
-                     {nextNode ? nextNode.description : firstNode.description}
-                   </p>
+                    <p className="research-item-description">
+                      {nextNode ? renderNodeDescription(nextNode) : renderNodeDescription(firstNode)}
+                    </p>
                 </div>
               );
             })}
