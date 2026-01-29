@@ -1,10 +1,10 @@
 import { useGameStore } from "./useGameStore.js"
-import { FaRegBuilding, FaRocket, FaBomb, FaFlask } from "react-icons/fa"
+import { FaRegBuilding, FaRocket, FaBomb, FaFlask, FaGasPump } from "react-icons/fa"
 import { COST_SCALING } from "./gameConstants.js"
 import { AUTOMATION } from "./gameConstants.js"
 
 export function SpaceportView() {
-     const { rockets, spaceports, buildSpaceport, buildRocket, explodedRocketIds, clearExplosion, autoBuildActive, autoSalvageActive, toggleAutoBuild, toggleAutoSalvage, buildScienceRocket, fuel, tickCount } = useGameStore()
+      const { rockets, spaceports, buildSpaceport, buildRocket, explodedRocketIds, clearExplosion, autoBuildActive, autoSalvageActive, toggleAutoBuild, toggleAutoSalvage, buildScienceRocket, fuel, tickCount, buildFuelRefinery, fuelRefineries } = useGameStore()
      
       // use effective capacity from research
       const effectiveCapacity = useGameStore(state => Math.max(1, state.spaceportCapacity + state.getEffectMultiplier('spaceportCapacityBonus')));
@@ -21,9 +21,11 @@ export function SpaceportView() {
         .filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null && !explodedRocketIds.includes(r.id))
         .slice(0, rocketsWithFuel)
         .map(r => r.id);
-      const scienceRocketsUnlocked = useGameStore(state => state.researchedNodes.includes('o4'));
-      const spaceportsUnlocked = useGameStore(state => state.researchedNodes.includes('o5'));
-      const explosionClearingUnlocked = useGameStore(state => state.researchedNodes.includes('o7'));
+       const scienceRocketsUnlocked = useGameStore(state => state.researchedNodes.includes('o4'));
+       const spaceportsUnlocked = useGameStore(state => state.researchedNodes.includes('o5'));
+       const fuelRefineriesUnlocked = useGameStore(state => state.researchedNodes.includes('o6'));
+       const explosionClearingUnlocked = useGameStore(state => state.researchedNodes.includes('o7'));
+       const currentFuelRefineryCost = useGameStore(state => Math.round(COST_SCALING.FUEL_REFINERY_COST_BASE * Math.pow(COST_SCALING.FUEL_REFINERY_COST_EXPONENT, state.fuelRefineries)));
      
      // Auto-build progress calculation
      const autoBuildEnabled = useGameStore(state => state.getEffectMultiplier('autoBuildEnabled') > 0);
@@ -212,19 +214,31 @@ export function SpaceportView() {
              </div>
            )}
 
-           {/* Build Spaceport */}
-           {spaceportsUnlocked && (
-             <div className="bg-black/30 border-2 border-green-500/50 rounded p-4 hover:border-green-500/80 hover:bg-green-900/20 transition-all cursor-pointer" onClick={buildSpaceport} title="Build new spaceport">
-               <div className="flex items-center justify-center mb-2">
-                 <FaRegBuilding className="text-2xl text-green-400" />
-               </div>
-               <div className="text-xs text-gray-400 font-mono text-center mb-1">NEW SPACEPORT</div>
-               <div className="text-lg font-bold text-green-400 font-mono text-center">${currentSpaceportCost.toLocaleString()}</div>
-               <div className="text-xs text-gray-500 font-mono text-center">Capacity +{effectiveCapacity}</div>
+            {/* Build Spaceport */}
+            {spaceportsUnlocked && (
+              <div className="bg-black/30 border-2 border-green-500/50 rounded p-4 hover:border-green-500/80 hover:bg-green-900/20 transition-all cursor-pointer" onClick={buildSpaceport} title="Build new spaceport">
+                <div className="flex items-center justify-center mb-2">
+                  <FaRegBuilding className="text-2xl text-green-400" />
+                </div>
+                <div className="text-xs text-gray-400 font-mono text-center mb-1">NEW SPACEPORT</div>
+                <div className="text-lg font-bold text-green-400 font-mono text-center">${currentSpaceportCost.toLocaleString()}</div>
+                <div className="text-xs text-gray-500 font-mono text-center">Capacity +{effectiveCapacity}</div>
+              </div>
+               )}
+
+            {/* Build Fuel Refinery */}
+            {fuelRefineriesUnlocked && (
+              <div className="bg-black/30 border-2 border-orange-500/50 rounded p-4 hover:border-orange-500/80 hover:bg-orange-900/20 transition-all cursor-pointer" onClick={buildFuelRefinery} title="Build fuel refinery">
+                <div className="flex items-center justify-center mb-2">
+                  <FaGasPump className="text-2xl text-orange-400" />
+                </div>
+                <div className="text-xs text-gray-400 font-mono text-center mb-1">FUEL REFINERY</div>
+                <div className="text-lg font-bold text-orange-400 font-mono text-center">${currentFuelRefineryCost.toLocaleString()}</div>
+                <div className="text-xs text-gray-500 font-mono text-center">{fuelRefineries} built · +5/tick · +500 cap</div>
+              </div>
+             )}
              </div>
-              )}
-            </div>
-         </div>
-       </div>
-    )
-}
+          </div>
+        </div>
+     )
+ }
