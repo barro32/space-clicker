@@ -61,6 +61,7 @@ export interface MoonSector {
   slotsUsed: number; // Slots currently occupied
   unlocked: boolean; // Requires research to unlock
   scanned: boolean; // Requires science cost to scan before building
+  researchRequirement?: string; // Optional research node ID required to unlock this sector
 }
 
 export interface MoonLunarBounty {
@@ -2049,8 +2050,11 @@ export const useGameStore = create<GameState>((set, get) => ({
         return {};
       }
       
-      // Check if has required research (placeholder for now)
-      // TODO: Implement proper research requirement checking
+      // Check if has required research
+      if (sector.researchRequirement && !state.researchedNodes.includes(sector.researchRequirement)) {
+        get().addNotification(`Research required to unlock this sector`);
+        return {};
+      }
       
       // Mark sector as unlocked
       const newSectors = state.moonSectors.map(s => 
