@@ -1376,9 +1376,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       const researchFuelCapacityBonus = state.getEffectMultiplier('fuelCapacityBonus');
       const perkFuelCapacityBonus = state.getCompanyPerkValue('fuelCapacityBonus');
       const refineryCapacityBonus = state.getEffectMultiplier('refineryCapacityBonus');
-      const capacityPerRefinery = PRODUCTION.FUEL_REFINERY_CAPACITY_BASE + refineryCapacityBonus;
+      const capacityPerRefinery = PRODUCTION.FUEL_REFINERY_CAPACITY_BASE + refineryCapacityBonus + perkFuelCapacityBonus;
       const refineryCapacity = state.fuelRefineries * capacityPerRefinery;
-      return INITIAL_STATE.FUEL + researchFuelCapacityBonus + perkFuelCapacityBonus + state.bonusFuelCapacity + refineryCapacity;
+      return INITIAL_STATE.FUEL + researchFuelCapacityBonus + state.bonusFuelCapacity + refineryCapacity;
     },
   
   getAvailableNodes: () => {
