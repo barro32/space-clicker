@@ -85,17 +85,17 @@ export interface ResearchNode {
 }
 
 // Generate Safety Protocols (100 levels) - Surface layer
-// Cost scales at 4.75 science per level (5% reduction from original 5)
+// Cost scales at 5 science per level
 const generateSafetyProtocols = (): ResearchNode[] => {
   const levels = 100;
   const nodes: ResearchNode[] = [];
   for (let i = 1; i <= levels; i++) {
     nodes.push({
       id: `p2-${i}`,
-      name: `Safety Protocols ${i}`,
+      name: 'Safety Protocols',
       description: i === 1 ? '-{reduction}% explosion chance' : '-{reduction}% explosion chance',
       branch: 'propulsion',
-      scienceCost: Math.round(4.75 * i),
+      scienceCost: Math.round(5 * i),
       prerequisites: [],
       effect: { type: 'explosionChanceMultiplier', value: 0.95 },
       ...(i === 1 ? { maxLevel: levels } : {}),
@@ -370,7 +370,7 @@ export const researchTree: ResearchNode[] = [
    ...generateAdvancedRefineries(),
     {
       id: 'i3',
-      name: 'Cost Reduction I',
+      name: 'Cost Reduction',
       description: '-{reduction}% spaceport and refinery cost.',
       branch: 'infrastructure',
       scienceCost: 600,

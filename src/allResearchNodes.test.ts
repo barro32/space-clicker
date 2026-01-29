@@ -322,63 +322,63 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
        });
      });
 
-     describe('p2-3 through p2-10: Safety Protocols 3-10', () => {
-       const safetyLevels = [
-         { id: 'p2-3', name: 'Safety Protocols 3' },
-         { id: 'p2-4', name: 'Safety Protocols 4' },
-         { id: 'p2-5', name: 'Safety Protocols 5' },
-         { id: 'p2-6', name: 'Safety Protocols 6' },
-         { id: 'p2-7', name: 'Safety Protocols 7' },
-         { id: 'p2-8', name: 'Safety Protocols 8' },
-         { id: 'p2-9', name: 'Safety Protocols 9' },
-         { id: 'p2-10', name: 'Safety Protocols 10' },
-       ];
+      describe('p2-3 through p2-10: Safety Protocols', () => {
+        const safetyLevels = [
+          { id: 'p2-3' },
+          { id: 'p2-4' },
+          { id: 'p2-5' },
+          { id: 'p2-6' },
+          { id: 'p2-7' },
+          { id: 'p2-8' },
+          { id: 'p2-9' },
+          { id: 'p2-10' },
+        ];
 
-       safetyLevels.forEach(({ id, name }) => {
-         it(`${id} should exist with no prerequisites`, () => {
-           const node = researchTree.find(n => n.id === id);
-           expect(node).toBeDefined();
-           expect(node?.name).toBe(name);
-           expect(node?.prerequisites).toEqual([]);
-         });
+        safetyLevels.forEach(({ id }) => {
+          it(`${id} should exist with no prerequisites`, () => {
+            const node = researchTree.find(n => n.id === id);
+            expect(node).toBeDefined();
+            expect(node?.name).toBe('Safety Protocols');
+            expect(node?.prerequisites).toEqual([]);
+          });
 
-         it(`${id} should have explosionChanceMultiplier=0.95`, () => {
-           const node = researchTree.find(n => n.id === id);
-           expect(node?.effect.type).toBe('explosionChanceMultiplier');
-           expect(node?.effect.value).toBe(0.95);
-         });
-       });
-     });
+          it(`${id} should have explosionChanceMultiplier=0.95`, () => {
+            const node = researchTree.find(n => n.id === id);
+            expect(node?.effect.type).toBe('explosionChanceMultiplier');
+            expect(node?.effect.value).toBe(0.95);
+          });
+        });
+      });
 
-     describe('p2-11 through p2-20: Safety Protocols XI-XX', () => {
-       const safetyLevels = [
-         { id: 'p2-11', name: 'Safety Protocols 11' },
-         { id: 'p2-12', name: 'Safety Protocols 12' },
-         { id: 'p2-13', name: 'Safety Protocols 13' },
-         { id: 'p2-14', name: 'Safety Protocols 14' },
-         { id: 'p2-15', name: 'Safety Protocols 15' },
-         { id: 'p2-16', name: 'Safety Protocols 16' },
-         { id: 'p2-17', name: 'Safety Protocols 17' },
-         { id: 'p2-18', name: 'Safety Protocols 18' },
-         { id: 'p2-19', name: 'Safety Protocols 19' },
-         { id: 'p2-20', name: 'Safety Protocols 20' },
-       ];
+      describe('p2-11 through p2-20: Safety Protocols', () => {
+        const safetyLevels = [
+          { id: 'p2-11' },
+          { id: 'p2-12' },
+          { id: 'p2-13' },
+          { id: 'p2-14' },
+          { id: 'p2-15' },
+          { id: 'p2-16' },
+          { id: 'p2-17' },
+          { id: 'p2-18' },
+          { id: 'p2-19' },
+          { id: 'p2-20' },
+        ];
 
-       safetyLevels.forEach(({ id, name }) => {
-         it(`${id} should exist with no prerequisites`, () => {
-           const node = researchTree.find(n => n.id === id);
-           expect(node).toBeDefined();
-           expect(node?.name).toBe(name);
-           expect(node?.prerequisites).toEqual([]);
-         });
+        safetyLevels.forEach(({ id }) => {
+          it(`${id} should exist with no prerequisites`, () => {
+            const node = researchTree.find(n => n.id === id);
+            expect(node).toBeDefined();
+            expect(node?.name).toBe('Safety Protocols');
+            expect(node?.prerequisites).toEqual([]);
+          });
 
-         it(`${id} should have explosionChanceMultiplier=0.95`, () => {
-           const node = researchTree.find(n => n.id === id);
-           expect(node?.effect.type).toBe('explosionChanceMultiplier');
-           expect(node?.effect.value).toBe(0.95);
-         });
-       });
-     });
+          it(`${id} should have explosionChanceMultiplier=0.95`, () => {
+            const node = researchTree.find(n => n.id === id);
+            expect(node?.effect.type).toBe('explosionChanceMultiplier');
+            expect(node?.effect.value).toBe(0.95);
+          });
+        });
+      });
 
      describe('p3-1 through p3-5: High-Energy Fuel I-V', () => {
        const fuelLevels = [
@@ -481,7 +481,7 @@ describe('All 190 Research Nodes - Comprehensive Coverage', () => {
        });
      });
 
-     describe('i3: Automated Construction', () => {
+      describe('i3: Cost Reduction', () => {
        it('should exist in researchTree', () => {
          const node = researchTree.find(n => n.id === 'i3');
          expect(node).toBeDefined();
