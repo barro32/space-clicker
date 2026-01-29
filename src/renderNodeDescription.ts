@@ -23,7 +23,7 @@ function calculateEffectValues(
 
   if (type === 'explosionChanceMultiplier') {
     values.reduction = percentReduction();
-    if (currentLevel && currentLevel > 1) {
+    if (currentLevel !== undefined) {
       values.totalReduction = Math.round((1 - Math.pow(value, currentLevel)) * 100);
     }
   } else if (type === 'fuelCostMultiplier') {
@@ -32,7 +32,7 @@ function calculateEffectValues(
     values.reduction = percentReduction();
   } else if (type === 'buildRocketMultiplier' || type === 'clearExplosionMultiplier') {
     values.increase = percentIncrease();
-    if (currentLevel && currentLevel > 1) {
+    if (currentLevel !== undefined) {
       values.totalMultiplier = multiplier(currentLevel).toFixed(2);
     }
   } else if (type === 'profitMultiplier' || type === 'cargoGenerationMultiplier') {
@@ -45,12 +45,12 @@ function calculateEffectValues(
     values.increase = percentIncrease();
   } else if (type === 'spaceportCapacityBonus') {
     values.value = value;
-    if (currentLevel && currentLevel > 1) {
+    if (currentLevel !== undefined) {
       values.totalValue = value * currentLevel;
     }
   } else if (type === 'cargoPerLaunchMultiplier') {
     values.increase = percentIncrease();
-    if (currentLevel && currentLevel > 1) {
+    if (currentLevel !== undefined) {
       values.totalMultiplier = multiplier(currentLevel).toFixed(2);
     }
   } else if (type === 'passiveCargoBonus') {

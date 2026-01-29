@@ -10,7 +10,9 @@ export type EffectType =
   | 'fuelCapacityBonus'
   | 'cargoGenerationMultiplier'
   | 'cargoPerLaunchMultiplier'
+  | 'cargoPerLaunchBonus'
   | 'passiveCargoBonus'
+  | 'sciencePerRocketBonus'
    | 'refineryOutputMultiplier'
    | 'constructionCostMultiplier'
    | 'passiveMoneyBonus'
@@ -260,17 +262,40 @@ const generateAdvancedRefineries = (): ResearchNode[] => {
 // Generate Fuel Tanks (5 levels) - Surface layer
 const generateFuelTanks = (): ResearchNode[] => {
   const levels = 5;
-  const baseCosts = [100, 200, 400, 700, 1100];
+  const baseCosts = [500, 1000, 2000, 3500, 5500];
   const nodes: ResearchNode[] = [];
   for (let i = 1; i <= levels; i++) {
     nodes.push({
       id: `f1-${i}`,
       name: `Fuel Tanks ${toRoman(i)}`,
-      description: i === 1 ? '+{value} max fuel capacity' : '+{value} max fuel capacity',
+      description: i === 1 ? '+{value} max fuel capacity (increased tank size)' : '+{value} max fuel capacity',
       branch: 'infrastructure',
-      scienceCost: baseCosts[i - 1] || 1100 + (i - 5) * 500,
+      scienceCost: baseCosts[i - 1] || 5500 + (i - 5) * 2000,
       prerequisites: [],
       effect: { type: 'fuelCapacityBonus', value: 50 },
+      ...(i === 1 ? { maxLevel: levels } : {}),
+      levelSuffix: true,
+      assignedLayer: 'surface'
+    });
+  }
+  return nodes;
+};
+
+// Generate High-Energy Fuel (5 levels) - Surface layer
+// Each level adds +1 cargo per launch
+const generateHighEnergyFuel = (): ResearchNode[] => {
+  const levels = 5;
+  const baseCosts = [150, 300, 500, 750, 1000];
+  const nodes: ResearchNode[] = [];
+  for (let i = 1; i <= levels; i++) {
+    nodes.push({
+      id: `p3-${i}`,
+      name: `High-Energy Fuel ${toRoman(i)}`,
+      description: i === 1 ? '+{value} cargo per rocket launch' : `+${i} cargo per rocket launch`,
+      branch: 'propulsion',
+      scienceCost: baseCosts[i - 1] || 1000 + (i - 5) * 300,
+      prerequisites: [],
+      effect: { type: 'cargoPerLaunchBonus', value: 1 },
       ...(i === 1 ? { maxLevel: levels } : {}),
       levelSuffix: true,
       assignedLayer: 'surface'
@@ -325,14 +350,16 @@ export const researchTree: ResearchNode[] = [
   ...generateEfficientEngines(),
   // Multi-level explosion safety research (100 levels)
   ...generateSafetyProtocols(),
+  // Multi-level high-energy fuel research (5 levels)
+  ...generateHighEnergyFuel(),
   {
-    id: 'p3',
-    name: 'High-Energy Fuel',
-    description: '+{increase}% cargo per launch',
+    id: 'p4',
+    name: 'Flight Recorder System',
+    description: '+1 science per rocket launch',
     branch: 'propulsion',
-    scienceCost: 500,
-    prerequisites: [],
-    effect: { type: 'cargoGenerationMultiplier', value: 1.2 },
+    scienceCost: 200,
+    prerequisites: ['p2-10'], // Requires Safety Protocols level 10
+    effect: { type: 'sciencePerRocketBonus', value: 1 },
     assignedLayer: 'surface'
   },
 
@@ -341,16 +368,16 @@ export const researchTree: ResearchNode[] = [
    ...generateModularSpaceports(),
    // Advanced Refineries (5 levels)
    ...generateAdvancedRefineries(),
-   {
-     id: 'i3',
-     name: 'Automated Construction',
-     description: 'Reduces construction cost by {reduction}%.',
-     branch: 'infrastructure',
-     scienceCost: 600,
-     prerequisites: [],
-     effect: { type: 'constructionCostMultiplier', value: 0.85 },
-     assignedLayer: 'surface'
-   },
+    {
+      id: 'i3',
+      name: 'Cost Reduction I',
+      description: '-{reduction}% spaceport and refinery cost.',
+      branch: 'infrastructure',
+      scienceCost: 600,
+      prerequisites: [],
+      effect: { type: 'constructionCostMultiplier', value: 0.85 },
+      assignedLayer: 'surface'
+    },
     // Fuel Tanks (5 levels)
     ...generateFuelTanks(),
     // Refinery Capacity (5 levels)
@@ -646,7 +673,7 @@ export const researchTree: ResearchNode[] = [
     name: 'Auto-Queue',
     description: 'Unlocks auto-build (20s interval)',
     branch: 'control',
-    scienceCost: 400,
+    scienceCost: 4000,
     prerequisites: [],
     effect: { type: 'autoBuildEnabled', value: 1 },
     assignedLayer: 'surface'
@@ -656,7 +683,7 @@ export const researchTree: ResearchNode[] = [
     name: 'Auto-Salvage',
     description: 'Unlocks auto-salvage (20s interval)',
     branch: 'control',
-    scienceCost: 300,
+    scienceCost: 3000,
     prerequisites: ['o7'], // Requires Salvage Operations to be unlocked first
     effect: { type: 'autoSalvageEnabled', value: 1 },
     assignedLayer: 'surface'

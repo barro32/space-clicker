@@ -223,7 +223,7 @@ const loadInitialState = () => {
           // Migration: Moon layer state
           if (parsed.moonStatus === undefined) parsed.moonStatus = 'locked';
           if (parsed.moonMissionTicksRemaining === undefined) parsed.moonMissionTicksRemaining = 0;
-          if (!parsed.moonBuildings) parsed.moonBuildings = { extractors: 0, refineries: 0, silos: 0, maintenance: 0, massDrivers: 0, solarArray: 0, nuclearReactor: 0, battery: 0, fabricator: 0 };
+          if (!parsed.moonBuildings) parsed.moonBuildings = { extractors: 0, refineries: 0, silos: 0, maintenances: 0, massDrivers: 0, solarArray: 0, nuclearReactor: 0, battery: 0, fabricators: 0 };
           if (!parsed.moonResources) parsed.moonResources = { regolith: 0, helium3: 0, alloys: 0 };
           if (!parsed.earthResources) parsed.earthResources = { regolith: 0, helium3: 0, alloys: 0 };
           
@@ -236,12 +236,21 @@ const loadInitialState = () => {
           }
           
           // Ensure existing moonBuildings have new building types
-          if (parsed.moonBuildings) {
-            if (parsed.moonBuildings.solarArray === undefined) parsed.moonBuildings.solarArray = 0;
-            if (parsed.moonBuildings.nuclearReactor === undefined) parsed.moonBuildings.nuclearReactor = 0;
-            if (parsed.moonBuildings.battery === undefined) parsed.moonBuildings.battery = 0;
-            if (parsed.moonBuildings.fabricator === undefined) parsed.moonBuildings.fabricator = 0;
-          }
+           if (parsed.moonBuildings) {
+             if (parsed.moonBuildings.solarArray === undefined) parsed.moonBuildings.solarArray = 0;
+             if (parsed.moonBuildings.nuclearReactor === undefined) parsed.moonBuildings.nuclearReactor = 0;
+             if (parsed.moonBuildings.battery === undefined) parsed.moonBuildings.battery = 0;
+             if (parsed.moonBuildings.fabricators === undefined) parsed.moonBuildings.fabricators = 0;
+             // Migration: handle old singular names
+             if (parsed.moonBuildings.maintenance !== undefined && parsed.moonBuildings.maintenances === undefined) {
+               parsed.moonBuildings.maintenances = parsed.moonBuildings.maintenance;
+               delete parsed.moonBuildings.maintenance;
+             }
+             if (parsed.moonBuildings.fabricator !== undefined && parsed.moonBuildings.fabricators === undefined) {
+               parsed.moonBuildings.fabricators = parsed.moonBuildings.fabricator;
+               delete parsed.moonBuildings.fabricator;
+             }
+           }
           
           if (parsed.activeHazard === undefined) parsed.activeHazard = null;
           if (!parsed.moonLog) parsed.moonLog = [];

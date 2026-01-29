@@ -23,32 +23,28 @@ describe('useGameStore - Orbital Space Stations', () => {
 
 describe('Auto-build (Auto-Queue)', () => {
   it('unlocking u7 sets effect available', () => {
-    useGameStore.setState({ science: 1000, researchedNodes: [] } as unknown as GameState);
-    // u7 requires u3, which requires u1-3, so unlock the chain
-    useGameStore.getState().unlockNode('u1-1');
-    useGameStore.getState().unlockNode('u1-2');
-    useGameStore.getState().unlockNode('u1-3');
-    useGameStore.getState().unlockNode('u3');
+    useGameStore.setState({ science: 5000, researchedNodes: [] } as unknown as GameState);
+    // u7 now has no prerequisites and costs 4000 science
     useGameStore.getState().unlockNode('u7');
     const state = useGameStore.getState();
     expect(state.researchedNodes).toContain('u7');
     expect(state.getEffectMultiplier('autoBuildEnabled')).toBeGreaterThan(0);
   });
 
-   it('when toggle enabled tick attempts to auto-build rockets', () => {
-     // Reset and prepare for auto-build
-     useGameStore.setState({
-       money: 1000,
-       rockets: [],
-       nextRocketId: 0,
-       rocketCost: 10,
-       spaceports: [{ id: 1 }],
-       spaceportCapacity: 9,
-       researchedNodes: ['u1-1','u1-2','u1-3','u3','u7'], // provide multipliers and unlock auto
-       autoBuildActive: true,
-       previouslyAvailableResearch: [],
-       notifications: [],
-     } as unknown as GameState);
+    it('when toggle enabled tick attempts to auto-build rockets', () => {
+      // Reset and prepare for auto-build
+      useGameStore.setState({
+        money: 1000,
+        rockets: [],
+        nextRocketId: 0,
+        rocketCost: 10,
+        spaceports: [{ id: 1 }],
+        spaceportCapacity: 9,
+        researchedNodes: ['u7'], // just need u7 to enable auto-build
+        autoBuildActive: true,
+        previouslyAvailableResearch: [],
+        notifications: [],
+      } as unknown as GameState);
 
      // Run one tick: should auto-build using money
      useGameStore.getState().tick();
@@ -258,7 +254,7 @@ describe('Auto-build (Auto-Queue)', () => {
           companyId: 'titan',
           title: 'Test',
           requiredCargo: 0.05, // Very low so one tick completes it (0.1 per launch)
-          requiredScience: 0.5, // Low enough for passive science (1 per spaceport)
+          requiredScience: 0, // No science requirement since passive spaceport science was removed
           requiredMoney: 100, // Achievable with profit per rocket
           deliveredCargo: 0,
           deliveredScience: 0,

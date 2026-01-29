@@ -393,6 +393,65 @@ export const MOON = {
     FABRICATOR_REGOLITH_COST: 20, // Regolith consumed per alloy produced
     FABRICATOR_POWER_DEMAND: 25, // Power consumed per fabricator
     
+    // === TIER 1 BUILDINGS (Cargo Cost from Earth) ===
+    TIER1_EXTRACTOR_COST: 50, // Cargo units
+    TIER1_REFINERY_COST: 75,
+    TIER1_CARGO_STORAGE_COST: 40,
+    TIER1_SOLAR_COST: 60,
+    TIER1_NUCLEAR_COST: 100,
+    TIER1_BATTERY_COST: 30,
+    TIER1_MAINTENANCE_COST: 45,
+    TIER1_MASS_DRIVER_COST: 80,
+    TIER1_FABRICATOR_COST: 90,
+    TIER1_STARPORT_COST: 200,
+    
+    TIER1_COST_SCALING: 1.4, // Exponential scaling for tier 1 buildings
+    TIER1_CARGO_STORAGE_CAPACITY: 100, // Cargo units stored per storage building
+    
+    // === TIER 2 BUILDINGS (Moon Resource Cost) ===
+    TIER2_EXTRACTOR_COST: { regolith: 500, alloys: 200 },
+    TIER2_EXTRACTOR_RATE: 8, // Production rate (vs T1: 5)
+    TIER2_EXTRACTOR_POWER: 15, // Power demand (vs T1: 10)
+    
+    TIER2_REFINERY_COST: { regolith: 300, alloys: 150 },
+    TIER2_REFINERY_RATE: 0.15, // He-3 per tick (vs T1: 0.1)
+    TIER2_REFINERY_REGOLITH_COST: 8, // Regolith per He-3 (vs T1: 10, so 20% cheaper)
+    TIER2_REFINERY_POWER: 20, // Power demand (vs T1: 15)
+    
+    TIER2_FABRICATOR_COST: { regolith: 800, alloys: 400 },
+    TIER2_FABRICATOR_RATE: 0.08, // Alloys per tick (vs T1: 0.05)
+    TIER2_FABRICATOR_REGOLITH_COST: 15, // Regolith per alloy (vs T1: 20, so 25% cheaper)
+    TIER2_FABRICATOR_POWER: 40, // Power demand (vs T1: 25)
+    
+    TIER2_CARGO_STORAGE_COST: { regolith: 200, alloys: 100 },
+    TIER2_CARGO_STORAGE_CAPACITY: 300, // Cargo units per T2 storage (vs T1: 100)
+    TIER2_CARGO_STORAGE_POWER: 2, // Power demand (vs T1: 0)
+    
+    // === CARGO & FUEL SYSTEM ===
+    CARGO_ROCKET_CAPACITY: 100, // Max cargo per supply mission
+    FUEL_CONSUMPTION_PER_MOON_TRIP: 100, // Fuel for Earth → Refuel Station → Moon
+    FUEL_CONSUMPTION_PER_FUEL_TRIP: 50, // Fuel for Earth → Fuel Station
+    INITIAL_MOON_CARGO: 200, // Starting cargo when landing on moon
+    MOON_CARGO_BASE_STORAGE: 100, // Base cargo storage capacity on moon
+    
+    // === SECTOR UNLOCK SYSTEM ===
+    SECTOR_SCAN_COST_BASE: 500, // Science cost to scan a sector
+    SECTOR_UNLOCK_REQUIREMENTS: {
+      // Sector 1 (Landing Zone): Always unlocked
+      1: { research: null, scanCost: 0 },
+      // Sectors 2-5: Require m11 research
+      2: { research: 'm11', scanCost: 500 },
+      3: { research: 'm11', scanCost: 500 },
+      4: { research: 'm11', scanCost: 500 },
+      5: { research: 'm11', scanCost: 500 },
+      // Sectors 6-10: Require m12 research
+      6: { research: 'm12', scanCost: 500 },
+      7: { research: 'm12', scanCost: 500 },
+      8: { research: 'm12', scanCost: 500 },
+      9: { research: 'm12', scanCost: 500 },
+      10: { research: 'm12', scanCost: 500 },
+    },
+    
     // === UI/LOG SETTINGS ===
     LOG_MAX_ENTRIES: 50, // Maximum moon log entries to keep in history
     INITIAL_POWER_ENERGY: 200, // Starting energy for moon power system
