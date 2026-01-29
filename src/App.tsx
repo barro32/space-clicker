@@ -93,12 +93,26 @@ function calculateGameMetrics(state: GameState): GameMetrics {
   const explosionChance = (state.rocketExplosionChance || 0.5) * getEffectMultiplier('explosionChanceMultiplier', researchedNodes);
   const successRate = Math.max(0, 1 - explosionChance);
   
-   // Estimated production
-   const estimatedLaunches = Math.min(totalRockets, Math.floor((state.fuel || 0) / Math.max(1, effectiveFuelCost)));
-   const successfulCargo = Math.floor(cargoRockets * estimatedLaunches * successRate / Math.max(1, totalRockets));
-   const moneyPerSec = successfulCargo * (state.profitPerRocket || 1) * getEffectMultiplier('profitMultiplier', researchedNodes);
-   const passiveScience = (state.spaceports || []).length;
-   const sciencePerSec = passiveScience;
+    // Estimated production
+    const estimatedLaunches = Math.min(totalRockets, Math.floor((state.fuel || 0) / Math.max(1, effectiveFuelCost)));
+    const successfulCargo = Math.floor(cargoRockets * estimatedLaunches * successRate / Math.max(1, totalRockets));
+    const moneyPerSec = successfulCargo * (state.profitPerRocket || 1) * getEffectMultiplier('profitMultiplier', researchedNodes);
+    
+    // Science production from launches + company perks
+    const sciencePerRocketBonus = getEffectMultiplier('sciencePerRocketBonus', researchedNodes);
+    const sciencePerLaunch = PRODUCTION.SCIENCE_PER_SCIENCE_ROCKET + sciencePerRocketBonus;
+    const launchScience = successfulCargo * sciencePerLaunch;
+    
+    // Science from explosions
+    const explosionScienceBonus = PRODUCTION.SCIENCE_PER_EXPLOSION;
+    const failedLaunches = Math.floor(cargoRockets * estimatedLaunches * explosionChance / Math.max(1, totalRockets));
+    const explosionScience = failedLaunches * explosionScienceBonus;
+    
+    // Passive science from spaceports
+    const passiveScience = (state.spaceports || []).length;
+    
+    // Total science per second
+    const sciencePerSec = launchScience + explosionScience + passiveScience;
   
   // Telemetry check
   const hasTelemetry = hasResearch('uiTelemetryFlag', researchedNodes);
