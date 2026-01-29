@@ -163,7 +163,7 @@ const loadInitialState = () => {
           parsed.spaceportCapacity = INITIAL_STATE.SPACEPORT_CAPACITY;
           if (!parsed.spaceports) parsed.spaceports = [{ id: 1 }];
           if (parsed.spaceportCost === undefined) parsed.spaceportCost = INITIAL_STATE.SPACEPORT_COST;
-          if (parsed.fuelRefineries === undefined) parsed.fuelRefineries = 0;
+           if (parsed.fuelRefineries === undefined) parsed.fuelRefineries = 1;
           if (parsed.fuelProductionPerRefinery === undefined) parsed.fuelProductionPerRefinery = INITIAL_STATE.FUEL_PRODUCTION_PER_REFINERY;
           if (parsed.fuelCostPerRocket === undefined) parsed.fuelCostPerRocket = INITIAL_STATE.FUEL_COST_PER_ROCKET;
           if (parsed.fuelRefineryCost === undefined) parsed.fuelRefineryCost = INITIAL_STATE.FUEL_REFINERY_COST;
