@@ -86,7 +86,7 @@ export interface ResearchNode {
 }
 
 // Generate Safety Protocols (100 levels) - Surface layer
-// Cost scales at 5 science per level
+// Cost scales at 1 science per level (1, 2, 3, 4, ...)
 const generateSafetyProtocols = (): ResearchNode[] => {
   const levels = 100;
   const nodes: ResearchNode[] = [];
@@ -96,7 +96,7 @@ const generateSafetyProtocols = (): ResearchNode[] => {
       name: 'Safety Protocols',
       description: i === 1 ? '-{reduction}% explosion chance' : '-{reduction}% explosion chance',
       branch: 'propulsion',
-      scienceCost: Math.round(5 * i),
+      scienceCost: i,
       prerequisites: [],
       effect: { type: 'explosionChanceMultiplier', value: 0.95 },
       ...(i === 1 ? { maxLevel: levels } : {}),
