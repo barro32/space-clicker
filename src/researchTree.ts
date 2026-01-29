@@ -20,11 +20,10 @@ export type EffectType =
    | 'companyXPMultiplier'
    | 'stationLogisticsMultiplier'
   | 'stationScienceMultiplier'
-  | 'unlockMoonMissions'
-  | 'unlockScienceRockets'
-  | 'unlockSpaceports'
-  | 'unlockRefineries'
-   | 'unlockExplosionClearing'
+   | 'unlockMoonMissions'
+   | 'unlockScienceRockets'
+   | 'unlockSpaceports'
+    | 'unlockExplosionClearing'
    | 'unlockFreeLaunch'
    | 'buildRocketBatchBonus'
   | 'clearExplosionCountBonus'
@@ -539,16 +538,6 @@ export const researchTree: ResearchNode[] = [
     scienceCost: 200,
     prerequisites: [],
     effect: { type: 'unlockSpaceports', value: 1 },
-    assignedLayer: 'surface'
-  },
-  {
-    id: 'o6',
-    name: 'Fuel Production',
-    description: 'Unlocks Fuel Refineries',
-    branch: 'orbital',
-    scienceCost: 20,
-    prerequisites: [],
-    effect: { type: 'unlockRefineries', value: 1 },
     assignedLayer: 'surface'
   },
   {
