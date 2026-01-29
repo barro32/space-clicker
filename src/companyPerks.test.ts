@@ -287,8 +287,8 @@ describe('Company Perk Effects - Comprehensive Suite', () => {
       } as unknown as GameState);
 
       const value = useGameStore.getState().getCompanyPerkValue('fuelCostMultiplier');
-      // Levels 1 & 2: 0.95 * 0.90 = 0.855
-      expect(value).toBeCloseTo(0.855);
+      // Level 1: 0.92
+      expect(value).toBeCloseTo(0.92);
     });
 
     it('refineryOutputMultiplier should multiply correctly', () => {
@@ -304,8 +304,8 @@ describe('Company Perk Effects - Comprehensive Suite', () => {
       } as unknown as GameState);
 
       const value = useGameStore.getState().getCompanyPerkValue('refineryOutputMultiplier');
-      // Level 3: 1.15
-      expect(value).toBeCloseTo(1.15);
+      // Level 2: 1.20
+      expect(value).toBeCloseTo(1.20);
     });
 
     it('fuelCapacityBonus should sum additively', () => {
@@ -321,8 +321,8 @@ describe('Company Perk Effects - Comprehensive Suite', () => {
       } as unknown as GameState);
 
       const value = useGameStore.getState().getCompanyPerkValue('fuelCapacityBonus');
-      // Levels 5, 6, 10: +50 +100 +200 = 350
-      expect(value).toBe(350);
+      // Levels 4, 8, 10: +75 +150 +300 = 525
+      expect(value).toBe(525);
     });
   });
 
@@ -422,7 +422,7 @@ describe('Company Perk Effects - Comprehensive Suite', () => {
           { id: 'titan', level: 1, contractsCompleted: 0 }, // profitMultiplier 1.05
           { id: 'nova', level: 0, contractsCompleted: 0 },
           { id: 'zenith', level: 0, contractsCompleted: 0 },
-          { id: 'galactic', level: 1, contractsCompleted: 0 }, // fuelCostMultiplier 0.95
+          { id: 'galactic', level: 1, contractsCompleted: 0 }, // fuelCostMultiplier 0.92
           { id: 'aegis', level: 0, contractsCompleted: 0 },
           { id: 'atlas', level: 0, contractsCompleted: 0 },
         ],
@@ -432,7 +432,7 @@ describe('Company Perk Effects - Comprehensive Suite', () => {
       const fuel = useGameStore.getState().getCompanyPerkValue('fuelCostMultiplier');
 
       expect(profit).toBeCloseTo(1.05);
-      expect(fuel).toBeCloseTo(0.95);
+      expect(fuel).toBeCloseTo(0.92);
     });
 
     it('should combine additive bonuses across companies', () => {
@@ -463,15 +463,15 @@ describe('Company Perk Effects - Comprehensive Suite', () => {
           { id: 'titan', level: 0, contractsCompleted: 0 },
           { id: 'nova', level: 0, contractsCompleted: 0 },
           { id: 'zenith', level: 0, contractsCompleted: 0 },
-          { id: 'galactic', level: 1, contractsCompleted: 0 }, // fuelCostMultiplier 0.95 from company
+          { id: 'galactic', level: 1, contractsCompleted: 0 }, // fuelCostMultiplier 0.92 from company
           { id: 'aegis', level: 0, contractsCompleted: 0 },
           { id: 'atlas', level: 0, contractsCompleted: 0 },
         ],
       } as unknown as GameState);
 
       const total = useGameStore.getState().getTotalEffectValue('fuelCostMultiplier');
-      // 0.97 * 0.95 = 0.9215
-      expect(total).toBeCloseTo(0.9215);
+      // 0.97 * 0.92 = 0.8924
+      expect(total).toBeCloseTo(0.8924);
     });
 
     it('should handle effects with only research nodes', () => {
