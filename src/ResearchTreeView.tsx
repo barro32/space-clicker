@@ -42,6 +42,10 @@ export function ResearchTreeView() {
      if (isUnlocked(node.id)) return false; // Already researched nodes shown elsewhere
      return prerequisitesMet(node); // Show if prerequisites are met (regardless of affordability)
    };
+   const isUnlockedTech = (node: ResearchNode): boolean => {
+     // Tech is "unlocked" if prerequisites are met (regardless of affordability)
+     return !isUnlocked(node.id) && prerequisitesMet(node);
+   };
    const canUnlock = (node: ResearchNode) => {
      if (isUnlocked(node.id)) return false;
      if (science < node.scienceCost) return false;
@@ -215,22 +219,25 @@ export function ResearchTreeView() {
               {surfaceResearchTree
                  .filter(node => node.branch === branch && !node.levelSuffix && isVisible(node))
                 .sort((a, b) => (canUnlock(b) ? 1 : 0) - (canUnlock(a) ? 1 : 0))
-                .map(node => {
-                  const available = canUnlock(node);
-                  const canAfford = science >= node.scienceCost;
-                  const isNewlyAvailable = (newlyAvailableResearchIds || []).includes(node.id);
+                 .map(node => {
+                   const available = canUnlock(node);
+                   const unlocked = isUnlockedTech(node);
+                   const canAfford = science >= node.scienceCost;
+                   const isNewlyAvailable = (newlyAvailableResearchIds || []).includes(node.id);
 
-                  return (
-                    <div
-                      key={node.id}
-                      onClick={() => available && unlockNode(node.id)}
-                      data-testid={`node-${node.id}`}
-                      className={`rounded-lg p-3 border-2 transition-all ${
-                        available
-                          ? `border-blue-500/70 bg-blue-900/40 hover:bg-blue-800/50 cursor-pointer shadow-lg shadow-blue-500/20 ${isNewlyAvailable ? 'animate-new-research' : ''}`
-                          : 'border-gray-700/50 bg-gray-800/30 opacity-60'
-                      }`}
-                    >
+                   return (
+                     <div
+                       key={node.id}
+                       onClick={() => available && unlockNode(node.id)}
+                       data-testid={`node-${node.id}`}
+                       className={`rounded-lg p-3 border-2 transition-all ${
+                         available
+                           ? `border-blue-500/70 bg-blue-900/40 hover:bg-blue-800/50 cursor-pointer shadow-lg shadow-blue-500/20 ${isNewlyAvailable ? 'animate-new-research' : ''}`
+                           : unlocked
+                           ? 'border-yellow-500/50 bg-yellow-900/20 hover:bg-yellow-900/30 cursor-not-allowed'
+                           : 'border-gray-700/50 bg-gray-800/30 opacity-60'
+                       }`}
+                     >
                       {/* Title & Cost in one row */}
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="font-semibold text-sm text-white">{node.name}</h3>
@@ -238,7 +245,7 @@ export function ResearchTreeView() {
                           <span className={`text-sm font-mono font-bold ${canAfford ? 'text-blue-400' : 'text-red-400'}`}>
                             {node.scienceCost.toLocaleString()}
                           </span>
-                          {!available && <FaLock className="text-gray-500 text-xs" />}
+                           {!unlocked && <FaLock className="text-gray-500 text-xs" />}
                         </div>
                       </div>
 
@@ -268,23 +275,26 @@ export function ResearchTreeView() {
                  // Hide if not started and prerequisites not met for first level
                  if (currentLevel === 0 && firstNode && !prerequisitesMet(firstNode)) return null;
 
-                 const canUnlockNext = nextNode && canUnlock(nextNode);
-                 const canAffordNext = nextNode && science >= nextNode.scienceCost;
-                 const cleanName = getCleanName(firstNode.name);
+                  const canUnlockNext = nextNode && canUnlock(nextNode);
+                  const canAffordNext = nextNode && science >= nextNode.scienceCost;
+                  const isUnlockedNext = nextNode && isUnlockedTech(nextNode);
+                  const cleanName = getCleanName(firstNode.name);
 
-                return (
-                  <div
-                    key={baseId}
-                    onClick={() => canUnlockNext && nextNode && unlockNode(nextNode.id)}
-                    data-testid={`node-${baseId}`}
-                    className={`rounded-lg p-3 border-2 transition-all ${
-                      canUnlockNext
-                        ? 'border-blue-500/70 bg-blue-900/40 hover:bg-blue-800/50 cursor-pointer shadow-lg shadow-blue-500/20'
-                        : currentLevel > 0
-                        ? 'border-purple-500/50 bg-purple-900/30'
-                        : 'border-gray-700/50 bg-gray-800/30 opacity-60'
-                    }`}
-                  >
+                 return (
+                   <div
+                     key={baseId}
+                     onClick={() => canUnlockNext && nextNode && unlockNode(nextNode.id)}
+                     data-testid={`node-${baseId}`}
+                     className={`rounded-lg p-3 border-2 transition-all ${
+                       canUnlockNext
+                         ? 'border-blue-500/70 bg-blue-900/40 hover:bg-blue-800/50 cursor-pointer shadow-lg shadow-blue-500/20'
+                         : currentLevel > 0
+                         ? 'border-purple-500/50 bg-purple-900/30'
+                         : isUnlockedNext
+                         ? 'border-yellow-500/50 bg-yellow-900/20 hover:bg-yellow-900/30 cursor-not-allowed'
+                         : 'border-gray-700/50 bg-gray-800/30 opacity-60'
+                     }`}
+                   >
                     {/* Title with Level & Cost */}
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
