@@ -276,10 +276,10 @@ export const ORBITAL = {
 export const MOON = {
   // Landing Mission
   MISSION_COST: {
-    fuel: 10000,
-    cargo: 2000,
-    science: 5000,
-    lunarComponents: 100,
+    fuel: 2000,
+    cargo: 500,
+    science: 1000,
+    lunarComponents: 25,
   },
   MISSION_DURATION_BASE: 120, // Ticks (2 minutes at 1 tick/sec)
   
