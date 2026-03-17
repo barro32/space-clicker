@@ -12,10 +12,9 @@ export type CompanyPerkEffect =
   | 'passiveMoneyBonus'
   | 'fuelToMoneyBonus' // Money gen scales with fuel %
   | 'globalMoneyMultiplier' // Flat global money multiplier
-  // Nova Research (Science)
-  | 'sciencePerRocketBonus'
-  | 'sciencePerSalvageBonus'
-  | 'researchCostMultiplier'
+   // Nova Research (Science)
+   | 'sciencePerSalvageBonus'
+   | 'researchCostMultiplier'
   | 'passiveScienceBonus'
   | 'sciencePerExplosionBonus'
   | 'satelliteScienceBonus' // Satellites generate passive science
@@ -27,21 +26,17 @@ export type CompanyPerkEffect =
   | 'passiveCargoBonus'
   | 'dockingDurationReduction'
   | 'transitSpeedMultiplier' // Reduces Earth-to-Orbit transit time
-  // Galactic Energy (Fuel)
-  | 'fuelCostMultiplier'
-  | 'refineryOutputMultiplier'
-  | 'fuelCapacityBonus'
-  | 'refineryCostMultiplier'
-  | 'passiveFuelBonus'
-  | 'afterburnerEfficiency' // Reduces afterburner fuel cost (3x -> 2x)
-  | 'afterburnerOutput' // Increases afterburner output bonus (2x -> 2.5x)
-  // Aegis Security (Safety)
+   // Galactic Energy (Fuel)
+   | 'fuelCostMultiplier'
+   | 'refineryOutputMultiplier'
+   | 'fuelCapacityBonus'
+   | 'refineryCostMultiplier'
+   // Aegis Security (Safety)
   | 'explosionChanceMultiplier'
   | 'salvageSpeedMultiplier'
   | 'autoSalvageSpeedMultiplier'
-  | 'hazardDurationReduction'
-  | 'thermalShielding' // Negates afterburner explosion risk
-  | 'scienceFromExplosions' // Explosions grant science based on rocket cost
+   | 'hazardDurationReduction'
+   | 'scienceFromExplosions' // Explosions grant science based on rocket cost
   // Atlas Engineering (Speed/Capacity)
   | 'spaceportCapacityBonus'
   | 'batchBuildBonus'
@@ -93,10 +88,10 @@ export const COMPANY_DEFINITIONS: CompanyDefinition[] = [
     focus: 'Science & Tech',
     color: 'blue',
     perks: [
-      { level: 1, name: 'Lab Assistant', description: '+1 science per explosion', effect: 'sciencePerExplosionBonus', value: 1 },
-      { level: 2, name: 'Data Collection', description: '+1 science per science rocket', effect: 'sciencePerRocketBonus', value: 1 },
-      { level: 3, name: 'Field Notes', description: '+1 science per salvage', effect: 'sciencePerSalvageBonus', value: 1 },
-      { level: 4, name: 'Debris Analysis', description: '+2 science per salvage', effect: 'sciencePerSalvageBonus', value: 2 },
+       { level: 1, name: 'Lab Assistant', description: '+1 science per explosion', effect: 'sciencePerExplosionBonus', value: 1 },
+       { level: 2, name: 'Debris Collection', description: '+2 science per salvage', effect: 'sciencePerSalvageBonus', value: 2 },
+       { level: 3, name: 'Field Notes', description: '+1 science per salvage', effect: 'sciencePerSalvageBonus', value: 1 },
+       { level: 4, name: 'Debris Analysis', description: '+2 science per salvage', effect: 'sciencePerSalvageBonus', value: 2 },
       { level: 5, name: 'Telemetry Link', description: 'Satellites generate +1 science/tick each', effect: 'satelliteScienceBonus', value: 1 },
       { level: 6, name: 'Orbital Labs', description: 'Each station level adds +2% global science', effect: 'stationScienceScale', value: 0.02 },
       { level: 7, name: 'Tech Transfer', description: '-10% research costs', effect: 'researchCostMultiplier', value: 0.90 },
@@ -123,24 +118,24 @@ export const COMPANY_DEFINITIONS: CompanyDefinition[] = [
       { level: 10, name: 'Logistics Empire', description: '+7 passive cargo/tick', effect: 'passiveCargoBonus', value: 7 },
     ],
   },
-  {
-    id: 'galactic',
-    name: 'Galactic Energy',
-    focus: 'Fuel & Refineries',
-    color: 'orange',
-    perks: [
-      { level: 1, name: 'Fuel Saver', description: '-5% fuel cost per launch', effect: 'fuelCostMultiplier', value: 0.95 },
-      { level: 2, name: 'Fuel Efficiency', description: '-10% fuel cost per launch', effect: 'fuelCostMultiplier', value: 0.90 },
-      { level: 3, name: 'Better Refining', description: '+15% refinery output', effect: 'refineryOutputMultiplier', value: 1.15 },
-      { level: 4, name: 'Refined Output', description: '+25% refinery output', effect: 'refineryOutputMultiplier', value: 1.25 },
-      { level: 5, name: 'Extra Tanks', description: '+50 max fuel capacity', effect: 'fuelCapacityBonus', value: 50 },
-      { level: 6, name: 'Reserve Tanks', description: '+100 max fuel capacity', effect: 'fuelCapacityBonus', value: 100 },
-      { level: 7, name: 'Industrial Scale', description: '-15% refinery cost', effect: 'refineryCostMultiplier', value: 0.85 },
-      { level: 8, name: 'Mass Production', description: '-25% refinery cost', effect: 'refineryCostMultiplier', value: 0.75 },
-      { level: 9, name: 'Flow Control', description: 'Afterburner fuel cost reduced (3x to 2x)', effect: 'afterburnerEfficiency', value: 2.0 },
-      { level: 10, name: 'Plasma Injectors', description: 'Afterburner output increased (2x to 2.5x)', effect: 'afterburnerOutput', value: 2.5 },
-    ],
-  },
+   {
+     id: 'galactic',
+     name: 'Galactic Energy',
+     focus: 'Fuel & Refineries',
+     color: 'orange',
+     perks: [
+       { level: 1, name: 'Fuel Saver', description: '-8% fuel cost per launch', effect: 'fuelCostMultiplier', value: 0.92 },
+       { level: 2, name: 'Better Refining', description: '+20% refinery output', effect: 'refineryOutputMultiplier', value: 1.20 },
+       { level: 3, name: 'Industrial Scale', description: '-20% refinery cost', effect: 'refineryCostMultiplier', value: 0.80 },
+       { level: 4, name: 'Extra Tanks', description: '+75 max fuel capacity per refinery', effect: 'fuelCapacityBonus', value: 75 },
+       { level: 5, name: 'Fuel Efficiency', description: '-15% fuel cost per launch', effect: 'fuelCostMultiplier', value: 0.85 },
+       { level: 6, name: 'Quantum Refining', description: '+40% refinery output', effect: 'refineryOutputMultiplier', value: 1.40 },
+       { level: 7, name: 'Mass Production', description: '-35% refinery cost', effect: 'refineryCostMultiplier', value: 0.65 },
+       { level: 8, name: 'Reserve Tanks', description: '+150 max fuel capacity per refinery', effect: 'fuelCapacityBonus', value: 150 },
+       { level: 9, name: 'Fuel Economy', description: '-25% fuel cost per launch', effect: 'fuelCostMultiplier', value: 0.75 },
+       { level: 10, name: 'Infinite Reserves', description: '+300 max fuel capacity per refinery', effect: 'fuelCapacityBonus', value: 300 },
+     ],
+   },
   {
     id: 'aegis',
     name: 'Aegis Security',
@@ -149,10 +144,10 @@ export const COMPANY_DEFINITIONS: CompanyDefinition[] = [
     perks: [
       { level: 1, name: 'Safety Training', description: '-5% explosion chance', effect: 'explosionChanceMultiplier', value: 0.95 },
       { level: 2, name: 'Safety Protocols', description: '-10% explosion chance', effect: 'explosionChanceMultiplier', value: 0.90 },
-      { level: 3, name: 'Quick Cleanup', description: '+50% manual salvage speed', effect: 'salvageSpeedMultiplier', value: 1.5 },
-      { level: 4, name: 'Salvage Expertise', description: '+3 science per salvage', effect: 'sciencePerSalvageBonus', value: 3 },
-      { level: 5, name: 'Thermal Shields', description: 'Negates Afterburner explosion risk', effect: 'thermalShielding', value: 1 },
-      { level: 6, name: 'Black Box', description: 'Explosions grant science (50% of rocket cost)', effect: 'scienceFromExplosions', value: 0.5 },
+       { level: 3, name: 'Quick Cleanup', description: '+50% manual salvage speed', effect: 'salvageSpeedMultiplier', value: 1.5 },
+       { level: 4, name: 'Salvage Expertise', description: '+3 science per salvage', effect: 'sciencePerSalvageBonus', value: 3 },
+       { level: 5, name: 'Advanced Salvage', description: '+100% auto-salvage speed', effect: 'autoSalvageSpeedMultiplier', value: 2 },
+       { level: 6, name: 'Black Box', description: 'Explosions grant science (50% of rocket cost)', effect: 'scienceFromExplosions', value: 0.5 },
       { level: 7, name: 'Risk Management', description: '-15% explosion chance', effect: 'explosionChanceMultiplier', value: 0.85 },
       { level: 8, name: 'Hazard Control', description: '-25% hazard duration on Moon', effect: 'hazardDurationReduction', value: 0.25 },
       { level: 9, name: 'Auto Recovery', description: '1.5x auto-salvage speed', effect: 'autoSalvageSpeedMultiplier', value: 1.5 },
@@ -189,39 +184,41 @@ export const DEFAULT_COMPANIES = COMPANY_DEFINITIONS.map(def => ({
 
 // Initial Game State
 export const INITIAL_STATE = {
-  MONEY: 10,
-  SCIENCE: 0,
-  FUEL: 100,
-  CARGO: 0,
-  SPACEPORT_CAPACITY: 1,
-  ROCKET_COST: 1,
-  PROFIT_PER_ROCKET: 1,
-  FUEL_REFINERY_COST: 20,
-  FUEL_COST_PER_ROCKET: 1,
-  FUEL_PRODUCTION_PER_REFINERY: 1,
-  SPACEPORT_COST: 200,
-  ROCKET_EXPLOSION_CHANCE: 0.5,
-  CONTRACT_REFRESH_INTERVAL: 300, // 5 minutes in seconds
-  MAX_AVAILABLE_CONTRACTS: 3,
-  MAX_ACTIVE_CONTRACTS: 1,
+   MONEY: 10,
+    SCIENCE: 0,
+    FUEL: 500,
+    CARGO: 0,
+    SPACEPORT_CAPACITY: 1,
+    ROCKET_COST: 1,
+    PROFIT_PER_ROCKET: 1,
+     FUEL_COST_PER_ROCKET: 1,
+     SPACEPORT_COST: 200,
+   ROCKET_EXPLOSION_CHANCE: 0.5,
+   CONTRACT_REFRESH_INTERVAL: 300, // 5 minutes in seconds
+   MAX_AVAILABLE_CONTRACTS: 3,
+   MAX_ACTIVE_CONTRACTS: 1,
 };
 
 // Cost Scaling Factors
 export const COST_SCALING = {
-  ROCKET_COST_EXPONENT: 1.35,
-  SPACEPORT_COST_EXPONENT: 1.5,
-  FUEL_REFINERY_COST_EXPONENT: 1.5,
+   ROCKET_COST_EXPONENT: 1.35,
+   SPACEPORT_COST_EXPONENT: 2.5,
+   FUEL_REFINERY_COST_BASE: 10,
+   FUEL_REFINERY_COST_EXPONENT: 1.5,
 };
 
 // Production Values
 export const PRODUCTION = {
-  SCIENCE_PER_EXPLOSION: 1,
-  SCIENCE_PER_SCIENCE_ROCKET: 1,
-  CARGO_PER_SUCCESSFUL_LAUNCH: 0.1,
-  STATION_SCIENCE_BONUS: 10,
-  STATION_LOGISTICS_BONUS: 50,
-  PASSIVE_CARGO_BONUS_PER_SPACEPORT: 1,
-  PASSIVE_SCIENCE_PER_SPACEPORT: 1,
+   SCIENCE_PER_EXPLOSION: 1,
+   SCIENCE_PER_SCIENCE_ROCKET: 1,
+   CARGO_PER_SUCCESSFUL_LAUNCH: 0.1,
+   STATION_SCIENCE_BONUS: 10,
+   STATION_LOGISTICS_BONUS: 50,
+   PASSIVE_CARGO_BONUS_PER_SPACEPORT: 1,
+   PASSIVE_SCIENCE_PER_SPACEPORT: 1,
+   PASSIVE_FUEL_PER_TICK: 1,
+   FUEL_REFINERY_PRODUCTION_PER_TICK: 5, // Per refinery building
+   FUEL_REFINERY_CAPACITY_BONUS: 500, // Per refinery building
 };
 
 // Time-related
@@ -230,11 +227,15 @@ export const TIME = {
   DISPLAY_TIME_THRESHOLD_SECONDS: 60,
 };
 
-// Afterburner System
-export const AFTERBURNER = {
-  FUEL_COST_MULTIPLIER: 3, // 3x fuel consumption (reduced by perks)
-  OUTPUT_MULTIPLIER: 2, // 2x resource output (increased by perks)
-  EXPLOSION_RISK_BONUS: 0.05, // +5% flat explosion chance (negated by thermal shielding)
+// Game Settings (user preferences)
+export interface GameSettings {
+  soundMuted: boolean;
+  fullscreen: boolean;
+}
+
+export const DEFAULT_SETTINGS: GameSettings = {
+   soundMuted: false,
+   fullscreen: false,
 };
 
 // Orbital Layer Constants
@@ -365,6 +366,7 @@ export const MOON = {
   
   // Hazards
   HAZARD_CHANCE: 0.02, // 2% per tick
+  HAZARD_DUST_CHANCE: 0.7, // 70% chance of Moon Dust (vs 30% Solar Flare)
   HAZARDS: {
     moonDust: {
       name: 'Moon Dust Storm',
@@ -382,12 +384,124 @@ export const MOON = {
   MAINTENANCE_DURATION_REDUCTION: 0.15, // 15% faster hazard clearing per maintenance building
   
    // Manual Transport (before Mass Drivers)
-   MANUAL_TRANSPORT_REGOLITH: 100, // Per click
-   MANUAL_TRANSPORT_HELIUM3: 10, // Per click
-   
-   // === FABRICATOR SYSTEM ===
-   // Fabricator (converts regolith to alloys)
-   FABRICATOR_ALLOYS_RATE: 0.05, // Per tick per fabricator
-   FABRICATOR_REGOLITH_COST: 20, // Regolith consumed per alloy produced
-   FABRICATOR_POWER_DEMAND: 25, // Power consumed per fabricator
+    MANUAL_TRANSPORT_REGOLITH: 100, // Per click
+    MANUAL_TRANSPORT_HELIUM3: 10, // Per click
+    
+    // === FABRICATOR SYSTEM ===
+    // Fabricator (converts regolith to alloys)
+    FABRICATOR_ALLOYS_RATE: 0.05, // Per tick per fabricator
+    FABRICATOR_REGOLITH_COST: 20, // Regolith consumed per alloy produced
+    FABRICATOR_POWER_DEMAND: 25, // Power consumed per fabricator
+    
+    // === TIER 1 BUILDINGS (Cargo Cost from Earth) ===
+    TIER1_EXTRACTOR_COST: 50, // Cargo units
+    TIER1_REFINERY_COST: 75,
+    TIER1_CARGO_STORAGE_COST: 40,
+    TIER1_SOLAR_COST: 60,
+    TIER1_NUCLEAR_COST: 100,
+    TIER1_BATTERY_COST: 30,
+    TIER1_MAINTENANCE_COST: 45,
+    TIER1_MASS_DRIVER_COST: 80,
+    TIER1_FABRICATOR_COST: 90,
+    TIER1_STARPORT_COST: 200,
+    
+    TIER1_COST_SCALING: 1.4, // Exponential scaling for tier 1 buildings
+    TIER1_CARGO_STORAGE_CAPACITY: 100, // Cargo units stored per storage building
+    
+    // === TIER 2 BUILDINGS (Moon Resource Cost) ===
+    TIER2_EXTRACTOR_COST: { regolith: 500, alloys: 200 },
+    TIER2_EXTRACTOR_RATE: 8, // Production rate (vs T1: 5)
+    TIER2_EXTRACTOR_POWER: 15, // Power demand (vs T1: 10)
+    
+    TIER2_REFINERY_COST: { regolith: 300, alloys: 150 },
+    TIER2_REFINERY_RATE: 0.15, // He-3 per tick (vs T1: 0.1)
+    TIER2_REFINERY_REGOLITH_COST: 8, // Regolith per He-3 (vs T1: 10, so 20% cheaper)
+    TIER2_REFINERY_POWER: 20, // Power demand (vs T1: 15)
+    
+    TIER2_FABRICATOR_COST: { regolith: 800, alloys: 400 },
+    TIER2_FABRICATOR_RATE: 0.08, // Alloys per tick (vs T1: 0.05)
+    TIER2_FABRICATOR_REGOLITH_COST: 15, // Regolith per alloy (vs T1: 20, so 25% cheaper)
+    TIER2_FABRICATOR_POWER: 40, // Power demand (vs T1: 25)
+    
+    TIER2_CARGO_STORAGE_COST: { regolith: 200, alloys: 100 },
+    TIER2_CARGO_STORAGE_CAPACITY: 300, // Cargo units per T2 storage (vs T1: 100)
+    TIER2_CARGO_STORAGE_POWER: 2, // Power demand (vs T1: 0)
+    
+    // === CARGO & FUEL SYSTEM ===
+    CARGO_ROCKET_CAPACITY: 100, // Max cargo per supply mission
+    FUEL_CONSUMPTION_PER_MOON_TRIP: 100, // Fuel for Earth → Refuel Station → Moon
+    FUEL_CONSUMPTION_PER_FUEL_TRIP: 50, // Fuel for Earth → Fuel Station
+    INITIAL_MOON_CARGO: 200, // Starting cargo when landing on moon
+    MOON_CARGO_BASE_STORAGE: 100, // Base cargo storage capacity on moon
+    
+    // === SECTOR UNLOCK SYSTEM ===
+    SECTOR_SCAN_COST_BASE: 500, // Science cost to scan a sector
+    SECTOR_UNLOCK_REQUIREMENTS: {
+      // Sector 1 (Landing Zone): Always unlocked
+      1: { research: null, scanCost: 0 },
+      // Sectors 2-5: Require m11 research
+      2: { research: 'm11', scanCost: 500 },
+      3: { research: 'm11', scanCost: 500 },
+      4: { research: 'm11', scanCost: 500 },
+      5: { research: 'm11', scanCost: 500 },
+      // Sectors 6-10: Require m12 research
+      6: { research: 'm12', scanCost: 500 },
+      7: { research: 'm12', scanCost: 500 },
+      8: { research: 'm12', scanCost: 500 },
+      9: { research: 'm12', scanCost: 500 },
+      10: { research: 'm12', scanCost: 500 },
+    },
+    
+    // === UI/LOG SETTINGS ===
+    LOG_MAX_ENTRIES: 50, // Maximum moon log entries to keep in history
+    INITIAL_POWER_ENERGY: 200, // Starting energy for moon power system
+};
+
+// Automation Settings
+export const AUTOMATION = {
+  BASE_INTERVAL: 20, // Ticks between auto-build/salvage operations
+  SALVAGE_TICK_OFFSET: 10, // Offset to prevent auto-build and auto-salvage on same tick
+};
+
+// Contract System
+export const CONTRACT = {
+  BASE_CARGO_REQ: 50,
+  BASE_SCIENCE_REQ: 100,
+  BASE_MONEY_REQ: 300,
+  
+  // Contract type multipliers (difficulty/rarity scaling)
+  TYPES: {
+    easyMoney: { cargoMul: 0.2, scienceMul: 0.2, moneyMul: 0.2 },
+    easyScience: { cargoMul: 0.2, scienceMul: 2.0, moneyMul: 0.2 },
+    hardMoney: { cargoMul: 3.0, scienceMul: 0.3, moneyMul: 3.0 },
+    hardScience: { cargoMul: 0.3, scienceMul: 3.0, moneyMul: 0.3 },
+    balancedSmall: { cargoMul: 1.5, scienceMul: 1.5, moneyMul: 1.0 },
+    balancedLarge: { cargoMul: 1.0, scienceMul: 1.0, moneyMul: 1.5 },
+    timedChallenge: { cargoMul: 1.0, scienceMul: 1.0, moneyMul: 1.0 },
+    fragile: { cargoMul: 1.0, scienceMul: 1.0, moneyMul: 1.0 },
+  },
+  
+  // Base rewards
+  BASE_MONEY_REWARD: 800,
+  BASE_SCIENCE_REWARD: 50,
+  EXPERIENCE_PER_LEVEL: 50, // XP (contracts completed) needed per company level
+  
+  // Special contract properties
+  FRAGILE_CHANCE: 0.7, // Probability of fragile contract type (>0.7 = fragile)
+  TIMED_CHANCE: 0.5, // Probability of timed contract modifier (>0.5 = timed)
+  TIME_LIMIT_BASE: 60, // Base ticks for timed contracts
+  TIME_LIMIT_VARIANCE_MAX: 120, // Max additional ticks variance for timed contracts
+  FRAGILE_EXPLOSION_LIMIT_MAX: 3, // Max explosions before fragile contract fails
+};
+
+// Layer Unlock Thresholds
+export const LAYER_UNLOCK = {
+  ORBIT_CARGO_REQUIRED: 500, // Cargo needed to unlock orbital layer
+  CONTRACTS_LAUNCHES_REQUIRED: 1000, // Rocket launches needed to unlock contracts
+};
+
+// Game UI/UX Settings
+export const GAME = {
+  MAX_NOTIFICATIONS: 5, // Maximum notifications to display at once
+  MOON_LOG_MAX_ENTRIES: 50, // Maximum moon log entries (also in MOON.LOG_MAX_ENTRIES)
 };

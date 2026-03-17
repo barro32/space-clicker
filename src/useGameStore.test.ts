@@ -23,38 +23,84 @@ describe('useGameStore - Orbital Space Stations', () => {
 
 describe('Auto-build (Auto-Queue)', () => {
   it('unlocking u7 sets effect available', () => {
-    useGameStore.setState({ science: 1000, researchedNodes: [] } as unknown as GameState);
-    // u7 requires u3, which requires u1-3, so unlock the chain
-    useGameStore.getState().unlockNode('u1-1');
-    useGameStore.getState().unlockNode('u1-2');
-    useGameStore.getState().unlockNode('u1-3');
-    useGameStore.getState().unlockNode('u3');
+    useGameStore.setState({ science: 5000, researchedNodes: [] } as unknown as GameState);
+    // u7 now has no prerequisites and costs 4000 science
     useGameStore.getState().unlockNode('u7');
     const state = useGameStore.getState();
     expect(state.researchedNodes).toContain('u7');
     expect(state.getEffectMultiplier('autoBuildEnabled')).toBeGreaterThan(0);
   });
 
-   it('when toggle enabled tick attempts to auto-build rockets', () => {
-     // Reset and prepare for auto-build
-     useGameStore.setState({
-       money: 1000,
-       rockets: [],
-       nextRocketId: 0,
-       rocketCost: 10,
-       spaceports: [{ id: 1 }],
-       spaceportCapacity: 9,
-       researchedNodes: ['u1-1','u1-2','u1-3','u3','u7'], // provide multipliers and unlock auto
-       autoBuildActive: true,
-       previouslyAvailableResearch: [],
-       notifications: [],
-     } as unknown as GameState);
+    it('when toggle enabled tick attempts to auto-build rockets', () => {
+      // Reset and prepare for auto-build
+      useGameStore.setState({
+        money: 1000,
+        rockets: [],
+        nextRocketId: 0,
+        rocketCost: 10,
+        spaceports: [{ id: 1 }],
+        spaceportCapacity: 9,
+        researchedNodes: ['u7'], // just need u7 to enable auto-build
+        autoBuildActive: true,
+        previouslyAvailableResearch: [],
+        notifications: [],
+      } as unknown as GameState);
 
      // Run one tick: should auto-build using money
      useGameStore.getState().tick();
      const s = useGameStore.getState();
      // After tick, some rockets should have been queued/built
      expect(s.rockets.filter(r => r !== null).length).toBeGreaterThan(0);
+   });
+
+   describe('Moon - Building Construction with Limited Resources', () => {
+     beforeEach(() => {
+       // Set up with just enough resources to build (100 cargo)
+       useGameStore.setState({
+         cargo: 100,
+         science: 50000,
+         fuel: 1000,
+         money: 100000,
+         moonStatus: 'unlocked',
+         moonResources: { regolith: 10000, helium3: 0, alloys: 0 },
+         earthResources: { helium3: 0, alloys: 0 },
+         moonSectors: [
+           {
+             id: 'sector-1',
+             name: 'Landing Zone',
+             slots: 4,
+             slotsUsed: 0,
+             unlocked: true,
+             scanned: true,
+             traits: {},
+             buildings: {
+               extractors: 0,
+               refineries: 0,
+               silos: 0,
+               maintenance: 0,
+               massDrivers: 0,
+               solarArray: 0,
+               nuclearReactor: 0,
+               battery: 0,
+               fabricators: 0,
+               cargoStorage: 0,
+             },
+           }
+         ],
+         researchedNodes: [],
+         notifications: [],
+         companies: DEFAULT_COMPANIES.map(c => ({ ...c })),
+       } as unknown as GameState);
+     });
+
+     it('builds extractor with 100 cargo (costs 50)', () => {
+       useGameStore.getState().constructBuildingOnMoon('sector-1', 'extractor');
+       
+       const state = useGameStore.getState();
+       expect(state.cargo).toBe(50);
+       expect(state.moonSectors[0].buildings.extractors).toBe(1);
+       expect(state.moonSectors[0].slotsUsed).toBe(1);
+     });
    });
 });
 
@@ -165,9 +211,9 @@ describe('Auto-build (Auto-Queue)', () => {
 
       useGameStore.getState().tick();
 
-      const state = useGameStore.getState();
-      // Logistics stations generate money (via cargoProd in tick), not cargo resources
-      expect(state.money).toBeGreaterThan(0);
+       const state = useGameStore.getState();
+       // Logistics stations generate money (via moneyProduction in tick), not cargo resources
+       expect(state.money).toBeGreaterThan(0);
     });
 
     it('should generate cargo from active rockets', () => {
@@ -258,7 +304,7 @@ describe('Auto-build (Auto-Queue)', () => {
           companyId: 'titan',
           title: 'Test',
           requiredCargo: 0.05, // Very low so one tick completes it (0.1 per launch)
-          requiredScience: 0.5, // Low enough for passive science (1 per spaceport)
+          requiredScience: 0, // No science requirement since passive spaceport science was removed
           requiredMoney: 100, // Achievable with profit per rocket
           deliveredCargo: 0,
           deliveredScience: 0,
@@ -401,22 +447,21 @@ describe('Auto-build (Auto-Queue)', () => {
 
     it('should apply fuel cost multiplier correctly', () => {
       useGameStore.setState({
-        fuel: 100,
-        fuelCostPerRocket: 10,
-        researchedNodes: ['p1-1'], // 0.97 multiplier
-        rockets: [{ id: 1 }],
-        explodedRocketIds: [],
-        fuelRefineries: 0,
-        spaceports: [],
-        spaceStations: [],
-        companies: [], // No companies = no perk bonuses for precise calculation
-      } as unknown as GameState);
+         fuel: 100,
+         fuelCostPerRocket: 10,
+         researchedNodes: ['p1-1'], // 0.97 multiplier
+         rockets: [{ id: 1 }],
+         explodedRocketIds: [],
+         spaceports: [],
+         spaceStations: [],
+         companies: [], // No companies = no perk bonuses for precise calculation
+       } as unknown as GameState);
 
-      useGameStore.getState().tick();
+       useGameStore.getState().tick();
 
-      const state = useGameStore.getState();
-      // 100 - (10 * 0.97) = 90.3
-      expect(state.fuel).toBeCloseTo(90.3);
+       const state = useGameStore.getState();
+       // 100 + 1 (passive) - (10 * 0.97) = 91.3
+       expect(state.fuel).toBeCloseTo(91.3);
     });
 
     it('should apply construction cost multiplier correctly', () => {
@@ -455,51 +500,48 @@ describe('Auto-build (Auto-Queue)', () => {
 
     it('should consume fuel during tick if rockets launch', () => {
       useGameStore.setState({
-        fuel: 10,
-        rockets: [{ id: 1, type: 'cargo' as const }, { id: 2, type: 'cargo' as const }],
-        explodedRocketIds: [],
-        fuelCostPerRocket: 1,
-        profitPerRocket: 1,
-        spaceports: [{ id: 1 }],
-        spaceportCapacity: 9,
-        spaceStations: [],
-        money: 0,
-        cargo: 0,
-        science: 0,
-        fuelRefineries: 0,
-        fuelProductionPerRefinery: 1,
-        rocketExplosionChance: 0, // Ensure no random explosions during test
-        companies: [], // No companies = no perk bonuses for precise calculation
-      } as unknown as GameState);
+         fuel: 10,
+         rockets: [{ id: 1, type: 'cargo' as const }, { id: 2, type: 'cargo' as const }],
+         explodedRocketIds: [],
+         fuelCostPerRocket: 1,
+         profitPerRocket: 1,
+         spaceports: [{ id: 1 }],
+         spaceportCapacity: 9,
+         spaceStations: [],
+         money: 0,
+         cargo: 0,
+         science: 0,
+         rocketExplosionChance: 0, // Ensure no random explosions during test
+         companies: [], // No companies = no perk bonuses for precise calculation
+       } as unknown as GameState);
 
-      useGameStore.getState().tick();
+       useGameStore.getState().tick();
 
-      const state = useGameStore.getState();
-      // 2 rockets launched: -2 fuel
-      expect(state.fuel).toBe(8);
-      // rewards for 2 successful launches
-      expect(state.cargo).toBeCloseTo(0.2);
+       const state = useGameStore.getState();
+       // 10 + 1 (passive) - 2 (rockets) = 9 fuel
+       expect(state.fuel).toBe(9);
+       // rewards for 2 successful launches
+       expect(state.cargo).toBeCloseTo(0.2);
     });
 
-    it('should NOT generate rewards if fuel is insufficient', () => {
-      useGameStore.setState({
-        fuel: 0,
-        rockets: [{ id: 1, type: 'cargo' as const }],
-        explodedRocketIds: [],
-        fuelCostPerRocket: 1,
-        spaceports: [], // no passive income
-        money: 0,
-        cargo: 0,
-        science: 0,
-        fuelRefineries: 0,
-      } as unknown as GameState);
+     it('should NOT generate rewards if fuel is insufficient', () => {
+       useGameStore.setState({
+         fuel: 0,
+         rockets: [{ id: 1, type: 'cargo' as const }],
+         explodedRocketIds: [],
+         fuelCostPerRocket: 2, // Cost > passive fuel (1), so shouldn't launch
+         spaceports: [], // no passive income
+         money: 0,
+         cargo: 0,
+         science: 0,
+       } as unknown as GameState);
 
-      useGameStore.getState().tick();
+       useGameStore.getState().tick();
 
-      const state = useGameStore.getState();
-      expect(state.fuel).toBe(0);
-      expect(state.cargo).toBe(0);
-    });
+       const state = useGameStore.getState();
+       expect(state.fuel).toBe(1); // 0 + 1 passive, didn't launch because cost is 2
+       expect(state.cargo).toBe(0);
+     });
   });
 
   describe('Moon - Fabricator Research Effects', () => {

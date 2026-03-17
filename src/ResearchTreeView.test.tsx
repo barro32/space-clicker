@@ -27,9 +27,9 @@ describe('ResearchTreeView Component', () => {
       expect(screen.getByRole('heading', { name: /orbital/i, level: 2 })).toBeDefined();
       expect(screen.getByRole('heading', { name: /control/i, level: 2 })).toBeDefined();
 
-      // At least one control node should render (u1 is now grouped under base ID)
-      const u1Node = screen.getByTestId('node-u1');
-      expect(u1Node).toBeDefined();
+       // At least one control node should render (u3 has no prerequisites)
+       const u3Node = screen.getByTestId('node-u3');
+       expect(u3Node).toBeDefined();
     });
 
    it('allows unlocking available nodes', () => {

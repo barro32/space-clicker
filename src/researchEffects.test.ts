@@ -3,13 +3,13 @@ import { useGameStore } from './useGameStore.js';
 
 describe('Research effect multipliers and special effects', () => {
   it('getEffectMultiplier returns multiplicative product for *Multiplier types', () => {
-    useGameStore.setState({ researchedNodes: ['p1-1', 'c1-1'] } as any);
+    useGameStore.setState({ researchedNodes: ['p1-1', 'u1-1'] } as any);
 
     const valFuel = useGameStore.getState().getEffectMultiplier('fuelCostMultiplier');
     expect(valFuel).toBeCloseTo(0.97);
 
-    const valProfit = useGameStore.getState().getEffectMultiplier('profitMultiplier');
-    expect(valProfit).toBeCloseTo(1.06);
+    const valBuild = useGameStore.getState().getEffectMultiplier('buildRocketMultiplier');
+    expect(valBuild).toBeCloseTo(1.2);
   });
 
   it('unlocking special nodes updates researchedNodes', () => {

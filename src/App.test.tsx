@@ -6,7 +6,6 @@ vi.mock('./SpaceportView', () => ({ SpaceportView: () => null }));
 vi.mock('./OrbitView', () => ({ OrbitView: () => null }));
 vi.mock('./ContractsView', () => ({ ContractsView: () => null }));
 vi.mock('./ResearchTreeView', () => ({ ResearchTreeView: () => null }));
-vi.mock('./DevConsole', () => ({ DevConsole: () => null }));
 vi.mock('./MoonView', () => ({ MoonView: () => null }));
 
 import React from 'react';

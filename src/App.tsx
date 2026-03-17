@@ -1,15 +1,18 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useGameStore, GameState } from "./useGameStore.js"
+import { MOON } from "./gameConstants.js"
 import { FaMoneyBillAlt, FaFlask, FaGasPump, FaBox, FaChevronUp, FaChevronDown, FaChevronLeft, FaChevronRight, FaRocket, FaSatellite, FaFlask as FaLab, FaExclamationTriangle, FaFileContract, FaIndustry, FaMoon, FaGem, FaLock } from 'react-icons/fa'
+import { MdSettings } from 'react-icons/md'
 import { SpaceportView } from "./SpaceportView.js"
 import { OrbitView } from "./OrbitView.js"
 import { ContractsView } from "./ContractsView.js"
 import { ResearchTreeView } from "./ResearchTreeView.js"
 import { MoonView } from "./MoonView.js"
 import { ResearchSidebar } from "./components/ResearchSidebar.js"
-import { DevConsole } from './DevConsole.js'
-import { INITIAL_STATE, TIME, DEFAULT_COMPANIES } from './gameConstants.js'
+import { SettingsPanel } from "./components/SettingsPanel.js"
+import { INITIAL_STATE, TIME, DEFAULT_COMPANIES, DEFAULT_SETTINGS, PRODUCTION } from './gameConstants.js'
 import { researchTree, ResearchNode, EffectType } from './researchTree.js'
+import { loadGameStateSync, loadGameStateAsync, saveGameState } from './persistence.js'
 
 
 // Helper function to calculate effect multiplier (duplicated from store for use in metrics calculation)
@@ -35,11 +38,10 @@ function hasResearch(type: EffectType, researchedNodes: string[]): boolean {
 
 // Comprehensive game metrics for the info panel
 interface GameMetrics {
-  // Fleet
-  totalRockets: number;
-  cargoRockets: number;
-  scienceRockets: number;
-  explodedRockets: number;
+   // Fleet
+   totalRockets: number;
+   cargoRockets: number;
+   explodedRockets: number;
   // Production
   fuelProduction: number;
   fuelConsumption: number;
@@ -73,17 +75,16 @@ interface GameMetrics {
 function calculateGameMetrics(state: GameState): GameMetrics {
   const researchedNodes = state.researchedNodes || [];
   
-  // Fleet counts
-  const allRockets = (state.rockets || []).filter((r): r is { id: number; type: 'cargo' | 'science' } => r !== null);
-  const explodedIds = state.explodedRocketIds || [];
-  const activeRockets = allRockets.filter(r => !explodedIds.includes(r.id));
-  const cargoRockets = activeRockets.filter(r => r.type === 'cargo').length;
-  const scienceRockets = activeRockets.filter(r => r.type === 'science').length;
-  const totalRockets = activeRockets.length;
-  const explodedRockets = explodedIds.length;
-  
-  // Fuel calculations
-  const fuelProduction = (state.fuelRefineries || 0) * (state.fuelProductionPerRefinery || 1) * getEffectMultiplier('refineryOutputMultiplier', researchedNodes);
+   // Fleet counts
+   const allRockets = (state.rockets || []).filter((r): r is { id: number; type: 'cargo' } => r !== null);
+   const explodedIds = state.explodedRocketIds || [];
+   const activeRockets = allRockets.filter(r => !explodedIds.includes(r.id));
+   const cargoRockets = activeRockets.length;
+   const totalRockets = activeRockets.length;
+   const explodedRockets = explodedIds.length;
+   
+   // Fuel calculations
+   const fuelProduction = PRODUCTION.PASSIVE_FUEL_PER_TICK;
   const effectiveFuelCost = (state.fuelCostPerRocket || 1) * getEffectMultiplier('fuelCostMultiplier', researchedNodes);
   const fuelConsumption = totalRockets * effectiveFuelCost;
   const fuelNet = fuelProduction - fuelConsumption;
@@ -92,22 +93,34 @@ function calculateGameMetrics(state: GameState): GameMetrics {
   const explosionChance = (state.rocketExplosionChance || 0.5) * getEffectMultiplier('explosionChanceMultiplier', researchedNodes);
   const successRate = Math.max(0, 1 - explosionChance);
   
-  // Estimated production
-  const estimatedLaunches = Math.min(totalRockets, Math.floor((state.fuel || 0) / Math.max(1, effectiveFuelCost)));
-  const successfulCargo = Math.floor(cargoRockets * estimatedLaunches * successRate / Math.max(1, totalRockets));
-  const successfulScience = Math.floor(scienceRockets * estimatedLaunches * successRate / Math.max(1, totalRockets));
-  const moneyPerSec = successfulCargo * (state.profitPerRocket || 1) * getEffectMultiplier('profitMultiplier', researchedNodes);
-  const passiveScience = (state.spaceports || []).length;
-  const sciencePerSec = successfulScience + passiveScience;
+    // Estimated production
+    const estimatedLaunches = Math.min(totalRockets, Math.floor((state.fuel || 0) / Math.max(1, effectiveFuelCost)));
+    const successfulCargo = Math.floor(cargoRockets * estimatedLaunches * successRate / Math.max(1, totalRockets));
+    const moneyPerSec = successfulCargo * (state.profitPerRocket || 1) * getEffectMultiplier('profitMultiplier', researchedNodes);
+    
+    // Science production from launches + company perks
+    const sciencePerRocketBonus = getEffectMultiplier('sciencePerRocketBonus', researchedNodes);
+    const sciencePerLaunch = PRODUCTION.SCIENCE_PER_SCIENCE_ROCKET + sciencePerRocketBonus;
+    const launchScience = successfulCargo * sciencePerLaunch;
+    
+    // Science from explosions
+    const explosionScienceBonus = PRODUCTION.SCIENCE_PER_EXPLOSION;
+    const failedLaunches = Math.floor(cargoRockets * estimatedLaunches * explosionChance / Math.max(1, totalRockets));
+    const explosionScience = failedLaunches * explosionScienceBonus;
+    
+    // Passive science from spaceports
+    const passiveScience = (state.spaceports || []).length;
+    
+    // Total science per second
+    const sciencePerSec = launchScience + explosionScience + passiveScience;
   
   // Telemetry check
   const hasTelemetry = hasResearch('uiTelemetryFlag', researchedNodes);
   
-  return {
-    totalRockets,
-    cargoRockets,
-    scienceRockets,
-    explodedRockets,
+   return {
+     totalRockets,
+     cargoRockets,
+     explodedRockets,
     fuelProduction,
     fuelConsumption,
     fuelNet,
@@ -117,7 +130,7 @@ function calculateGameMetrics(state: GameState): GameMetrics {
     successRate,
     hasTelemetry,
     spaceportCount: (state.spaceports || []).length,
-    refineryCount: state.fuelRefineries || 0,
+     refineryCount: 0, // No more fuel refineries - now just passive fuel production
     stationCount: (state.spaceStations || []).length,
     activeContracts: (state.activeContracts || []).length,
     maxActiveContracts: state.getMaxActiveContracts ? state.getMaxActiveContracts() : 1,
@@ -140,9 +153,9 @@ function calculateGameMetrics(state: GameState): GameMetrics {
 const loadInitialState = () => {
   if (typeof window !== 'undefined') {
     try {
-      const savedState = localStorage.getItem('gameState');
+      const savedState = loadGameStateSync();
       if (savedState) {
-        const parsed = JSON.parse(savedState);
+        const parsed = savedState;
         if (parsed.money !== undefined && parsed.science !== undefined) {
           if (!parsed.spaceStations) parsed.spaceStations = [];
           if (!parsed.currentView) parsed.currentView = "surface";
@@ -159,11 +172,8 @@ const loadInitialState = () => {
           if (parsed.profitPerRocket === undefined) parsed.profitPerRocket = INITIAL_STATE.PROFIT_PER_ROCKET;
           parsed.spaceportCapacity = INITIAL_STATE.SPACEPORT_CAPACITY;
           if (!parsed.spaceports) parsed.spaceports = [{ id: 1 }];
-          if (parsed.spaceportCost === undefined) parsed.spaceportCost = INITIAL_STATE.SPACEPORT_COST;
-          if (parsed.fuelRefineries === undefined) parsed.fuelRefineries = 0;
-          if (parsed.fuelProductionPerRefinery === undefined) parsed.fuelProductionPerRefinery = INITIAL_STATE.FUEL_PRODUCTION_PER_REFINERY;
-          if (parsed.fuelCostPerRocket === undefined) parsed.fuelCostPerRocket = INITIAL_STATE.FUEL_COST_PER_ROCKET;
-          if (parsed.fuelRefineryCost === undefined) parsed.fuelRefineryCost = INITIAL_STATE.FUEL_REFINERY_COST;
+           if (parsed.spaceportCost === undefined) parsed.spaceportCost = INITIAL_STATE.SPACEPORT_COST;
+           if (parsed.fuelCostPerRocket === undefined) parsed.fuelCostPerRocket = INITIAL_STATE.FUEL_COST_PER_ROCKET;
           if (!parsed.explodedRocketIds) parsed.explodedRocketIds = [];
           if (parsed.rocketExplosionChance === undefined) parsed.rocketExplosionChance = INITIAL_STATE.ROCKET_EXPLOSION_CHANCE;
           
@@ -220,7 +230,7 @@ const loadInitialState = () => {
           // Migration: Moon layer state
           if (parsed.moonStatus === undefined) parsed.moonStatus = 'locked';
           if (parsed.moonMissionTicksRemaining === undefined) parsed.moonMissionTicksRemaining = 0;
-          if (!parsed.moonBuildings) parsed.moonBuildings = { extractors: 0, refineries: 0, silos: 0, maintenance: 0, massDrivers: 0, solarArray: 0, nuclearReactor: 0, battery: 0, fabricator: 0 };
+          if (!parsed.moonBuildings) parsed.moonBuildings = { extractors: 0, refineries: 0, silos: 0, maintenances: 0, massDrivers: 0, solarArray: 0, nuclearReactor: 0, battery: 0, fabricators: 0 };
           if (!parsed.moonResources) parsed.moonResources = { regolith: 0, helium3: 0, alloys: 0 };
           if (!parsed.earthResources) parsed.earthResources = { regolith: 0, helium3: 0, alloys: 0 };
           
@@ -233,12 +243,21 @@ const loadInitialState = () => {
           }
           
           // Ensure existing moonBuildings have new building types
-          if (parsed.moonBuildings) {
-            if (parsed.moonBuildings.solarArray === undefined) parsed.moonBuildings.solarArray = 0;
-            if (parsed.moonBuildings.nuclearReactor === undefined) parsed.moonBuildings.nuclearReactor = 0;
-            if (parsed.moonBuildings.battery === undefined) parsed.moonBuildings.battery = 0;
-            if (parsed.moonBuildings.fabricator === undefined) parsed.moonBuildings.fabricator = 0;
-          }
+           if (parsed.moonBuildings) {
+             if (parsed.moonBuildings.solarArray === undefined) parsed.moonBuildings.solarArray = 0;
+             if (parsed.moonBuildings.nuclearReactor === undefined) parsed.moonBuildings.nuclearReactor = 0;
+             if (parsed.moonBuildings.battery === undefined) parsed.moonBuildings.battery = 0;
+             if (parsed.moonBuildings.fabricators === undefined) parsed.moonBuildings.fabricators = 0;
+             // Migration: handle old singular names
+             if (parsed.moonBuildings.maintenance !== undefined && parsed.moonBuildings.maintenances === undefined) {
+               parsed.moonBuildings.maintenances = parsed.moonBuildings.maintenance;
+               delete parsed.moonBuildings.maintenance;
+             }
+             if (parsed.moonBuildings.fabricator !== undefined && parsed.moonBuildings.fabricators === undefined) {
+               parsed.moonBuildings.fabricators = parsed.moonBuildings.fabricator;
+               delete parsed.moonBuildings.fabricator;
+             }
+           }
           
           if (parsed.activeHazard === undefined) parsed.activeHazard = null;
           if (!parsed.moonLog) parsed.moonLog = [];
@@ -253,15 +272,22 @@ const loadInitialState = () => {
           if (!parsed.moonPowerSystem) parsed.moonPowerSystem = { 
             dayNightTick: 0, 
             isDay: true, 
-            currentEnergy: 200, 
-            maxEnergy: 200, 
+            currentEnergy: MOON.INITIAL_POWER_ENERGY, 
+            maxEnergy: MOON.INITIAL_POWER_ENERGY, 
             energyGeneration: 0, 
             energyDemand: 0 
           };
-          if (!parsed.moonBounties) parsed.moonBounties = [];
-          if (parsed.moonBountyRefreshTimer === undefined) parsed.moonBountyRefreshTimer = 300;
-          
-          // Migration: Layer unlock tracking
+           if (!parsed.moonBounties) parsed.moonBounties = [];
+           if (parsed.moonBountyRefreshTimer === undefined) parsed.moonBountyRefreshTimer = 300;
+           
+           // Migration: Settings (user preferences)
+           if (!parsed.settings) parsed.settings = DEFAULT_SETTINGS;
+           else {
+             // Ensure all settings have defaults if migrating from older saves
+             parsed.settings = { ...DEFAULT_SETTINGS, ...parsed.settings };
+           }
+           
+           // Migration: Layer unlock tracking
           if (parsed.totalSuccessfulLaunches === undefined) parsed.totalSuccessfulLaunches = 0;
           if (parsed.orbitLayerUnlocked === undefined) parsed.orbitLayerUnlocked = false;
           if (parsed.contractsLayerUnlocked === undefined) parsed.contractsLayerUnlocked = false;
@@ -361,15 +387,15 @@ export function App() {
   const { money, science, fuel, cargo, tick, notifications } = useGameStore()
   const maxFuel = useGameStore(state => state.getMaxFuel());
   
-  // Current layer state
-  const [currentLayer, setCurrentLayer] = useState<Layer>('surface');
+   // Current layer state
+   const [currentLayer, setCurrentLayer] = useState<Layer>('surface');
+   const [settingsOpen, setSettingsOpen] = useState(false);
   
   // Get computed values
   const researchedNodes = useGameStore(state => state.researchedNodes);
   const rockets = useGameStore(state => state.rockets);
   const explodedRocketIds = useGameStore(state => state.explodedRocketIds);
-  const fuelRefineries = useGameStore(state => state.fuelRefineries);
-  const spaceports = useGameStore(state => state.spaceports);
+   const spaceports = useGameStore(state => state.spaceports);
   const spaceStations = useGameStore(state => state.spaceStations);
   const activeContracts = useGameStore(state => state.activeContracts);
   const satellites = useGameStore(state => state.satellites);
@@ -384,7 +410,7 @@ export function App() {
   const metrics = useMemo(() => {
     const state = useGameStore.getState();
     return calculateGameMetrics(state);
-  }, [researchedNodes, rockets, explodedRocketIds, fuelRefineries, fuel, spaceports, spaceStations, activeContracts, satellites, spaceDebris]);
+   }, [researchedNodes, rockets, explodedRocketIds, fuel, spaceports, spaceStations, activeContracts, satellites, spaceDebris]);
 
   // Check if there's affordable research available
   const hasAffordableResearch = useMemo(() => {
@@ -561,7 +587,7 @@ export function App() {
 
   // Autosave
   useEffect(() => {
-    const saveState = () => {
+    const saveState = async () => {
       const state = useGameStore.getState();
       const stateToSave = {
         money: state.money, science: state.science, fuel: state.fuel, cargo: state.cargo,
@@ -570,10 +596,9 @@ export function App() {
         availableContracts: state.availableContracts, activeContracts: state.activeContracts,
         contractRefreshTimer: state.contractRefreshTimer,
         rockets: state.rockets, nextRocketId: state.nextRocketId, rocketCost: state.rocketCost,
-        profitPerRocket: state.profitPerRocket, spaceportCapacity: state.spaceportCapacity,
-        spaceports: state.spaceports, spaceStations: state.spaceStations, spaceportCost: state.spaceportCost,
-        fuelRefineries: state.fuelRefineries, fuelProductionPerRefinery: state.fuelProductionPerRefinery,
-        fuelCostPerRocket: state.fuelCostPerRocket, fuelRefineryCost: state.fuelRefineryCost,
+         profitPerRocket: state.profitPerRocket, spaceportCapacity: state.spaceportCapacity,
+         spaceports: state.spaceports, spaceStations: state.spaceStations, spaceportCost: state.spaceportCost,
+         fuelCostPerRocket: state.fuelCostPerRocket,
         explodedRocketIds: state.explodedRocketIds, rocketExplosionChance: state.rocketExplosionChance,
         researchedNodes: state.researchedNodes, autoBuildActive: state.autoBuildActive,
         autoSalvageActive: state.autoSalvageActive,
@@ -593,7 +618,7 @@ export function App() {
         orbitLayerUnlocked: state.orbitLayerUnlocked,
         contractsLayerUnlocked: state.contractsLayerUnlocked,
       };
-      localStorage.setItem('gameState', JSON.stringify(stateToSave));
+      await saveGameState(stateToSave);
       setLastSaveTime(Date.now());
     };
 
@@ -823,13 +848,22 @@ export function App() {
                   </>
                 )}
               </div>
-            )}
-          </div>
-          
-          {/* Save indicator - minimal */}
-          <div className="text-[10px] text-gray-600 font-mono whitespace-nowrap">
-            {displayTime}
-          </div>
+           )}
+           </div>
+           
+           {/* Settings Button */}
+           <button
+             onClick={() => setSettingsOpen(true)}
+             className="p-2 rounded-lg bg-gray-800/80 border border-cyan-500/30 hover:bg-gray-700 hover:border-cyan-500/50 transition-all text-cyan-400 hover:text-cyan-300"
+             title="Open settings"
+           >
+             <MdSettings size={20} />
+           </button>
+           
+           {/* Save indicator - minimal */}
+           <div className="text-[10px] text-gray-600 font-mono whitespace-nowrap">
+             {displayTime}
+           </div>
         </div>
       </div>
 
@@ -1006,7 +1040,8 @@ export function App() {
         <ResearchSidebar layer={currentLayer} />
       )}
 
-      <DevConsole />
+      {/* Settings Panel Modal */}
+      {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
     </div>
   )
 }
