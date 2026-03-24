@@ -1,21 +1,27 @@
-# Space Rocket Idle Game
+# Space Evolution
 
-A space-themed idle game built with React, TypeScript, Zustand, and Tailwind CSS. Manage spaceports, launch rockets, conduct research, and build an interstellar economy.
+A space-themed idle game built with React, TypeScript, Zustand, and Tailwind CSS. Manage spaceports, launch rockets, conduct research, build orbiting infrastructure, and grow a strange little interstellar economy.
 
-## Getting Started
+## Running the game
 
 ```bash
 # Install dependencies
 npm install
 
-# Start development server
+# Start the browser dev server
 npm run dev
 
-# Run tests
-npm test
+# Run the Electron shell against the dev server
+npm run dev:electron
 
-# Build for production
+# Run the test suite once
+npm test -- --run
+
+# Build the browser app
 npm run build
+
+# Build the Electron distributable
+npm run build:electron
 ```
 
 ## How to Play
@@ -34,7 +40,7 @@ Build a thriving space program by accumulating money, science, and cargo. Expand
 
 ### Game Layers
 
-Navigate between three main layers using the right-side navigation:
+Navigate between four main layers using the right-side navigation:
 
 1. **Orbit** - Build and manage space stations
    - Research Stations: Boost science output
@@ -42,9 +48,11 @@ Navigate between three main layers using the right-side navigation:
 
 2. **Surface** - Core operations (two sub-views)
    - **Spaceports**: Build rockets and manage launch infrastructure
-   - **Contracts**: Accept missions from 10 industrial companies
+   - **Contracts**: Accept missions from industrial partners
 
-3. **Research Lab** - Unlock technologies across 5 branches
+3. **Moon** - Manage lunar operations and moon-base progression
+
+4. **Research Lab** - Unlock technologies across 5 branches
 
 ### Core Mechanics
 
@@ -68,7 +76,7 @@ Five technology branches:
 - **Control**: Automation features (auto-build, auto-salvage)
 
 #### Contracts
-- Partner with 10 companies (Titan Mining, Nova Research, etc.)
+- Partner with companies such as Titan Mining and Nova Research
 - Four contract types: Logistics, Research, Commercial, Balanced
 - Some contracts have time limits or explosion limits
 - Completing contracts grants rewards and company XP
@@ -99,16 +107,18 @@ Five technology branches:
 
 ```
 src/
-  App.tsx              # Main app with layer navigation
-  useGameStore.ts      # Zustand store with all game logic
-  SpaceportView.tsx    # Surface layer - rockets & building
-  OrbitView.tsx        # Orbital layer - space stations
-  ContractsView.tsx    # Contracts management
-  ResearchTreeView.tsx # Research tree UI
-  DevConsole.tsx       # Developer tools (Ctrl+`)
-  researchTree.ts      # Research node definitions
-  gameConstants.ts     # Game balance constants
-  styles.css           # Custom CSS & animations
+  App.tsx                 # Main app with layer navigation
+  useGameStore.ts         # Zustand store with game logic and save/load hooks
+  SpaceportView.tsx       # Surface layer - rockets & building
+  OrbitView.tsx           # Orbital layer - space stations
+  MoonView.tsx            # Lunar progression layer
+  ContractsView.tsx       # Contract management
+  ResearchTreeView.tsx    # Research tree UI
+  persistence.ts          # Local save/load helpers
+  researchTree.ts         # Research node definitions
+  gameConstants.ts        # Game balance constants
+  renderNodeDescription.ts# Research-node description helper
+  styles.css              # Custom CSS & animations
 ```
 
 ## Development
@@ -131,6 +141,11 @@ All balance values are centralized in `src/gameConstants.ts`:
 2. Create node definition with prerequisites
 3. Handle effect in `useGameStore.ts` tick or action functions
 
+## Notes
+
+- Generated coverage reports are intentionally ignored and should not be committed.
+- For the GitHub Pages/browser build work, see issue #1 / PR #3.
+
 ## License
 
-MIT
+ISC
