@@ -2,6 +2,14 @@
 
 A space-themed idle game built with React, TypeScript, Zustand, and Tailwind CSS. Manage spaceports, launch rockets, conduct research, and build an interstellar economy.
 
+## Play in the Browser
+
+The game can be published as a static site on GitHub Pages, so you can test it without running the Electron app or a local dev server.
+
+- Once GitHub Pages is enabled for this repository, every push to `main` deploys the latest web build automatically.
+- The site is served from the production Vite build in `dist/`.
+- Because the app uses a relative asset base, the same build works both on GitHub Pages and in local previews.
+
 ## Getting Started
 
 ```bash
