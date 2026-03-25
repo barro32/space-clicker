@@ -1,144 +1,123 @@
-# Space Rocket Idle Game
+# Space Evolution
 
-A space-themed idle game built with React, TypeScript, Zustand, and Tailwind CSS. Manage spaceports, launch rockets, conduct research, and build an interstellar economy.
-
-## Play in the Browser
-
-The game can be published as a static site on GitHub Pages, so you can test it without running the Electron app or a local dev server.
-
-- Once GitHub Pages is enabled for this repository, every push to `main` deploys the latest web build automatically.
-- The site is served from the production Vite build in `dist/`.
-- Because the app uses a relative asset base, the same build works both on GitHub Pages and in local previews.
+A space-themed idle game built with React, TypeScript, Zustand, Vite, and Tailwind CSS. Build out a space program across the surface, orbit, research lab, and Moon while balancing money, science, fuel, cargo, contracts, and lunar resources.
 
 ## Getting Started
 
 ```bash
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
-
-# Run tests
-npm test
-
-# Build for production
+npm test -- --run
 npm run build
 ```
 
-## How to Play
+## Play in the Browser
 
-### Goal
-Build a thriving space program by accumulating money, science, and cargo. Expand your infrastructure, research new technologies, and complete contracts for industrial partners.
+The game is set up for static deployment via GitHub Pages.
 
-### Resources
+- Pushes to `main` can deploy the latest Vite web build automatically.
+- The app uses a relative asset base so the same build works for GitHub Pages and local previews.
 
-| Resource | Description | Generation |
-|----------|-------------|------------|
-| **Money** | Primary currency for building | Cargo rocket launches, contract rewards |
-| **Science** | Used for research unlocks | Science rockets, explosions, spaceports |
-| **Fuel** | Required for each rocket launch | Fuel refineries (1/sec per refinery) |
-| **Cargo** | Used for orbital construction | Successful cargo launches |
+## Core Loop
 
-### Game Layers
+Start on the surface by building rockets and spaceports, then use the resources they generate to unlock deeper systems:
 
-Navigate between three main layers using the right-side navigation:
+- **Money** funds expansion and construction.
+- **Science** unlocks research and progression.
+- **Fuel** is generated passively and consumed by launches.
+- **Cargo** supports orbital and lunar progression.
+- **Moon resources** such as regolith and helium-3 unlock later-stage systems.
 
-1. **Orbit** - Build and manage space stations
-   - Research Stations: Boost science output
-   - Logistics Stations: Increase money production
+Explosions are part of the loop: failed launches can still produce science and eventually become manageable through research and automation.
 
-2. **Surface** - Core operations (two sub-views)
-   - **Spaceports**: Build rockets and manage launch infrastructure
-   - **Contracts**: Accept missions from 10 industrial companies
+## Main Views
 
-3. **Research Lab** - Unlock technologies across 5 branches
+The current game includes four main areas:
 
-### Core Mechanics
+1. **Surface**
+   - Build rockets and expand spaceports
+   - Manage launch capacity and early-game economy
+2. **Orbit**
+   - Build stations and manage orbital progression
+   - Track satellites, debris, docking, and related upgrades
+3. **Research Lab**
+   - Unlock research across multiple branches
+   - Gain automation, UI, economy, safety, and progression upgrades
+4. **Moon**
+   - Unlock lunar progression and gather Moon-specific resources
+   - Manage hazards, resource transfers, and later-game expansion
 
-#### Rockets
-- **Cargo Rockets** (blue): Generate money on successful launch
-- **Science Rockets** (purple): Generate science on successful launch
-- Each launch consumes fuel and has an explosion chance (50% base)
-- Exploded rockets can be salvaged for +1 science
+## Contracts and Companies
 
-#### Spaceports
-- Each spaceport has slots for rockets (2 base capacity)
-- Generates passive science and cargo bonuses
-- Build more spaceports to expand fleet capacity
+Contracts are available from the in-game company system and provide structured goals plus rewards.
 
-#### Research Tree (139 nodes)
-Five technology branches:
-- **Propulsion**: Reduce explosion chance (100 levels of Safety Protocols)
-- **Infrastructure**: Increase capacity, reduce costs (10 Modular Spaceports)
-- **Commercial**: Boost profits and contract rewards
-- **Orbital**: Unlock science rockets, spaceports, refineries, stations
-- **Control**: Automation features (auto-build, auto-salvage)
+- The code currently uses **6 default companies** (`titan`, `nova`, `zenith`, `galactic`, `aegis`, `atlas`).
+- Active contract limits and rewards can be increased through progression.
+- Contract state is persisted and refreshed over time.
 
-#### Contracts
-- Partner with 10 companies (Titan Mining, Nova Research, etc.)
-- Four contract types: Logistics, Research, Commercial, Balanced
-- Some contracts have time limits or explosion limits
-- Completing contracts grants rewards and company XP
-- Companies level up for better contracts
+## Automation and Progression
 
-#### Automation (requires research)
-- **Auto-Build**: Automatically builds cargo rockets (1 per 20s base)
-- **Auto-Salvage**: Automatically clears explosions (1 per 20s base)
-- Progress bars show countdown to next automatic action
+Research can unlock or improve:
 
-### Tips
-- Start by building cargo rockets to generate money
-- Research "Safety Protocols" to reduce explosion chance
-- Build fuel refineries to sustain more rocket launches
-- Accept contracts for bonus rewards
-- Science rockets unlock after researching "Science Module"
+- auto-build
+- auto-salvage
+- telemetry and UI helpers
+- economy and launch safety bonuses
+- orbital and lunar systems
 
 ## Tech Stack
 
-- **React 19** - UI framework
-- **TypeScript** - Type safety
-- **Zustand** - State management
-- **Tailwind CSS 4** - Styling
-- **Vite** - Build tool
-- **Vitest** - Testing
+- React 19
+- TypeScript
+- Zustand
+- Vite 7
+- Tailwind CSS 4
+- Vitest
+- Electron (desktop packaging)
 
 ## Project Structure
 
-```
+```text
 src/
-  App.tsx              # Main app with layer navigation
-  useGameStore.ts      # Zustand store with all game logic
-  SpaceportView.tsx    # Surface layer - rockets & building
-  OrbitView.tsx        # Orbital layer - space stations
-  ContractsView.tsx    # Contracts management
-  ResearchTreeView.tsx # Research tree UI
-  DevConsole.tsx       # Developer tools (Ctrl+`)
-  researchTree.ts      # Research node definitions
-  gameConstants.ts     # Game balance constants
-  styles.css           # Custom CSS & animations
+  App.tsx                    # Main app shell and view navigation
+  useGameStore.ts            # Game state and core mechanics
+  SpaceportView.tsx          # Surface gameplay
+  OrbitView.tsx              # Orbital gameplay
+  ContractsView.tsx          # Contract management
+  ResearchTreeView.tsx       # Research UI
+  MoonView.tsx               # Lunar gameplay
+  components/
+    ResearchSidebar.tsx      # Research sidebar
+    SettingsPanel.tsx        # Game settings panel
+  persistence.ts             # Save/load logic
+  researchTree.ts            # Research definitions
+  gameConstants.ts           # Balance constants and defaults
 ```
 
-## Development
+## Development Notes
 
-### Running Tests
+### Tests
+
 ```bash
-npm test           # Watch mode
-npm test -- --run  # Single run
+npm test           # watch mode
+npm test -- --run  # single run
 ```
 
-### Game Constants
-All balance values are centralized in `src/gameConstants.ts`:
-- Initial resource values
-- Cost scaling exponents
-- Production rates
-- Timing intervals
+### Build Targets
 
-### Adding Research Nodes
-1. Add effect type to `EffectType` union in `researchTree.ts`
-2. Create node definition with prerequisites
-3. Handle effect in `useGameStore.ts` tick or action functions
+```bash
+npm run build           # web build
+npm run build:electron  # packaged Electron build
+```
+
+### Persistence
+
+The app includes save/load support and state migrations so older saves can continue working as the game evolves.
+
+## Repository Hygiene
+
+Generated coverage output is intentionally ignored and should not be committed. Regenerate it locally when needed.
 
 ## License
 
-MIT
+ISC
