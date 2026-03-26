@@ -1,4 +1,4 @@
-# Space Evolution
+# Space Rocket Idle Game
 
 A space-themed idle game built with React, TypeScript, Zustand, Vite, and Tailwind CSS. Build out a space program across the surface, orbit, research lab, and Moon while balancing money, science, fuel, cargo, contracts, and lunar resources.
 
