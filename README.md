@@ -1,14 +1,30 @@
-# Space Rocket Idle Game
+# Space Evolution
 
-A space-themed idle game built with React, TypeScript, Zustand, Vite, and Tailwind CSS. Build out a space program across the surface, orbit, research lab, and Moon while balancing money, science, fuel, cargo, contracts, and lunar resources.
+A space-themed idle game built with React, TypeScript, Zustand, and Tailwind CSS. Manage spaceports, launch rockets, conduct research, build orbiting infrastructure, and grow a strange little interstellar economy.
 
-## Getting Started
+## Play in the Browser
+
+The game is published as a static site on GitHub Pages, so you can test it without running the Electron app or a local dev server.
+
+## Running the game
 
 ```bash
 npm install
+
+# Start the browser dev server
 npm run dev
+
+# Run the Electron shell against the dev server
+npm run dev:electron
+
+# Run the test suite once
 npm test -- --run
+
+# Build the browser app
 npm run build
+
+# Build the Electron distributable
+npm run build:electron
 ```
 
 ## Play in the Browser
@@ -22,17 +38,17 @@ The game is set up for static deployment via GitHub Pages.
 
 Start on the surface by building rockets and spaceports, then use the resources they generate to unlock deeper systems:
 
-- **Money** funds expansion and construction.
-- **Science** unlocks research and progression.
-- **Fuel** is generated passively and consumed by launches.
-- **Cargo** supports orbital and lunar progression.
-- **Moon resources** such as regolith and helium-3 unlock later-stage systems.
+Navigate between four main layers using the right-side navigation:
 
 Explosions are part of the loop: failed launches can still produce science and eventually become manageable through research and automation.
 
-## Main Views
+2. **Surface** - Core operations (two sub-views)
+   - **Spaceports**: Build rockets and manage launch infrastructure
+   - **Contracts**: Accept missions from industrial partners
 
-The current game includes four main areas:
+3. **Moon** - Manage lunar operations and moon-base progression
+
+4. **Research Lab** - Unlock technologies across 5 branches
 
 1. **Surface**
    - Build rockets and expand spaceports
@@ -55,7 +71,12 @@ Contracts are available from the in-game company system and provide structured g
 - Active contract limits and rewards can be increased through progression.
 - Contract state is persisted and refreshed over time.
 
-## Automation and Progression
+#### Contracts
+- Partner with companies such as Titan Mining and Nova Research
+- Four contract types: Logistics, Research, Commercial, Balanced
+- Some contracts have time limits or explosion limits
+- Completing contracts grants rewards and company XP
+- Companies level up for better contracts
 
 Research can unlock or improve:
 
@@ -79,28 +100,18 @@ Research can unlock or improve:
 
 ```text
 src/
-  App.tsx                    # Main app shell and view navigation
-  useGameStore.ts            # Game state and core mechanics
-  SpaceportView.tsx          # Surface gameplay
-  OrbitView.tsx              # Orbital gameplay
-  ContractsView.tsx          # Contract management
-  ResearchTreeView.tsx       # Research UI
-  MoonView.tsx               # Lunar gameplay
-  components/
-    ResearchSidebar.tsx      # Research sidebar
-    SettingsPanel.tsx        # Game settings panel
-  persistence.ts             # Save/load logic
-  researchTree.ts            # Research definitions
-  gameConstants.ts           # Balance constants and defaults
-```
-
-## Development Notes
-
-### Tests
-
-```bash
-npm test           # watch mode
-npm test -- --run  # single run
+  App.tsx                 # Main app with layer navigation
+  useGameStore.ts         # Zustand store with game logic and save/load hooks
+  SpaceportView.tsx       # Surface layer - rockets & building
+  OrbitView.tsx           # Orbital layer - space stations
+  MoonView.tsx            # Lunar progression layer
+  ContractsView.tsx       # Contract management
+  ResearchTreeView.tsx    # Research tree UI
+  persistence.ts          # Local save/load helpers
+  researchTree.ts         # Research node definitions
+  gameConstants.ts        # Game balance constants
+  renderNodeDescription.ts# Research-node description helper
+  styles.css              # Custom CSS & animations
 ```
 
 ### Build Targets
@@ -118,6 +129,8 @@ The app includes save/load support and state migrations so older saves can conti
 
 Generated coverage output is intentionally ignored and should not be committed. Regenerate it locally when needed.
 
-## License
+## Notes
 
-ISC
+- Generated coverage reports are intentionally ignored and should not be committed.
+- For the GitHub Pages/browser build work, see issue #1 / PR #3.
+
