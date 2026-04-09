@@ -1,26 +1,70 @@
 {
-  "name": "space-clicker",
-  "version": "0.1.0",
-  "private": true,
-  "devDependencies": {
-    "react-native-scripts": "1.14.0",
-    "jest-expo": "~27.0.0",
-    "react-test-renderer": "16.3.1"
-  },
-  "main": "./node_modules/react-native-scripts/build/bin/crna-entry.js",
+  "name": "ai-game",
+  "version": "1.0.0",
+  "description": "Space Evolution - A space-themed idle game with rockets, orbital mechanics, contracts, and lunar exploration",
+  "main": "electron-main.js",
+  "type": "module",
   "scripts": {
-    "start": "react-native-scripts start",
-    "eject": "react-native-scripts eject",
-    "android": "react-native-scripts android",
-    "ios": "react-native-scripts ios",
-    "test": "jest"
+    "test": "vitest",
+    "dev": "vite",
+    "dev:electron": "cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
+    "build": "vite build",
+    "build:electron": "npm run build && electron-builder --win --publish never",
+    "preview": "vite preview"
   },
-  "jest": {
-    "preset": "jest-expo"
-  },
+  "keywords": [
+    "idle-game",
+    "react",
+    "typescript",
+    "space",
+    "simulation",
+    "incremental"
+  ],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "expo": "^27.0.1",
-    "react": "16.3.1",
-    "react-native": "~0.55.2"
+    "@tailwindcss/vite": "^4.1.17",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-icons": "^5.5.0",
+    "tailwindcss": "^4.1.17",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@types/react": "^19.2.3",
+    "@types/react-dom": "^19.2.3",
+    "@vitest/coverage-v8": "^4.0.16",
+    "cross-env": "^7.0.3",
+    "electron": "^40.8.0",
+    "electron-builder": "^26.4.0",
+    "jsdom": "^27.3.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.2",
+    "vitest": "^4.0.16"
+  },
+  "build": {
+    "appId": "com.spaceevolution.game",
+    "productName": "Space Evolution",
+    "files": [
+      "dist/**/*",
+      "electron-main.js",
+      "electron-preload.js",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Space Evolution"
+    }
   }
 }

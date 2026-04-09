@@ -1,0 +1,503 @@
+@import "tailwindcss";
+
+/* Disable text selection globally across entire game */
+* {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Allow text selection only in specific input elements if needed */
+input, textarea {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+}
+
+/* Hide scrollbars but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Snap scroll containers */
+.snap-y-mandatory {
+  scroll-snap-type: y mandatory;
+}
+.snap-x-mandatory {
+  scroll-snap-type: x mandatory;
+}
+.snap-start {
+  scroll-snap-align: start;
+}
+.snap-center {
+  scroll-snap-align: center;
+}
+
+/* Layer backgrounds */
+.layer-orbit {
+  background: linear-gradient(180deg, #0a0a1a 0%, #1a1a3a 50%, #0d1b2a 100%);
+}
+.layer-surface {
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+.layer-research {
+  background: linear-gradient(180deg, #1a0a1a 0%, #2d1b36 30%, #1a0a20 70%, #0d0d0d 100%);
+}
+.layer-contracts {
+  background: linear-gradient(180deg, #0d1b2a 0%, #1a1a2e 30%, #2d1b36 70%, #1a1a2e 100%);
+}
+
+/* Star field effect for orbit */
+.stars {
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, white, transparent),
+    radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+    radial-gradient(1px 1px at 90px 40px, white, transparent),
+    radial-gradient(2px 2px at 160px 120px, rgba(255,255,255,0.9), transparent),
+    radial-gradient(1px 1px at 230px 80px, white, transparent),
+    radial-gradient(2px 2px at 300px 150px, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 350px 200px, white, transparent),
+    radial-gradient(2px 2px at 420px 60px, rgba(255,255,255,0.8), transparent),
+    radial-gradient(1px 1px at 500px 180px, white, transparent),
+    radial-gradient(2px 2px at 580px 90px, rgba(255,255,255,0.6), transparent);
+  background-size: 600px 300px;
+  animation: stars-twinkle 4s ease-in-out infinite alternate;
+}
+
+@keyframes stars-twinkle {
+  0% { opacity: 0.8; }
+  100% { opacity: 1; }
+}
+
+/* Underground lab effect for research */
+.underground-glow {
+  box-shadow: 
+    inset 0 0 100px rgba(139, 92, 246, 0.1),
+    inset 0 0 200px rgba(139, 92, 246, 0.05);
+}
+
+/* Animations */
+@keyframes rocket-ready {
+  0% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-3px);
+  }
+  50% {
+    transform: translateY(0);
+  }
+  75% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-rocket-ready {
+  animation: rocket-ready 1s ease-in-out infinite;
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(-5%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Cargo rocket launch animation - maintains -45deg rotation, moves up */
+ @keyframes cargo-launch {
+   0%, 100% {
+     transform: rotate(-45deg) translate(0, 0);
+     filter: brightness(1);
+   }
+   50% {
+     transform: rotate(-45deg) translate(2px, -2px);
+     filter: brightness(1.3);
+   }
+ }
+
+ .animate-cargo-launch {
+   animation: cargo-launch 1s ease-in-out infinite;
+ }
+
+ /* Science rocket launch animation - no rotation, moves up */
+ @keyframes science-launch {
+   0%, 100% {
+     transform: translateY(0);
+     filter: brightness(1);
+   }
+   50% {
+     transform: translateY(-3px);
+     filter: brightness(1.3);
+   }
+ }
+
+ .animate-science-launch {
+   animation: science-launch 1s ease-in-out infinite;
+ }
+
+ @keyframes new-research-highlight {
+   0% {
+     box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+   }
+   50% {
+     box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+   }
+   100% {
+     box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+   }
+ }
+
+ .animate-new-research {
+   animation: new-research-highlight 2s ease-out;
+ }
+
+ @keyframes float-up-fade {
+   0% {
+     opacity: 1;
+     transform: translateY(0);
+   }
+   100% {
+     opacity: 0;
+     transform: translateY(-40px);
+   }
+ }
+
+ .animate-float-up {
+   animation: float-up-fade 1.5s ease-out forwards;
+ }
+
+/* Floating particles for research lab */
+@keyframes float-particle {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-20px) translateX(10px);
+    opacity: 0.6;
+  }
+}
+
+.particle {
+  animation: float-particle 6s ease-in-out infinite;
+}
+
+/* Glow effects */
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
+}
+.glow-purple {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+.glow-orange {
+  box-shadow: 0 0 20px rgba(251, 146, 60, 0.3);
+}
+
+/* Scroll transition animations */
+.layer-transition {
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease-out;
+}
+
+/* Layer content fade-in animations */
+@keyframes layer-fade-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.layer-content-enter {
+  animation: layer-fade-in 0.4s ease-out forwards;
+}
+
+/* Parallax-style layer backgrounds */
+.layer-parallax {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Research button flash animation */
+@keyframes research-flash {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.9), 0 0 40px rgba(139, 92, 246, 0.5);
+  }
+}
+
+.animate-research-flash {
+  animation: research-flash 1.5s ease-in-out infinite;
+}
+
+/* Smooth scroll behavior for containers */
+.smooth-scroll {
+  scroll-behavior: smooth;
+}
+
+/* Orbital layer animations */
+@keyframes spin-slow {
+  from {
+    transform: rotate(45deg);
+  }
+  to {
+    transform: rotate(405deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+@keyframes orbit-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-orbit {
+  animation: orbit-rotate 20s linear infinite;
+}
+
+/* === MOON TERMINAL THEME === */
+
+/* Terminal container */
+.terminal-container {
+  font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+  color: #22c55e;
+  text-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
+}
+
+/* Terminal title */
+.terminal-title {
+  font-family: 'Courier New', monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* Terminal text */
+.terminal-text {
+  font-family: 'Courier New', monospace;
+}
+
+/* Terminal panel */
+.terminal-panel {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 4px;
+  box-shadow: 
+    0 0 10px rgba(34, 197, 94, 0.1),
+    inset 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Terminal button */
+.terminal-button {
+  font-family: 'Courier New', monospace;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(34, 197, 94, 0.5);
+  color: #22c55e;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.2s ease;
+}
+
+.terminal-button:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.2);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+}
+
+.terminal-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Small terminal button */
+.terminal-button-sm {
+  font-family: 'Courier New', monospace;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #22c55e;
+  transition: all 0.2s ease;
+}
+
+.terminal-button-sm:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.3);
+}
+
+/* Terminal flicker animation */
+@keyframes terminal-flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.98; }
+  52% { opacity: 0.9; }
+  54% { opacity: 1; }
+}
+
+.terminal-flicker {
+  animation: terminal-flicker 0.15s infinite;
+}
+
+/* Scanline effect */
+.scanlines::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 0, 0.03) 2px,
+    rgba(0, 255, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* Moon layer background */
+.layer-moon {
+  background: linear-gradient(180deg, #0a0a0a 0%, #0d0d0d 30%, #111111 70%, #0a0a0a 100%);
+}
+
+/* Terminal alert styling */
+.terminal-alert {
+  animation: terminal-alert-pulse 2s ease-in-out infinite;
+}
+
+@keyframes terminal-alert-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.8), 0 0 40px rgba(239, 68, 68, 0.4);
+  }
+}
+
+/* Hazard overlay effects */
+.hazard-dust {
+  position: relative;
+}
+
+.hazard-dust::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(251, 191, 36, 0.05) 10px,
+    rgba(251, 191, 36, 0.05) 20px
+  );
+  animation: dust-drift 3s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes dust-drift {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(20px); }
+}
+
+.hazard-flare {
+  position: relative;
+}
+
+.hazard-flare::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(251, 146, 60, 0.1) 0%,
+    transparent 70%
+  );
+  animation: flare-pulse 1s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes flare-pulse {
+  0% { opacity: 0.3; }
+  100% { opacity: 0.6; }
+}
+
+/* CRT glow effect */
+.crt-glow {
+  box-shadow: 
+    0 0 50px rgba(34, 197, 94, 0.1),
+    inset 0 0 80px rgba(34, 197, 94, 0.05);
+}
+
+/* Research Sidebar Text Hierarchy */
+.research-title {
+  @apply text-xl font-bold text-white;
+}
+
+.research-science-label {
+  @apply text-base font-bold text-blue-400;
+}
+
+.research-item-title {
+  @apply text-sm font-semibold text-white;
+}
+
+.research-item-description {
+  @apply text-xs text-gray-400 leading-tight;
+}
+
+.research-item-cost {
+  @apply text-sm font-mono;
+}
+
+.research-item-additional {
+  @apply text-xs;
+}
+
+.research-level-badge {
+  @apply text-xs font-mono;
+}
+
+.research-completed-heading {
+  @apply text-sm text-gray-500;
+}
+
+.research-completed-item {
+  @apply text-xs;
+}
