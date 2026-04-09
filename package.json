@@ -38,11 +38,11 @@
     "@types/react-dom": "^19.2.3",
     "@vitest/coverage-v8": "^4.0.16",
     "cross-env": "^7.0.3",
-    "electron": "^40.0.0",
+    "electron": "^40.8.0",
     "electron-builder": "^26.4.0",
     "jsdom": "^27.3.0",
     "typescript": "^5.9.3",
-    "vite": "^7.2.2",
+    "vite": "^7.3.2",
     "vitest": "^4.0.16"
   },
   "build": {
