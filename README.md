@@ -1,136 +1,118 @@
-# Space Rocket Idle Game
+# Space Evolution
 
-A space-themed idle game built with React, TypeScript, Zustand, and Tailwind CSS. Manage spaceports, launch rockets, conduct research, and build an interstellar economy.
+Space Evolution is a React + TypeScript incremental game about building a launch program, expanding into orbit, running contracts, and establishing lunar industry.
 
-## Getting Started
+The current desktop target is Electron on Windows, with Steam as the intended release path once desktop reliability, input support, and Steam integration are ready.
+
+## Stack
+
+- React 19
+- TypeScript
+- Zustand
+- Tailwind CSS 4
+- Vite
+- Electron
+- Vitest + Testing Library
+
+## Scripts
 
 ```bash
-# Install dependencies
-npm install
-
-# Start development server
+# Web development
 npm run dev
 
-# Run tests
-npm test
+# Electron development
+# Run these in separate terminals:
+npm run dev
+npm run dev:electron
 
-# Build for production
+# Production web build
 npm run build
+
+# Windows Electron build
+npm run build:electron
+
+# Tests
+npm test
+npm test -- --run
 ```
 
-## How to Play
+## Current Game Scope
 
-### Goal
-Build a thriving space program by accumulating money, science, and cargo. Expand your infrastructure, research new technologies, and complete contracts for industrial partners.
+The game currently includes:
 
-### Resources
+- Surface operations with rockets, spaceports, fuel, explosions, and salvage
+- Orbit gameplay with stations, docking, satellites, and debris
+- Contract progression tied to company levels and perks
+- A large research tree that unlocks automation and layer progression
+- Moon progression with missions, sectors, power, hazards, and resource processing
+- Save/load support for browser and Electron builds
 
-| Resource | Description | Generation |
-|----------|-------------|------------|
-| **Money** | Primary currency for building | Cargo rocket launches, contract rewards |
-| **Science** | Used for research unlocks | Science rockets, explosions, spaceports |
-| **Fuel** | Required for each rocket launch | Fuel refineries (1/sec per refinery) |
-| **Cargo** | Used for orbital construction | Successful cargo launches |
+## Project Layout
 
-### Game Layers
-
-Navigate between three main layers using the right-side navigation:
-
-1. **Orbit** - Build and manage space stations
-   - Research Stations: Boost science output
-   - Logistics Stations: Increase money production
-
-2. **Surface** - Core operations (two sub-views)
-   - **Spaceports**: Build rockets and manage launch infrastructure
-   - **Contracts**: Accept missions from 10 industrial companies
-
-3. **Research Lab** - Unlock technologies across 5 branches
-
-### Core Mechanics
-
-#### Rockets
-- **Cargo Rockets** (blue): Generate money on successful launch
-- **Science Rockets** (purple): Generate science on successful launch
-- Each launch consumes fuel and has an explosion chance (50% base)
-- Exploded rockets can be salvaged for +1 science
-
-#### Spaceports
-- Each spaceport has slots for rockets (2 base capacity)
-- Generates passive science and cargo bonuses
-- Build more spaceports to expand fleet capacity
-
-#### Research Tree (139 nodes)
-Five technology branches:
-- **Propulsion**: Reduce explosion chance (100 levels of Safety Protocols)
-- **Infrastructure**: Increase capacity, reduce costs (10 Modular Spaceports)
-- **Commercial**: Boost profits and contract rewards
-- **Orbital**: Unlock science rockets, spaceports, refineries, stations
-- **Control**: Automation features (auto-build, auto-salvage)
-
-#### Contracts
-- Partner with 10 companies (Titan Mining, Nova Research, etc.)
-- Four contract types: Logistics, Research, Commercial, Balanced
-- Some contracts have time limits or explosion limits
-- Completing contracts grants rewards and company XP
-- Companies level up for better contracts
-
-#### Automation (requires research)
-- **Auto-Build**: Automatically builds cargo rockets (1 per 20s base)
-- **Auto-Salvage**: Automatically clears explosions (1 per 20s base)
-- Progress bars show countdown to next automatic action
-
-### Tips
-- Start by building cargo rockets to generate money
-- Research "Safety Protocols" to reduce explosion chance
-- Build fuel refineries to sustain more rocket launches
-- Accept contracts for bonus rewards
-- Science rockets unlock after researching "Science Module"
-
-## Tech Stack
-
-- **React 19** - UI framework
-- **TypeScript** - Type safety
-- **Zustand** - State management
-- **Tailwind CSS 4** - Styling
-- **Vite** - Build tool
-- **Vitest** - Testing
-
-## Project Structure
-
-```
+```text
 src/
-  App.tsx              # Main app with layer navigation
-  useGameStore.ts      # Zustand store with all game logic
-  SpaceportView.tsx    # Surface layer - rockets & building
-  OrbitView.tsx        # Orbital layer - space stations
-  ContractsView.tsx    # Contracts management
-  ResearchTreeView.tsx # Research tree UI
-  DevConsole.tsx       # Developer tools (Ctrl+`)
-  researchTree.ts      # Research node definitions
-  gameConstants.ts     # Game balance constants
-  styles.css           # Custom CSS & animations
+  App.tsx
+  useGameStore.ts
+  gameConstants.ts
+  researchTree.ts
+  SpaceportView.tsx
+  OrbitView.tsx
+  ContractsView.tsx
+  ResearchTreeView.tsx
+  MoonView.tsx
+  components/
+    ResearchSidebar.tsx
+    SettingsPanel.tsx
 ```
 
-## Development
+Important files:
 
-### Running Tests
+- [src/useGameStore.ts](/home/barro/code/barro/space-clicker/src/useGameStore.ts): core simulation, actions, progression state
+- [src/gameConstants.ts](/home/barro/code/barro/space-clicker/src/gameConstants.ts): balance and tuning constants
+- [src/researchTree.ts](/home/barro/code/barro/space-clicker/src/researchTree.ts): research definitions
+- [src/persistence.ts](/home/barro/code/barro/space-clicker/src/persistence.ts): browser/Electron save abstraction
+- [electron-main.js](/home/barro/code/barro/space-clicker/electron-main.js): Electron main process and file-based saves
+
+## Saves
+
+Browser builds use `localStorage`.
+
+Electron builds use a JSON save file:
+
+- Windows: `%APPDATA%/SpaceEvolution/gameSave.json`
+- macOS/Linux: `~/.SpaceEvolution/gameSave.json`
+
+## Testing
+
+Run the full suite:
+
 ```bash
-npm test           # Watch mode
-npm test -- --run  # Single run
+npm test -- --run
 ```
 
-### Game Constants
-All balance values are centralized in `src/gameConstants.ts`:
-- Initial resource values
-- Cost scaling exponents
-- Production rates
-- Timing intervals
+Run a specific file:
 
-### Adding Research Nodes
-1. Add effect type to `EffectType` union in `researchTree.ts`
-2. Create node definition with prerequisites
-3. Handle effect in `useGameStore.ts` tick or action functions
+```bash
+npm test -- --run src/useGameStore.test.ts
+```
 
-## License
+The current suite covers store logic, research behavior, and the major React views.
 
-MIT
+## Documentation Policy
+
+This repository intentionally keeps documentation small.
+
+- `README.md` is the main project document.
+- `AGENTS.md` contains repository-specific coding instructions for agentic tools.
+- Stale audit notes, planning scratch files, and one-off analysis documents are removed instead of preserved.
+
+## Steam Direction
+
+The current plan is:
+
+1. Keep the Electron desktop build stable and save-safe.
+2. Improve keyboard and controller navigation so the game is playable without a mouse.
+3. Add Steam-specific integration such as Cloud saves and achievements.
+4. Validate UI readability and interaction flow for Steam Deck class devices.
+
+This is a viable stack for a management/idle game, but Steam readiness depends more on polish, input handling, and reliability than on engine choice.
