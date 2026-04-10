@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
+import { shallow } from 'zustand/shallow'
 import { useGameStore, GameState } from "./useGameStore.js"
 import { MOON } from "./gameConstants.js"
 import { FaMoneyBillAlt, FaFlask, FaGasPump, FaBox, FaChevronUp, FaChevronDown, FaChevronLeft, FaChevronRight, FaRocket, FaSatellite, FaFlask as FaLab, FaExclamationTriangle, FaFileContract, FaIndustry, FaMoon, FaGem, FaLock } from 'react-icons/fa'
@@ -372,28 +373,49 @@ function LockedLayerView({ layer, cargo, totalSuccessfulLaunches, onUnlock }: Lo
 export function App() {
   const verticalScrollRef = useRef<HTMLDivElement>(null);
 
-  const { money, science, fuel, cargo, tick, notifications } = useGameStore()
-  const maxFuel = useGameStore(state => state.getMaxFuel());
+  const [
+    money,
+    science,
+    fuel,
+    cargo,
+    tick,
+    maxFuel,
+    researchedNodes,
+    rockets,
+    explodedRocketIds,
+    spaceports,
+    spaceStations,
+    activeContracts,
+    satellites,
+    spaceDebris,
+    totalSuccessfulLaunches,
+    orbitLayerUnlocked,
+    contractsLayerUnlocked,
+    unlockLayer,
+  ] = useGameStore((state) => [
+    state.money,
+    state.science,
+    state.fuel,
+    state.cargo,
+    state.tick,
+    state.getMaxFuel(),
+    state.researchedNodes,
+    state.rockets,
+    state.explodedRocketIds,
+    state.spaceports,
+    state.spaceStations,
+    state.activeContracts,
+    state.satellites,
+    state.spaceDebris,
+    state.totalSuccessfulLaunches,
+    state.orbitLayerUnlocked,
+    state.contractsLayerUnlocked,
+    state.unlockLayer,
+  ], shallow);
   
    // Current layer state
    const [currentLayer, setCurrentLayer] = useState<Layer>('surface');
    const [settingsOpen, setSettingsOpen] = useState(false);
-  
-  // Get computed values
-  const researchedNodes = useGameStore(state => state.researchedNodes);
-  const rockets = useGameStore(state => state.rockets);
-  const explodedRocketIds = useGameStore(state => state.explodedRocketIds);
-   const spaceports = useGameStore(state => state.spaceports);
-  const spaceStations = useGameStore(state => state.spaceStations);
-  const activeContracts = useGameStore(state => state.activeContracts);
-  const satellites = useGameStore(state => state.satellites);
-  const spaceDebris = useGameStore(state => state.spaceDebris);
-  
-  // Layer unlock states
-  const totalSuccessfulLaunches = useGameStore(state => state.totalSuccessfulLaunches);
-  const orbitLayerUnlocked = useGameStore(state => state.orbitLayerUnlocked);
-  const contractsLayerUnlocked = useGameStore(state => state.contractsLayerUnlocked);
-  const unlockLayer = useGameStore(state => state.unlockLayer);
   
   const metrics = useMemo(() => {
     const state = useGameStore.getState();
@@ -544,6 +566,39 @@ export function App() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    const handleKeyboardLayerNavigation = (event: KeyboardEvent) => {
+      if (settingsOpen) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      const tagName = target?.tagName;
+      const isTypingTarget = tagName === 'INPUT' || tagName === 'TEXTAREA' || target?.isContentEditable;
+      if (isTypingTarget) {
+        return;
+      }
+
+      const currentIndex = LAYERS.indexOf(currentLayer);
+      const lowestScrollable = getLowestScrollableLayerIndex();
+
+      if (event.key === 'ArrowUp' || event.key === 'PageUp') {
+        event.preventDefault();
+        if (currentIndex > lowestScrollable) {
+          scrollToLayer(LAYERS[currentIndex - 1]);
+        }
+      } else if (event.key === 'ArrowDown' || event.key === 'PageDown') {
+        event.preventDefault();
+        if (currentIndex < LAYERS.length - 1) {
+          scrollToLayer(LAYERS[currentIndex + 1]);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyboardLayerNavigation);
+    return () => window.removeEventListener('keydown', handleKeyboardLayerNavigation);
+  }, [currentLayer, settingsOpen, contractsLayerUnlocked, orbitLayerUnlocked, researchedNodes]);
 
   useEffect(() => {
     const interval = setInterval(tick, TIME.TICK_INTERVAL_MS)

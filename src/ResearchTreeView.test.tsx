@@ -11,13 +11,17 @@ vi.mock('./useGameStore', () => ({
 
 describe('ResearchTreeView Component', () => {
    it('renders branches and titles', () => {
-      (useGameStore as any).mockReturnValue({
+      const mockState = {
         researchedNodes: [],
         science: 1000,
         rocketExplosionChance: 0.75,
         unlockNode: vi.fn(),
         getEffectMultiplier: vi.fn((type: string) => type === 'explosionChanceMultiplier' ? 1 : 1),
-      });
+        newlyAvailableResearchIds: [],
+      };
+      (useGameStore as any).mockImplementation((selector?: (state: any) => any) =>
+        typeof selector === 'function' ? selector(mockState) : mockState
+      );
 
       render(<ResearchTreeView />);
       
@@ -34,13 +38,17 @@ describe('ResearchTreeView Component', () => {
 
    it('allows unlocking available nodes', () => {
      const unlockSpy = vi.fn();
-     (useGameStore as any).mockReturnValue({
+     const mockState = {
        researchedNodes: [],
        science: 1000,
        rocketExplosionChance: 0.75,
        unlockNode: unlockSpy,
        getEffectMultiplier: vi.fn((type: string) => type === 'explosionChanceMultiplier' ? 1 : 1),
-     });
+       newlyAvailableResearchIds: [],
+     };
+     (useGameStore as any).mockImplementation((selector?: (state: any) => any) =>
+       typeof selector === 'function' ? selector(mockState) : mockState
+     );
 
      render(<ResearchTreeView />);
      
@@ -51,13 +59,17 @@ describe('ResearchTreeView Component', () => {
    });
 
     it('shows style for researched nodes', () => {
-      (useGameStore as any).mockReturnValue({
+      const mockState = {
         researchedNodes: ['p1-1'],
         science: 1000,
         rocketExplosionChance: 0.75,
         unlockNode: vi.fn(),
         getEffectMultiplier: vi.fn((type: string) => type === 'explosionChanceMultiplier' ? 1 : 1),
-      });
+        newlyAvailableResearchIds: [],
+      };
+      (useGameStore as any).mockImplementation((selector?: (state: any) => any) =>
+        typeof selector === 'function' ? selector(mockState) : mockState
+      );
 
       render(<ResearchTreeView />);
       

@@ -31,7 +31,10 @@ const createDefaultMock = (overrides = {}) => ({
 
 describe('OrbitView Component', () => {
   it('renders planet and build buttons', () => {
-    (useGameStore as any).mockReturnValue(createDefaultMock());
+    const mockState = createDefaultMock();
+    (useGameStore as any).mockImplementation((selector?: (state: any) => any) =>
+      typeof selector === 'function' ? selector(mockState) : mockState
+    );
 
     render(<OrbitView />);
     
@@ -43,12 +46,15 @@ describe('OrbitView Component', () => {
   });
 
   it('displays stations in orbit', () => {
-     (useGameStore as any).mockReturnValue(createDefaultMock({
+     const mockState = createDefaultMock({
       spaceStations: [
         { id: '1', type: 'research', level: 1, maxDocks: 2, dockedRockets: [] },
         { id: '2', type: 'logistics', level: 2, maxDocks: 2, dockedRockets: [] },
       ],
-    }));
+    });
+    (useGameStore as any).mockImplementation((selector?: (state: any) => any) =>
+      typeof selector === 'function' ? selector(mockState) : mockState
+    );
 
     render(<OrbitView />);
     
@@ -59,9 +65,12 @@ describe('OrbitView Component', () => {
 
   it('calls buildSpaceStation when buttons are clicked', () => {
     const buildSpy = vi.fn();
-    (useGameStore as any).mockReturnValue(createDefaultMock({
+    const mockState = createDefaultMock({
       buildSpaceStation: buildSpy,
-    }));
+    });
+    (useGameStore as any).mockImplementation((selector?: (state: any) => any) =>
+      typeof selector === 'function' ? selector(mockState) : mockState
+    );
 
     render(<OrbitView />);
     

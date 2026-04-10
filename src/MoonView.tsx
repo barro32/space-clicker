@@ -1,10 +1,11 @@
 import { useGameStore, MoonBuildingType, MoonSector } from './useGameStore.js'
+import { shallow } from 'zustand/shallow'
 import { MOON } from './gameConstants.js'
 import { FaMoon, FaRocket, FaWarehouse, FaWrench, FaBolt, FaExclamationTriangle, FaArrowRight, FaIndustry, FaSun, FaAtom, FaBatteryFull, FaGripHorizontal, FaBox, FaFlask, FaGem } from 'react-icons/fa'
 import { useState } from 'react'
 
 export function MoonView() {
-  const {
+  const [
     moonStatus,
     moonMissionTicksRemaining,
     moonSectors,
@@ -24,16 +25,38 @@ export function MoonView() {
     launchMassDriverPayload,
     sendSupplyMission,
     clearHazard,
-    getMoonStorageCapacity,
+    storage,
     getMoonBuildingCost,
     getEffectMultiplier,
-  } = useGameStore()
+  ] = useGameStore((state) => [
+    state.moonStatus,
+    state.moonMissionTicksRemaining,
+    state.moonSectors,
+    state.moonResources,
+    state.earthResources,
+    state.activeHazard,
+    state.moonLog,
+    state.moonPowerSystem,
+    state.fuel,
+    state.cargo,
+    state.science,
+    state.lunarComponents,
+    state.researchedNodes,
+    state.startMoonMission,
+    state.scanSector,
+    state.constructBuildingOnMoon,
+    state.launchMassDriverPayload,
+    state.sendSupplyMission,
+    state.clearHazard,
+    state.getMoonStorageCapacity(),
+    state.getMoonBuildingCost,
+    state.getEffectMultiplier,
+  ], shallow)
 
   const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null)
   const [buildingHoverType, setBuildingHoverType] = useState<string | null>(null)
   const [supplyMissionCargo, setSupplyMissionCargo] = useState(Math.min(cargo, MOON.CARGO_ROCKET_CAPACITY))
 
-  const storage = getMoonStorageCapacity()
   const hasLunarManufacturing = researchedNodes.includes('o14')
 
   // Mission cost check

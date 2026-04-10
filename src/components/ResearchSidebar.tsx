@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react"
+import { shallow } from 'zustand/shallow'
 import { useGameStore } from "../useGameStore.js"
 import { researchTree, ResearchNode, ResearchLayer, ResearchBranch } from "../researchTree.js"
 import { renderNodeDescription } from "../renderNodeDescription.js"
@@ -83,15 +84,21 @@ const renderEffectDescription = (effect: { type: string; value: number }, curren
 
 export function ResearchSidebar({ layer }: ResearchSidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const { 
-    researchedNodes, 
-    unlockNode, 
-    science, 
-    cargo, 
-    lunarComponents, 
+  const [
+    researchedNodes,
+    unlockNode,
+    science,
+    cargo,
+    lunarComponents,
     earthResources,
-    getEffectMultiplier
-  } = useGameStore()
+  ] = useGameStore((state) => [
+    state.researchedNodes,
+    state.unlockNode,
+    state.science,
+    state.cargo,
+    state.lunarComponents,
+    state.earthResources,
+  ], shallow)
 
   // Filter research nodes for this layer
   const layerNodes = researchTree.filter(n => n.assignedLayer === layer);

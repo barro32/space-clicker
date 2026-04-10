@@ -1,26 +1,55 @@
 import { useState, useMemo, useEffect, useRef } from "react"
+import { shallow } from 'zustand/shallow'
 import { useGameStore, SpaceStation } from "./useGameStore.js"
 import { FaSatellite, FaGlobe, FaMicroscope, FaTruckLoading, FaRocket, FaFlask, FaArrowUp, FaTimes, FaExclamationTriangle, FaMoon, FaInfoCircle } from "react-icons/fa"
 import { ORBITAL, PRODUCTION } from "./gameConstants.js"
 
 export function OrbitView() {
-  const { 
-    spaceStations, 
-    buildSpaceStation, 
+  const [
+    spaceStations,
+    buildSpaceStation,
     upgradeStation,
-    cargo, 
+    cargo,
     science,
     lunarComponents,
     satellites,
-    maxSatellites,
     launchSatellite,
     spaceDebris,
     clearDebris,
     transitRockets,
     dockedRockets,
-    getEffectMultiplier,
-    getCompanyPerkValue,
-  } = useGameStore()
+    satellitesUnlocked,
+    hasDebrisImmunity,
+    effectiveMaxSatellites,
+    lunarProductionMultiplier,
+    satelliteBonusMultiplier,
+    stationBonusMultiplier,
+    dockingBonusMultiplier,
+    stationScienceMultiplier,
+    stationLogisticsMultiplier,
+  ] = useGameStore((state) => [
+    state.spaceStations,
+    state.buildSpaceStation,
+    state.upgradeStation,
+    state.cargo,
+    state.science,
+    state.lunarComponents,
+    state.satellites,
+    state.launchSatellite,
+    state.spaceDebris,
+    state.clearDebris,
+    state.transitRockets,
+    state.dockedRockets,
+    state.getEffectMultiplier('unlockSatellites') > 0,
+    state.getEffectMultiplier('debrisImmunity') > 0,
+    ORBITAL.MAX_SATELLITES_BASE + state.getEffectMultiplier('maxSatellitesBonus'),
+    state.getEffectMultiplier('lunarProductionMultiplier') || 1,
+    state.getEffectMultiplier('satelliteBonusMultiplier') || 1,
+    state.getCompanyPerkValue('stationBonusMultiplier') || 1,
+    state.getEffectMultiplier('dockingBonusMultiplier') || ORBITAL.DOCKING_BONUS_MULTIPLIER,
+    state.getEffectMultiplier('stationScienceMultiplier') || 1,
+    state.getEffectMultiplier('stationLogisticsMultiplier') || 1,
+  ], shallow)
   
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null)
   const [hoveredStationId, setHoveredStationId] = useState<string | null>(null)
@@ -50,18 +79,11 @@ export function OrbitView() {
        setRecentDockings(prev => prev.filter(d => now - d.timestamp < 1500))
      }, 500)
      return () => clearInterval(interval)
-   }, [recentDockings])
+   }, [])
   
   // Get fresh station data from store
   const selectedStation = selectedStationId ? spaceStations.find(s => s.id === selectedStationId) || null : null
   const hoveredStation = hoveredStationId ? spaceStations.find(s => s.id === hoveredStationId) || null : null
-  
-  // Check research unlocks
-  const satellitesUnlocked = getEffectMultiplier('unlockSatellites') > 0
-  const hasDebrisImmunity = getEffectMultiplier('debrisImmunity') > 0
-  
-  // Calculate current max satellites with research bonuses
-  const effectiveMaxSatellites = ORBITAL.MAX_SATELLITES_BASE + getEffectMultiplier('maxSatellitesBonus')
   
   // Cost calculations
   const canAffordStation = cargo >= ORBITAL.STATION_COST_CARGO && science >= ORBITAL.STATION_COST_SCIENCE
@@ -71,15 +93,8 @@ export function OrbitView() {
   const debrisPenalty = hasDebrisImmunity ? 0 : Math.min(spaceDebris.length * ORBITAL.DEBRIS_PENALTY_PER_PIECE * 100, ORBITAL.MAX_DEBRIS_PENALTY * 100)
   
   // Calculate current lunar component production rate
-  const lunarProductionMultiplier = getEffectMultiplier('lunarProductionMultiplier') || 1
-  const satelliteBonus = 1 + (satellites * ORBITAL.SATELLITE_GLOBAL_BONUS * (getEffectMultiplier('satelliteBonusMultiplier') || 1))
+  const satelliteBonus = 1 + (satellites * ORBITAL.SATELLITE_GLOBAL_BONUS * satelliteBonusMultiplier)
   const debrisMultiplier = hasDebrisImmunity ? 1 : (1 - debrisPenalty / 100)
-  
-  // Station output multipliers (matching tick() calculation)
-  const stationBonusMultiplier = getCompanyPerkValue('stationBonusMultiplier') || 1
-  const dockingBonusMultiplier = getEffectMultiplier('dockingBonusMultiplier') || ORBITAL.DOCKING_BONUS_MULTIPLIER
-  const stationScienceMultiplier = getEffectMultiplier('stationScienceMultiplier') || 1
-  const stationLogisticsMultiplier = getEffectMultiplier('stationLogisticsMultiplier') || 1
   
   // Helper to calculate effective station output
   const getEffectiveStationOutput = (station: typeof spaceStations[0]) => {

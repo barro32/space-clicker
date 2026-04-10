@@ -1,46 +1,82 @@
 import { useGameStore } from "./useGameStore.js"
+import { shallow } from 'zustand/shallow'
 import { FaRegBuilding, FaRocket, FaBomb, FaGasPump } from "react-icons/fa"
 import { COST_SCALING } from "./gameConstants.js"
 import { AUTOMATION } from "./gameConstants.js"
 
 export function SpaceportView() {
-       const { rockets, spaceports, buildSpaceport, buildRocket, explodedRocketIds, clearExplosion, autoBuildActive, autoSalvageActive, toggleAutoBuild, toggleAutoSalvage, fuel, tickCount, buildFuelRefinery, fuelRefineries } = useGameStore()
+  const [
+    rockets,
+    spaceports,
+    buildSpaceport,
+    buildRocket,
+    explodedRocketIds,
+    clearExplosion,
+    autoBuildActive,
+    autoSalvageActive,
+    toggleAutoBuild,
+    toggleAutoSalvage,
+    fuel,
+    tickCount,
+    buildFuelRefinery,
+    fuelRefineries,
+    effectiveCapacity,
+    currentRocketCost,
+    currentSpaceportCost,
+    fuelCostPerRocket,
+    spaceportsUnlocked,
+    fuelRefineriesUnlocked,
+    explosionClearingUnlocked,
+    currentFuelRefineryCost,
+    autoBuildEnabled,
+    buildMultiplier,
+    autoSalvageEnabled,
+    clearMultiplier,
+  ] = useGameStore((state) => [
+    state.rockets,
+    state.spaceports,
+    state.buildSpaceport,
+    state.buildRocket,
+    state.explodedRocketIds,
+    state.clearExplosion,
+    state.autoBuildActive,
+    state.autoSalvageActive,
+    state.toggleAutoBuild,
+    state.toggleAutoSalvage,
+    state.fuel,
+    state.tickCount,
+    state.buildFuelRefinery,
+    state.fuelRefineries,
+    Math.max(1, state.spaceportCapacity + state.getEffectMultiplier('spaceportCapacityBonus')),
+    state.getCurrentRocketCost(),
+    state.getCurrentSpaceportCost(),
+    state.fuelCostPerRocket * state.getEffectMultiplier('fuelCostMultiplier'),
+    state.researchedNodes.includes('o5'),
+    state.researchedNodes.includes('o6'),
+    state.researchedNodes.includes('o7'),
+    Math.round(COST_SCALING.FUEL_REFINERY_COST_BASE * Math.pow(COST_SCALING.FUEL_REFINERY_COST_EXPONENT, state.fuelRefineries)),
+    state.getEffectMultiplier('autoBuildEnabled') > 0,
+    state.getEffectMultiplier('buildRocketMultiplier') || 1,
+    state.getEffectMultiplier('autoSalvageEnabled') > 0,
+    state.getEffectMultiplier('clearExplosionMultiplier') || 1,
+  ], shallow);
      
-      // use effective capacity from research
-      const effectiveCapacity = useGameStore(state => Math.max(1, state.spaceportCapacity + state.getEffectMultiplier('spaceportCapacityBonus')));
-       const currentRocketCost = useGameStore(state => state.getCurrentRocketCost());
-       const currentSpaceportCost = useGameStore(state => state.getCurrentSpaceportCost());
-       const fuelCostPerRocket = useGameStore(state => state.fuelCostPerRocket * state.getEffectMultiplier('fuelCostMultiplier'));
+  const rocketsWithFuel = Math.floor(fuel / fuelCostPerRocket);
       
-      // Calculate how many rockets can launch with available fuel
-      const activeRocketCount = rockets.filter((r, i) => r !== null && !explodedRocketIds.includes(r.id)).length;
-      const rocketsWithFuel = Math.floor(fuel / fuelCostPerRocket);
-      
-      // Get ordered list of active rocket IDs (to determine which ones get fuel)
-       const activeRocketIds = rockets
-         .filter((r): r is { id: number; type: 'cargo' } => r !== null && !explodedRocketIds.includes(r.id))
-         .slice(0, rocketsWithFuel)
-         .map(r => r.id);
-        const spaceportsUnlocked = useGameStore(state => state.researchedNodes.includes('o5'));
-       const fuelRefineriesUnlocked = useGameStore(state => state.researchedNodes.includes('o6'));
-       const explosionClearingUnlocked = useGameStore(state => state.researchedNodes.includes('o7'));
-       const currentFuelRefineryCost = useGameStore(state => Math.round(COST_SCALING.FUEL_REFINERY_COST_BASE * Math.pow(COST_SCALING.FUEL_REFINERY_COST_EXPONENT, state.fuelRefineries)));
+  const activeRocketIds = rockets
+    .filter((r): r is { id: number; type: 'cargo' } => r !== null && !explodedRocketIds.includes(r.id))
+    .slice(0, rocketsWithFuel)
+    .map(r => r.id);
      
-     // Auto-build progress calculation
-     const autoBuildEnabled = useGameStore(state => state.getEffectMultiplier('autoBuildEnabled') > 0);
-     const buildMultiplier = useGameStore(state => state.getEffectMultiplier('buildRocketMultiplier') || 1);
-     const autoBuildInterval = Math.max(1, Math.floor(AUTOMATION.BASE_INTERVAL / buildMultiplier));
-     const autoBuildProgress = autoBuildEnabled && autoBuildActive 
-       ? ((tickCount % autoBuildInterval) / autoBuildInterval) * 100
-       : 0;
+  const autoBuildInterval = Math.max(1, Math.floor(AUTOMATION.BASE_INTERVAL / buildMultiplier));
+  const autoBuildProgress = autoBuildEnabled && autoBuildActive
+    ? ((tickCount % autoBuildInterval) / autoBuildInterval) * 100
+    : 0;
      
-     // Auto-salvage progress calculation
-     const autoSalvageEnabled = useGameStore(state => state.getEffectMultiplier('autoSalvageEnabled') > 0);
-     const clearMultiplier = useGameStore(state => state.getEffectMultiplier('clearExplosionMultiplier') || 1);
-     const autoSalvageInterval = Math.max(1, Math.floor(AUTOMATION.BASE_INTERVAL / clearMultiplier));
-      const autoSalvageProgress = autoSalvageEnabled && autoSalvageActive && explodedRocketIds.length > 0
-        ? (((tickCount + 10) % autoSalvageInterval) / autoSalvageInterval) * 100
-        : 0;
+  const autoSalvageInterval = Math.max(1, Math.floor(AUTOMATION.BASE_INTERVAL / clearMultiplier));
+  const autoSalvageProgress = autoSalvageEnabled && autoSalvageActive && explodedRocketIds.length > 0
+    ? (((tickCount + 10) % autoSalvageInterval) / autoSalvageInterval) * 100
+    : 0;
 
     return (
      <div className="w-full h-full flex flex-col items-center justify-center px-8 overflow-auto">

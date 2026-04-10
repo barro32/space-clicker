@@ -1,19 +1,29 @@
 import { useEffect, useState } from 'react';
+import { shallow } from 'zustand/shallow';
 import { useGameStore, Contract } from "./useGameStore.js"
 import { COMPANY_DEFINITIONS } from './gameConstants.js'
 import { FaBuilding, FaBoxOpen, FaFlask, FaMoneyBillAlt, FaCheckCircle, FaBan, FaHandshake, FaClock } from "react-icons/fa"
 
 export function ContractsView() {
-  const { 
-    companies, 
-    availableContracts, 
+  const [
+    companies,
+    availableContracts,
     activeContracts,
     contractRefreshTimer,
-    getMaxActiveContracts,
-    generateContracts, 
-    acceptContract, 
+    maxActiveContracts,
+    generateContracts,
+    acceptContract,
     forfeitContract,
-  } = useGameStore()
+  ] = useGameStore((state) => [
+    state.companies,
+    state.availableContracts,
+    state.activeContracts,
+    state.contractRefreshTimer,
+    state.getMaxActiveContracts(),
+    state.generateContracts,
+    state.acceptContract,
+    state.forfeitContract,
+  ], shallow);
 
   const [hoveredPerk, setHoveredPerk] = useState<{ companyId: string; perkIndex: number } | null>(null);
 
@@ -44,7 +54,6 @@ export function ContractsView() {
 
   const renderContract = (contract: Contract, isAvailable: boolean) => {
     const isActive = contract.status === 'active';
-    const maxActive = getMaxActiveContracts();
     const companyDef = COMPANY_DEFINITIONS.find(c => c.id === contract.companyId);
     const colors = companyDef ? getCompanyColor(companyDef.color) : { bg: 'bg-gray-500', border: 'border-gray-500', text: 'text-gray-400' };
     
@@ -103,7 +112,7 @@ export function ContractsView() {
           {isAvailable && (
             <button 
               onClick={() => acceptContract(contract.id)}
-              disabled={activeContracts.length >= maxActive}
+              disabled={activeContracts.length >= maxActiveContracts}
               className={`${colors.bg} hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed px-2.5 py-0.5 rounded text-[10px] font-bold transition-opacity`}
             >
               Accept
@@ -134,7 +143,7 @@ export function ContractsView() {
           </div>
           <div className="flex items-center gap-3 text-sm">
             <span className="text-gray-400 font-mono">ACTIVE:</span>
-            <span className="text-cyan-400 font-bold font-mono">{activeContracts.length}/{getMaxActiveContracts()}</span>
+            <span className="text-cyan-400 font-bold font-mono">{activeContracts.length}/{maxActiveContracts}</span>
           </div>
         </div>
 
@@ -257,7 +266,7 @@ export function ContractsView() {
               <div className="flex items-center gap-2 pb-1.5 border-b border-cyan-500/30 sticky top-0 bg-gray-900/80 backdrop-blur-sm z-10">
                 <FaCheckCircle className="text-cyan-400 text-sm" />
                 <h2 className="text-sm font-bold text-cyan-300 font-mono">ACTIVE CONTRACTS</h2>
-                <span className="text-[10px] text-gray-500 font-mono ml-auto">{activeContracts.length}/{getMaxActiveContracts()}</span>
+                <span className="text-[10px] text-gray-500 font-mono ml-auto">{activeContracts.length}/{maxActiveContracts}</span>
               </div>
               {activeContracts.length > 0 ? (
                 <div className="flex flex-col gap-1.5">

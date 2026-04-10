@@ -11,7 +11,7 @@ vi.mock('./useGameStore', () => ({
 
 describe('ContractsView Component', () => {
   it('renders companies and titles', () => {
-    (useGameStore as any).mockReturnValue({
+    const mockState = {
       companies: [{ id: 'titan', name: 'Titan Mining', level: 1, experience: 0, contractsCompleted: 0 }],
       availableContracts: [],
       activeContracts: [],
@@ -20,7 +20,10 @@ describe('ContractsView Component', () => {
       acceptContract: vi.fn(),
       forfeitContract: vi.fn(),
       getMaxActiveContracts: () => 1,
-    });
+    };
+    (useGameStore as any).mockImplementation((selector?: (state: any) => any) =>
+      typeof selector === 'function' ? selector(mockState) : mockState
+    );
 
     render(<ContractsView />);
     
@@ -33,7 +36,7 @@ describe('ContractsView Component', () => {
 
   it('displays available contracts and allows acceptance', () => {
     const acceptSpy = vi.fn();
-    (useGameStore as any).mockReturnValue({
+    const mockState = {
       companies: [],
       availableContracts: [
         { 
@@ -62,7 +65,10 @@ describe('ContractsView Component', () => {
       acceptContract: acceptSpy,
       forfeitContract: vi.fn(),
       getMaxActiveContracts: () => 1,
-    });
+    };
+    (useGameStore as any).mockImplementation((selector?: (state: any) => any) =>
+      typeof selector === 'function' ? selector(mockState) : mockState
+    );
 
     render(<ContractsView />);
     
