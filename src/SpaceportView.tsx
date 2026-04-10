@@ -1,5 +1,5 @@
 import { useGameStore } from "./useGameStore.js"
-import { shallow } from 'zustand/shallow'
+import { useShallow } from 'zustand/react/shallow'
 import { FaRegBuilding, FaRocket, FaBomb, FaGasPump } from "react-icons/fa"
 import { COST_SCALING } from "./gameConstants.js"
 import { AUTOMATION } from "./gameConstants.js"
@@ -32,7 +32,7 @@ export function SpaceportView() {
     buildMultiplier,
     autoSalvageEnabled,
     clearMultiplier,
-  ] = useGameStore((state) => [
+  ] = useGameStore(useShallow((state) => [
     state.rockets,
     state.spaceports,
     state.buildSpaceport,
@@ -59,7 +59,7 @@ export function SpaceportView() {
     state.getEffectMultiplier('buildRocketMultiplier') || 1,
     state.getEffectMultiplier('autoSalvageEnabled') > 0,
     state.getEffectMultiplier('clearExplosionMultiplier') || 1,
-  ], shallow);
+  ]));
      
   const rocketsWithFuel = Math.floor(fuel / fuelCostPerRocket);
       

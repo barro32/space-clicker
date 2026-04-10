@@ -1,8 +1,8 @@
 import { useGameStore, MoonBuildingType, MoonSector } from './useGameStore.js'
-import { shallow } from 'zustand/shallow'
+import { useShallow } from 'zustand/react/shallow'
 import { MOON } from './gameConstants.js'
 import { FaMoon, FaRocket, FaWarehouse, FaWrench, FaBolt, FaExclamationTriangle, FaArrowRight, FaIndustry, FaSun, FaAtom, FaBatteryFull, FaGripHorizontal, FaBox, FaFlask, FaGem } from 'react-icons/fa'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 export function MoonView() {
   const [
@@ -25,10 +25,9 @@ export function MoonView() {
     launchMassDriverPayload,
     sendSupplyMission,
     clearHazard,
-    storage,
     getMoonBuildingCost,
     getEffectMultiplier,
-  ] = useGameStore((state) => [
+  ] = useGameStore(useShallow((state) => [
     state.moonStatus,
     state.moonMissionTicksRemaining,
     state.moonSectors,
@@ -48,14 +47,27 @@ export function MoonView() {
     state.launchMassDriverPayload,
     state.sendSupplyMission,
     state.clearHazard,
-    state.getMoonStorageCapacity(),
     state.getMoonBuildingCost,
     state.getEffectMultiplier,
-  ], shallow)
+  ]))
 
   const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null)
   const [buildingHoverType, setBuildingHoverType] = useState<string | null>(null)
   const [supplyMissionCargo, setSupplyMissionCargo] = useState(Math.min(cargo, MOON.CARGO_ROCKET_CAPACITY))
+
+  const storage = useMemo(() => {
+    const siloBonus = moonSectors.reduce((total, sector) => total + (sector.buildings.silos || 0), 0)
+    const cargoStorageBonus = moonSectors.reduce((total, sector) => total + (sector.buildings.cargoStorage || 0), 0)
+    const alloysStorageBonus = getEffectMultiplier('alloysStorageBonus') || 0
+    const moonStorageMultiplier = getEffectMultiplier('moonStorageMultiplier') || 1
+
+    return {
+      regolith: (MOON.STORAGE_BASE.regolith + siloBonus * MOON.STORAGE_PER_SILO.regolith) * moonStorageMultiplier,
+      helium3: (MOON.STORAGE_BASE.helium3 + siloBonus * MOON.STORAGE_PER_SILO.helium3) * moonStorageMultiplier,
+      alloys: (MOON.STORAGE_BASE.alloys + siloBonus * MOON.STORAGE_PER_SILO.alloys + alloysStorageBonus) * moonStorageMultiplier,
+      cargo: MOON.MOON_CARGO_BASE_STORAGE + cargoStorageBonus * MOON.TIER1_CARGO_STORAGE_CAPACITY,
+    }
+  }, [moonSectors, getEffectMultiplier])
 
   const hasLunarManufacturing = researchedNodes.includes('o14')
 

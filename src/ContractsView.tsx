@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { shallow } from 'zustand/shallow';
+import { useShallow } from 'zustand/react/shallow';
 import { useGameStore, Contract } from "./useGameStore.js"
 import { COMPANY_DEFINITIONS } from './gameConstants.js'
 import { FaBuilding, FaBoxOpen, FaFlask, FaMoneyBillAlt, FaCheckCircle, FaBan, FaHandshake, FaClock } from "react-icons/fa"
@@ -14,7 +14,7 @@ export function ContractsView() {
     generateContracts,
     acceptContract,
     forfeitContract,
-  ] = useGameStore((state) => [
+  ] = useGameStore(useShallow((state) => [
     state.companies,
     state.availableContracts,
     state.activeContracts,
@@ -23,7 +23,7 @@ export function ContractsView() {
     state.generateContracts,
     state.acceptContract,
     state.forfeitContract,
-  ], shallow);
+  ]));
 
   const [hoveredPerk, setHoveredPerk] = useState<{ companyId: string; perkIndex: number } | null>(null);
 

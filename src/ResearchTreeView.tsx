@@ -1,5 +1,5 @@
 import { useGameStore } from "./useGameStore.js"
-import { shallow } from 'zustand/shallow'
+import { useShallow } from 'zustand/react/shallow'
 import { researchTree, ResearchBranch, ResearchNode } from "./researchTree.js"
 import { FaFlask, FaLock, FaCheckCircle, FaRocket, FaCogs, FaHandHoldingUsd, FaSatellite, FaBolt } from "react-icons/fa"
 
@@ -36,14 +36,14 @@ export function ResearchTreeView() {
     rocketExplosionChance,
     getEffectMultiplier,
     newlyAvailableResearchIds,
-  ] = useGameStore((state) => [
+  ] = useGameStore(useShallow((state) => [
     state.researchedNodes,
     state.unlockNode,
     state.science,
     state.rocketExplosionChance,
     state.getEffectMultiplier,
     state.newlyAvailableResearchIds,
-  ], shallow)
+  ]))
 
   const branches: ResearchBranch[] = Array.from(new Set(surfaceResearchTree.map(n => n.branch)));
   const preferredOrder = ['propulsion', 'infrastructure', 'commercial', 'orbital', 'control'] as ResearchBranch[];

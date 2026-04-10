@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
-import { shallow } from 'zustand/shallow'
+import { useShallow } from 'zustand/react/shallow'
 import { useGameStore, GameState } from "./useGameStore.js"
 import { MOON } from "./gameConstants.js"
 import { FaMoneyBillAlt, FaFlask, FaGasPump, FaBox, FaChevronUp, FaChevronDown, FaChevronLeft, FaChevronRight, FaRocket, FaSatellite, FaFlask as FaLab, FaExclamationTriangle, FaFileContract, FaIndustry, FaMoon, FaGem, FaLock } from 'react-icons/fa'
@@ -392,7 +392,7 @@ export function App() {
     orbitLayerUnlocked,
     contractsLayerUnlocked,
     unlockLayer,
-  ] = useGameStore((state) => [
+  ] = useGameStore(useShallow((state) => [
     state.money,
     state.science,
     state.fuel,
@@ -411,7 +411,7 @@ export function App() {
     state.orbitLayerUnlocked,
     state.contractsLayerUnlocked,
     state.unlockLayer,
-  ], shallow);
+  ]));
   
    // Current layer state
    const [currentLayer, setCurrentLayer] = useState<Layer>('surface');

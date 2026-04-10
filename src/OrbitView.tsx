@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react"
-import { shallow } from 'zustand/shallow'
+import { useShallow } from 'zustand/react/shallow'
 import { useGameStore, SpaceStation } from "./useGameStore.js"
 import { FaSatellite, FaGlobe, FaMicroscope, FaTruckLoading, FaRocket, FaFlask, FaArrowUp, FaTimes, FaExclamationTriangle, FaMoon, FaInfoCircle } from "react-icons/fa"
 import { ORBITAL, PRODUCTION } from "./gameConstants.js"
@@ -27,7 +27,7 @@ export function OrbitView() {
     dockingBonusMultiplier,
     stationScienceMultiplier,
     stationLogisticsMultiplier,
-  ] = useGameStore((state) => [
+  ] = useGameStore(useShallow((state) => [
     state.spaceStations,
     state.buildSpaceStation,
     state.upgradeStation,
@@ -49,7 +49,7 @@ export function OrbitView() {
     state.getEffectMultiplier('dockingBonusMultiplier') || ORBITAL.DOCKING_BONUS_MULTIPLIER,
     state.getEffectMultiplier('stationScienceMultiplier') || 1,
     state.getEffectMultiplier('stationLogisticsMultiplier') || 1,
-  ], shallow)
+  ]))
   
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null)
   const [hoveredStationId, setHoveredStationId] = useState<string | null>(null)
