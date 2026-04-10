@@ -22,6 +22,9 @@ export function loadGameStateSync(): GameSaveState | null {
       // In Electron, we cannot load synchronously. Return null and load async later.
       return null
     }
+    if (typeof localStorage === 'undefined' || typeof localStorage.getItem !== 'function') {
+      return null
+    }
     const savedState = localStorage.getItem('gameState')
     return savedState ? JSON.parse(savedState) : null
   } catch (error) {
@@ -41,6 +44,9 @@ export async function loadGameStateAsync(): Promise<GameSaveState | null> {
       const state = await (window as any).electronAPI.loadGameState()
       return state
     } else {
+      if (typeof localStorage === 'undefined' || typeof localStorage.getItem !== 'function') {
+        return null
+      }
       const savedState = localStorage.getItem('gameState')
       return savedState ? JSON.parse(savedState) : null
     }
@@ -60,6 +66,9 @@ export async function saveGameState(state: GameSaveState): Promise<boolean> {
     if (isElectron()) {
       return await (window as any).electronAPI.saveGameState(state)
     } else {
+      if (typeof localStorage === 'undefined' || typeof localStorage.setItem !== 'function') {
+        return false
+      }
       localStorage.setItem('gameState', JSON.stringify(state))
       return true
     }
@@ -79,6 +88,9 @@ export async function deleteGameState(): Promise<boolean> {
     if (isElectron()) {
       return await (window as any).electronAPI.deleteGameState()
     } else {
+      if (typeof localStorage === 'undefined' || typeof localStorage.removeItem !== 'function') {
+        return false
+      }
       localStorage.removeItem('gameState')
       return true
     }

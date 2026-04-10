@@ -72,7 +72,7 @@ export interface MoonLunarBounty {
   elapsedTime: number; // seconds
   rewardMoney: number;
   rewardScience: number;
-  status: 'active' | 'completed' | 'failed';
+  status: 'available' | 'active' | 'completed' | 'failed';
 }
 
 export interface MoonPowerSystem {
@@ -322,6 +322,14 @@ export const useGameStore = create<GameState>((set, get) => ({
    tick: () => set(state => {
     // Clear animation flags at start of each tick
     const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
+    const updatedRockets = [...state.rockets];
+    const rocketIndexById = new Map<number, number>();
+
+    updatedRockets.forEach((rocket, index) => {
+      if (rocket !== null) {
+        rocketIndexById.set(rocket.id, index);
+      }
+    });
     
        const passiveFuelProduction = PRODUCTION.PASSIVE_FUEL_PER_TICK;
        const refineryFuelProduction = state.fuelRefineries * PRODUCTION.FUEL_REFINERY_PRODUCTION_PER_TICK;
@@ -353,14 +361,18 @@ export const useGameStore = create<GameState>((set, get) => ({
          fuelAvailable -= effectiveFuelCost;
          
          // Check if rocket has free launches
-         const rocketData = state.rockets.find(r => r?.id === rocket.id);
+         const rocketIndex = rocketIndexById.get(rocket.id);
+         const rocketData = rocketIndex === undefined ? null : updatedRockets[rocketIndex];
          const hasFreeLaunch = rocketData && rocketData.freeLaunches && rocketData.freeLaunches > 0;
          
          // Roll for explosion (unless rocket has free launch)
          if (hasFreeLaunch || Math.random() >= effectiveExplosionChance) {
            // Consume free launch if used
            if (hasFreeLaunch && rocketData) {
-             rocketData.freeLaunches = (rocketData.freeLaunches || 1) - 1;
+             updatedRockets[rocketIndex!] = {
+               ...rocketData,
+               freeLaunches: (rocketData.freeLaunches || 1) - 1,
+             };
            }
            
             // Track successful launches for animation
@@ -721,7 +733,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
      // Auto-build logic
      let finalMoney = state.money + moneyProduction;
-    let finalRockets = state.rockets;
+     let finalRockets = updatedRockets;
     let finalNextId = state.nextRocketId;
     let finalScience = newScience;
     let finalExplodedRocketIds = newExplodedRocketIds;
@@ -1010,14 +1022,50 @@ export const useGameStore = create<GameState>((set, get) => ({
        if (bounty.status === 'active') {
          const updatedBounty = { ...bounty, elapsedTime: bounty.elapsedTime + (GAME.TICK_INTERVAL_MS / 1000) };
          
-         // Check if bounty is complete
+         // Active bounties expire when their timer runs out.
          if (updatedBounty.elapsedTime >= updatedBounty.timeLimit) {
-           return { ...updatedBounty, status: 'completed' as const };
+           return { ...updatedBounty, status: 'failed' as const };
          }
          return updatedBounty;
        }
        return bounty;
      });
+
+     let newMoonBountyRefreshTimer = state.moonBountyRefreshTimer;
+     if (state.moonStatus === 'unlocked') {
+       newMoonBountyRefreshTimer -= 1;
+
+       if (newMoonBountyRefreshTimer <= 0) {
+         const activeOrAvailableBounties = newMoonBounties.filter(
+           bounty => bounty.status === 'available' || bounty.status === 'active',
+         );
+
+         if (activeOrAvailableBounties.length < 3) {
+           const company = state.companies[Math.floor(Math.random() * state.companies.length)];
+           const helium3Amount = MOON.BOUNTY_AMOUNTS[Math.floor(Math.random() * MOON.BOUNTY_AMOUNTS.length)];
+           const timeLimit = MOON.BOUNTY_TIME_LIMITS[Math.floor(Math.random() * MOON.BOUNTY_TIME_LIMITS.length)];
+           const rewardMoney = Math.round(helium3Amount * MOON.BOUNTY_REWARD_MULTIPLIER);
+           const rewardScience = Math.round(helium3Amount * 0.1);
+
+           newMoonBounties = [
+             ...newMoonBounties,
+             {
+               id: `moon-bounty-${Date.now()}-${Math.random()}`,
+               companyId: company?.id ?? 'titan',
+               helium3Amount,
+               timeLimit,
+               elapsedTime: 0,
+               rewardMoney,
+               rewardScience,
+               status: 'available',
+             },
+           ];
+           notificationsToAdd.push('New lunar bounty available.');
+         }
+
+         newMoonBountyRefreshTimer = MOON.BOUNTY_GENERATION_INTERVAL;
+       }
+     }
 
      return {
       money: finalMoney,
@@ -1053,7 +1101,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         moonSectors: state.moonSectors, // Sectors are immutable during tick; only change via constructBuildingOnMoon
         moonPowerSystem: newMoonPowerSystem,
         moonBounties: newMoonBounties,
-        moonBountyRefreshTimer: state.moonBountyRefreshTimer,
+        moonBountyRefreshTimer: newMoonBountyRefreshTimer,
       tickCount: state.tickCount + 1,
     }
   }),
@@ -2237,7 +2285,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     acceptMoonBounty: (bountyId: string) => set(state => {
       const bounty = state.moonBounties.find(b => b.id === bountyId);
-      if (!bounty || bounty.status !== 'active') return {};
+      if (!bounty || bounty.status !== 'available') return {};
       
       return {
         moonBounties: state.moonBounties.map(b =>
@@ -2248,14 +2296,17 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     completeMoonBounty: (bountyId: string) => set(state => {
       const bounty = state.moonBounties.find(b => b.id === bountyId);
-      if (!bounty || bounty.status !== 'completed') return {};
+      if (!bounty || bounty.status !== 'active') return {};
+      if (state.earthResources.helium3 < bounty.helium3Amount) return {};
       
       return {
         money: state.money + bounty.rewardMoney,
         science: state.science + bounty.rewardScience,
-        moonBounties: state.moonBounties.map(b =>
-          b.id === bountyId ? { ...b, status: 'completed' as const } : b
-        ),
+        earthResources: {
+          ...state.earthResources,
+          helium3: state.earthResources.helium3 - bounty.helium3Amount,
+        },
+        moonBounties: state.moonBounties.filter(b => b.id !== bountyId),
       };
     }),
 }))

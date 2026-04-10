@@ -538,10 +538,82 @@ describe('Auto-build (Auto-Queue)', () => {
 
        useGameStore.getState().tick();
 
-       const state = useGameStore.getState();
-       expect(state.fuel).toBe(1); // 0 + 1 passive, didn't launch because cost is 2
-       expect(state.cargo).toBe(0);
-     });
+     const state = useGameStore.getState();
+     expect(state.fuel).toBe(1); // 0 + 1 passive, didn't launch because cost is 2
+     expect(state.cargo).toBe(0);
+    });
+
+    it('consumes a free launch without mutating the previous rocket object', () => {
+      useGameStore.setState({
+        fuel: 10,
+        rockets: [{ id: 1, type: 'cargo' as const, freeLaunches: 1 }],
+        explodedRocketIds: [],
+        fuelCostPerRocket: 1,
+        profitPerRocket: 1,
+        spaceports: [{ id: 1 }],
+        spaceStations: [],
+        money: 0,
+        cargo: 0,
+        science: 0,
+        rocketExplosionChance: 0,
+        companies: [],
+      } as unknown as GameState);
+
+      const beforeTickRocket = useGameStore.getState().rockets[0];
+
+      useGameStore.getState().tick();
+
+      const state = useGameStore.getState();
+      expect(beforeTickRocket?.freeLaunches).toBe(1);
+      expect(state.rockets[0]?.freeLaunches).toBe(0);
+    });
+  });
+
+  describe('Moon bounty lifecycle', () => {
+    it('accepts an available moon bounty', () => {
+      useGameStore.setState({
+        moonBounties: [{
+          id: 'b1',
+          companyId: 'titan',
+          helium3Amount: 250,
+          timeLimit: 30,
+          elapsedTime: 0,
+          rewardMoney: 500,
+          rewardScience: 25,
+          status: 'available',
+        }],
+      } as unknown as GameState);
+
+      useGameStore.getState().acceptMoonBounty('b1');
+
+      expect(useGameStore.getState().moonBounties[0]?.status).toBe('active');
+    });
+
+    it('completes an active moon bounty by spending Earth helium-3 and removing it', () => {
+      useGameStore.setState({
+        money: 0,
+        science: 0,
+        earthResources: { regolith: 0, helium3: 300, alloys: 0 },
+        moonBounties: [{
+          id: 'b1',
+          companyId: 'titan',
+          helium3Amount: 250,
+          timeLimit: 30,
+          elapsedTime: 0,
+          rewardMoney: 500,
+          rewardScience: 25,
+          status: 'active',
+        }],
+      } as unknown as GameState);
+
+      useGameStore.getState().completeMoonBounty('b1');
+
+      const state = useGameStore.getState();
+      expect(state.money).toBe(500);
+      expect(state.science).toBe(25);
+      expect(state.earthResources.helium3).toBe(50);
+      expect(state.moonBounties).toHaveLength(0);
+    });
   });
 
   describe('Moon - Fabricator Research Effects', () => {

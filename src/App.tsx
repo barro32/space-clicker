@@ -12,7 +12,7 @@ import { ResearchSidebar } from "./components/ResearchSidebar.js"
 import { SettingsPanel } from "./components/SettingsPanel.js"
 import { INITIAL_STATE, TIME, DEFAULT_COMPANIES, DEFAULT_SETTINGS, PRODUCTION } from './gameConstants.js'
 import { researchTree, ResearchNode, EffectType } from './researchTree.js'
-import { loadGameStateSync, loadGameStateAsync, saveGameState } from './persistence.js'
+import { isElectron, loadGameStateSync, loadGameStateAsync, saveGameState } from './persistence.js'
 
 
 // Helper function to calculate effect multiplier (duplicated from store for use in metrics calculation)
@@ -130,7 +130,7 @@ function calculateGameMetrics(state: GameState): GameMetrics {
     successRate,
     hasTelemetry,
     spaceportCount: (state.spaceports || []).length,
-     refineryCount: 0, // No more fuel refineries - now just passive fuel production
+    refineryCount: state.fuelRefineries || 0,
     stationCount: (state.spaceStations || []).length,
     activeContracts: (state.activeContracts || []).length,
     maxActiveContracts: state.getMaxActiveContracts ? state.getMaxActiveContracts() : 1,
@@ -149,157 +149,145 @@ function calculateGameMetrics(state: GameState): GameMetrics {
   };
 }
 
-// Load persisted state
-const loadInitialState = () => {
-  if (typeof window !== 'undefined') {
-    try {
-      const savedState = loadGameStateSync();
-      if (savedState) {
-        const parsed = savedState;
-        if (parsed.money !== undefined && parsed.science !== undefined) {
-          if (!parsed.spaceStations) parsed.spaceStations = [];
-          if (!parsed.currentView) parsed.currentView = "surface";
-          if (!parsed.notifications) parsed.notifications = [];
-          if (!parsed.companies) parsed.companies = DEFAULT_COMPANIES;
-          if (!parsed.availableContracts) parsed.availableContracts = [];
-          if (!parsed.researchedNodes) parsed.researchedNodes = [];
-          if (parsed.autoBuildActive === undefined) parsed.autoBuildActive = false;
-          if (parsed.autoSalvageActive === undefined) parsed.autoSalvageActive = false;
-          if (!parsed.previouslyAvailableResearch) parsed.previouslyAvailableResearch = [];
-          if (!parsed.rockets) parsed.rockets = [];
-          if (parsed.nextRocketId === undefined) parsed.nextRocketId = 0;
-          if (parsed.rocketCost === undefined) parsed.rocketCost = INITIAL_STATE.ROCKET_COST;
-          if (parsed.profitPerRocket === undefined) parsed.profitPerRocket = INITIAL_STATE.PROFIT_PER_ROCKET;
-          parsed.spaceportCapacity = INITIAL_STATE.SPACEPORT_CAPACITY;
-          if (!parsed.spaceports) parsed.spaceports = [{ id: 1 }];
-           if (parsed.spaceportCost === undefined) parsed.spaceportCost = INITIAL_STATE.SPACEPORT_COST;
-           if (parsed.fuelCostPerRocket === undefined) parsed.fuelCostPerRocket = INITIAL_STATE.FUEL_COST_PER_ROCKET;
-          if (!parsed.explodedRocketIds) parsed.explodedRocketIds = [];
-          if (parsed.rocketExplosionChance === undefined) parsed.rocketExplosionChance = INITIAL_STATE.ROCKET_EXPLOSION_CHANCE;
-          
-          // === STATE MIGRATIONS ===
-          
-          // Migration: activeContract (singular) -> activeContracts (array)
-          if (parsed.activeContract !== undefined) {
-            parsed.activeContracts = parsed.activeContract ? [parsed.activeContract] : [];
-            delete parsed.activeContract;
-          }
-          if (!parsed.activeContracts) parsed.activeContracts = [];
-          
-          // Migration: Add contractRefreshTimer if missing
-          if (parsed.contractRefreshTimer === undefined) {
-            parsed.contractRefreshTimer = 300; // 5 minutes
-          }
-          
-          // Migration: Company system (10 -> 6 companies)
-          // New company IDs: titan, nova, zenith, galactic, aegis, atlas
-          const newCompanyIds = ['titan', 'nova', 'zenith', 'galactic', 'aegis', 'atlas'];
-          if (parsed.companies) {
-            const existingIds = parsed.companies.map((c: { id: string }) => c.id);
-            const hasOldCompanies = existingIds.some((id: string) => !newCompanyIds.includes(id));
-            const missingNewCompanies = newCompanyIds.some(id => !existingIds.includes(id));
-            
-            if (hasOldCompanies || missingNewCompanies) {
-              // Migrate: keep existing data for companies that exist in new system, use defaults for others
-              parsed.companies = DEFAULT_COMPANIES.map(defaultCompany => {
-                const existing = parsed.companies.find((c: { id: string }) => c.id === defaultCompany.id);
-                return existing || defaultCompany;
-              });
-            }
-          }
-          
-          // Migration: Orbital layer expansion (satellites, debris, docking)
-          if (parsed.satellites === undefined) parsed.satellites = 0;
-          if (parsed.maxSatellites === undefined) parsed.maxSatellites = 10;
-          if (!parsed.spaceDebris) parsed.spaceDebris = [];
-          if (!parsed.transitRockets) parsed.transitRockets = [];
-          if (!parsed.dockedRockets) parsed.dockedRockets = [];
-          
-          // Migration: SpaceStation structure (add maxDocks and dockedRockets to existing stations)
-          if (parsed.spaceStations && parsed.spaceStations.length > 0) {
-            parsed.spaceStations = parsed.spaceStations.map((station: { id: string; type: string; level: number; maxDocks?: number; dockedRockets?: number[] }) => ({
-              ...station,
-              maxDocks: station.maxDocks ?? 2, // Default 2 docks per station
-              dockedRockets: station.dockedRockets ?? [],
-            }));
-          }
-          
-          // Migration: Lunar Components resource
-          if (parsed.lunarComponents === undefined) parsed.lunarComponents = 0;
-          
-          // Migration: Moon layer state
-          if (parsed.moonStatus === undefined) parsed.moonStatus = 'locked';
-          if (parsed.moonMissionTicksRemaining === undefined) parsed.moonMissionTicksRemaining = 0;
-          if (!parsed.moonBuildings) parsed.moonBuildings = { extractors: 0, refineries: 0, silos: 0, maintenances: 0, massDrivers: 0, solarArray: 0, nuclearReactor: 0, battery: 0, fabricators: 0 };
-          if (!parsed.moonResources) parsed.moonResources = { regolith: 0, helium3: 0, alloys: 0 };
-          if (!parsed.earthResources) parsed.earthResources = { regolith: 0, helium3: 0, alloys: 0 };
-          
-          // Ensure existing moonResources and earthResources have alloys property
-          if (parsed.moonResources && parsed.moonResources.alloys === undefined) {
-            parsed.moonResources.alloys = 0;
-          }
-          if (parsed.earthResources && parsed.earthResources.alloys === undefined) {
-            parsed.earthResources.alloys = 0;
-          }
-          
-          // Ensure existing moonBuildings have new building types
-           if (parsed.moonBuildings) {
-             if (parsed.moonBuildings.solarArray === undefined) parsed.moonBuildings.solarArray = 0;
-             if (parsed.moonBuildings.nuclearReactor === undefined) parsed.moonBuildings.nuclearReactor = 0;
-             if (parsed.moonBuildings.battery === undefined) parsed.moonBuildings.battery = 0;
-             if (parsed.moonBuildings.fabricators === undefined) parsed.moonBuildings.fabricators = 0;
-             // Migration: handle old singular names
-             if (parsed.moonBuildings.maintenance !== undefined && parsed.moonBuildings.maintenances === undefined) {
-               parsed.moonBuildings.maintenances = parsed.moonBuildings.maintenance;
-               delete parsed.moonBuildings.maintenance;
-             }
-             if (parsed.moonBuildings.fabricator !== undefined && parsed.moonBuildings.fabricators === undefined) {
-               parsed.moonBuildings.fabricators = parsed.moonBuildings.fabricator;
-               delete parsed.moonBuildings.fabricator;
-             }
-           }
-          
-          if (parsed.activeHazard === undefined) parsed.activeHazard = null;
-          if (!parsed.moonLog) parsed.moonLog = [];
-          if (!parsed.moonSectors) parsed.moonSectors = [{ 
-            id: 'starting-sector', 
-            name: 'Landing Zone', 
-            traits: {}, 
-            buildings: {}, 
-            slots: 4, 
-            slotsUsed: 0 
-          }];
-          if (!parsed.moonPowerSystem) parsed.moonPowerSystem = { 
-            dayNightTick: 0, 
-            isDay: true, 
-            currentEnergy: MOON.INITIAL_POWER_ENERGY, 
-            maxEnergy: MOON.INITIAL_POWER_ENERGY, 
-            energyGeneration: 0, 
-            energyDemand: 0 
-          };
-           if (!parsed.moonBounties) parsed.moonBounties = [];
-           if (parsed.moonBountyRefreshTimer === undefined) parsed.moonBountyRefreshTimer = 300;
-           
-           // Migration: Settings (user preferences)
-           if (!parsed.settings) parsed.settings = DEFAULT_SETTINGS;
-           else {
-             // Ensure all settings have defaults if migrating from older saves
-             parsed.settings = { ...DEFAULT_SETTINGS, ...parsed.settings };
-           }
-           
-           // Migration: Layer unlock tracking
-          if (parsed.totalSuccessfulLaunches === undefined) parsed.totalSuccessfulLaunches = 0;
-          if (parsed.orbitLayerUnlocked === undefined) parsed.orbitLayerUnlocked = false;
-          if (parsed.contractsLayerUnlocked === undefined) parsed.contractsLayerUnlocked = false;
-          
-          return parsed;
-        }
-      }
-    } catch (e) {
-      console.error('Failed to load persisted state:', e);
+function normalizeLoadedState(savedState: Record<string, any> | null) {
+  if (!savedState || savedState.money === undefined || savedState.science === undefined) {
+    return null;
+  }
+
+  const parsed = { ...savedState };
+
+  if (!parsed.spaceStations) parsed.spaceStations = [];
+  if (!parsed.currentView) parsed.currentView = "surface";
+  if (!parsed.notifications) parsed.notifications = [];
+  if (!parsed.companies) parsed.companies = DEFAULT_COMPANIES;
+  if (!parsed.availableContracts) parsed.availableContracts = [];
+  if (!parsed.researchedNodes) parsed.researchedNodes = [];
+  if (parsed.autoBuildActive === undefined) parsed.autoBuildActive = false;
+  if (parsed.autoSalvageActive === undefined) parsed.autoSalvageActive = false;
+  if (!parsed.previouslyAvailableResearch) parsed.previouslyAvailableResearch = [];
+  if (!parsed.rockets) parsed.rockets = [];
+  if (parsed.nextRocketId === undefined) parsed.nextRocketId = 0;
+  if (parsed.rocketCost === undefined) parsed.rocketCost = INITIAL_STATE.ROCKET_COST;
+  if (parsed.profitPerRocket === undefined) parsed.profitPerRocket = INITIAL_STATE.PROFIT_PER_ROCKET;
+  parsed.spaceportCapacity = INITIAL_STATE.SPACEPORT_CAPACITY;
+  if (!parsed.spaceports) parsed.spaceports = [{ id: 1 }];
+  if (parsed.spaceportCost === undefined) parsed.spaceportCost = INITIAL_STATE.SPACEPORT_COST;
+  if (parsed.fuelCostPerRocket === undefined) parsed.fuelCostPerRocket = INITIAL_STATE.FUEL_COST_PER_ROCKET;
+  if (!parsed.explodedRocketIds) parsed.explodedRocketIds = [];
+  if (parsed.rocketExplosionChance === undefined) parsed.rocketExplosionChance = INITIAL_STATE.ROCKET_EXPLOSION_CHANCE;
+
+  if (parsed.activeContract !== undefined) {
+    parsed.activeContracts = parsed.activeContract ? [parsed.activeContract] : [];
+    delete parsed.activeContract;
+  }
+  if (!parsed.activeContracts) parsed.activeContracts = [];
+
+  if (parsed.contractRefreshTimer === undefined) {
+    parsed.contractRefreshTimer = 300;
+  }
+
+  const newCompanyIds = ['titan', 'nova', 'zenith', 'galactic', 'aegis', 'atlas'];
+  if (parsed.companies) {
+    const existingIds = parsed.companies.map((c: { id: string }) => c.id);
+    const hasOldCompanies = existingIds.some((id: string) => !newCompanyIds.includes(id));
+    const missingNewCompanies = newCompanyIds.some(id => !existingIds.includes(id));
+
+    if (hasOldCompanies || missingNewCompanies) {
+      parsed.companies = DEFAULT_COMPANIES.map(defaultCompany => {
+        const existing = parsed.companies.find((c: { id: string }) => c.id === defaultCompany.id);
+        return existing || defaultCompany;
+      });
     }
   }
-  return null;
+
+  if (parsed.satellites === undefined) parsed.satellites = 0;
+  if (parsed.maxSatellites === undefined) parsed.maxSatellites = 10;
+  if (!parsed.spaceDebris) parsed.spaceDebris = [];
+  if (!parsed.transitRockets) parsed.transitRockets = [];
+  if (!parsed.dockedRockets) parsed.dockedRockets = [];
+
+  if (parsed.spaceStations && parsed.spaceStations.length > 0) {
+    parsed.spaceStations = parsed.spaceStations.map((station: { id: string; type: string; level: number; maxDocks?: number; dockedRockets?: number[] }) => ({
+      ...station,
+      maxDocks: station.maxDocks ?? 2,
+      dockedRockets: station.dockedRockets ?? [],
+    }));
+  }
+
+  if (parsed.lunarComponents === undefined) parsed.lunarComponents = 0;
+  if (parsed.moonStatus === undefined) parsed.moonStatus = 'locked';
+  if (parsed.moonMissionTicksRemaining === undefined) parsed.moonMissionTicksRemaining = 0;
+  if (!parsed.moonBuildings) parsed.moonBuildings = { extractors: 0, refineries: 0, silos: 0, maintenances: 0, massDrivers: 0, solarArray: 0, nuclearReactor: 0, battery: 0, fabricators: 0 };
+  if (!parsed.moonResources) parsed.moonResources = { regolith: 0, helium3: 0, alloys: 0 };
+  if (!parsed.earthResources) parsed.earthResources = { regolith: 0, helium3: 0, alloys: 0 };
+
+  if (parsed.moonResources && parsed.moonResources.alloys === undefined) {
+    parsed.moonResources.alloys = 0;
+  }
+  if (parsed.earthResources && parsed.earthResources.alloys === undefined) {
+    parsed.earthResources.alloys = 0;
+  }
+
+  if (parsed.moonBuildings) {
+    if (parsed.moonBuildings.solarArray === undefined) parsed.moonBuildings.solarArray = 0;
+    if (parsed.moonBuildings.nuclearReactor === undefined) parsed.moonBuildings.nuclearReactor = 0;
+    if (parsed.moonBuildings.battery === undefined) parsed.moonBuildings.battery = 0;
+    if (parsed.moonBuildings.fabricators === undefined) parsed.moonBuildings.fabricators = 0;
+    if (parsed.moonBuildings.maintenance !== undefined && parsed.moonBuildings.maintenances === undefined) {
+      parsed.moonBuildings.maintenances = parsed.moonBuildings.maintenance;
+      delete parsed.moonBuildings.maintenance;
+    }
+    if (parsed.moonBuildings.fabricator !== undefined && parsed.moonBuildings.fabricators === undefined) {
+      parsed.moonBuildings.fabricators = parsed.moonBuildings.fabricator;
+      delete parsed.moonBuildings.fabricator;
+    }
+  }
+
+  if (parsed.activeHazard === undefined) parsed.activeHazard = null;
+  if (!parsed.moonLog) parsed.moonLog = [];
+  if (!parsed.moonSectors) parsed.moonSectors = [{
+    id: 'starting-sector',
+    name: 'Landing Zone',
+    traits: {},
+    buildings: {},
+    slots: 4,
+    slotsUsed: 0,
+  }];
+  if (!parsed.moonPowerSystem) parsed.moonPowerSystem = {
+    dayNightTick: 0,
+    isDay: true,
+    currentEnergy: MOON.INITIAL_POWER_ENERGY,
+    maxEnergy: MOON.INITIAL_POWER_ENERGY,
+    energyGeneration: 0,
+    energyDemand: 0,
+  };
+  if (!parsed.moonBounties) parsed.moonBounties = [];
+  if (parsed.moonBountyRefreshTimer === undefined) parsed.moonBountyRefreshTimer = 300;
+
+  if (!parsed.settings) parsed.settings = DEFAULT_SETTINGS;
+  else {
+    parsed.settings = { ...DEFAULT_SETTINGS, ...parsed.settings };
+  }
+
+  if (parsed.totalSuccessfulLaunches === undefined) parsed.totalSuccessfulLaunches = 0;
+  if (parsed.orbitLayerUnlocked === undefined) parsed.orbitLayerUnlocked = false;
+  if (parsed.contractsLayerUnlocked === undefined) parsed.contractsLayerUnlocked = false;
+
+  return parsed;
+}
+
+// Load persisted state
+const loadInitialState = () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    return normalizeLoadedState(loadGameStateSync());
+  } catch (e) {
+    console.error('Failed to load persisted state:', e);
+    return null;
+  }
 };
 
 const persistedInitialState = loadInitialState();
@@ -529,6 +517,32 @@ export function App() {
         behavior: 'auto'
       });
     }
+  }, []);
+
+  useEffect(() => {
+    if (!isElectron()) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const hydrateAsyncState = async () => {
+      try {
+        const savedState = await loadGameStateAsync();
+        const normalizedState = normalizeLoadedState(savedState);
+        if (!cancelled && normalizedState) {
+          useGameStore.setState(normalizedState);
+        }
+      } catch (error) {
+        console.error('Failed to load async persisted state:', error);
+      }
+    };
+
+    void hydrateAsyncState();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
