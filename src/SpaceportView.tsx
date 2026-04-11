@@ -1,4 +1,5 @@
 import { useGameStore } from "./useGameStore.js"
+import type { Rocket } from "./useGameStore.js"
 import { useShallow } from 'zustand/react/shallow'
 import { FaRegBuilding, FaRocket, FaBomb, FaGasPump } from "react-icons/fa"
 import { COST_SCALING } from "./gameConstants.js"
@@ -7,6 +8,7 @@ import { AUTOMATION } from "./gameConstants.js"
 export function SpaceportView() {
   const [
     rockets,
+    recentlyLaunchedRocketIds,
     spaceports,
     buildSpaceport,
     buildRocket,
@@ -34,6 +36,7 @@ export function SpaceportView() {
     clearMultiplier,
   ] = useGameStore(useShallow((state) => [
     state.rockets,
+    state.recentlyLaunchedRocketIds,
     state.spaceports,
     state.buildSpaceport,
     state.buildRocket,
@@ -51,9 +54,9 @@ export function SpaceportView() {
     state.getCurrentRocketCost(),
     state.getCurrentSpaceportCost(),
     state.fuelCostPerRocket * state.getEffectMultiplier('fuelCostMultiplier'),
-    state.researchedNodes.includes('o5'),
-    state.researchedNodes.includes('o6'),
-    state.researchedNodes.includes('o7'),
+    state.getEffectMultiplier('unlockSpaceports') > 0,
+    state.getEffectMultiplier('unlockRefineries') > 0,
+    state.getEffectMultiplier('unlockExplosionClearing') > 0,
     Math.round(COST_SCALING.FUEL_REFINERY_COST_BASE * Math.pow(COST_SCALING.FUEL_REFINERY_COST_EXPONENT, state.fuelRefineries)),
     state.getEffectMultiplier('autoBuildEnabled') > 0,
     state.getEffectMultiplier('buildRocketMultiplier') || 1,
@@ -62,11 +65,12 @@ export function SpaceportView() {
   ]));
      
   const rocketsWithFuel = Math.floor(fuel / fuelCostPerRocket);
-      
-  const activeRocketIds = rockets
-    .filter((r): r is { id: number; type: 'cargo' } => r !== null && !explodedRocketIds.includes(r.id))
+     
+  const surfaceReadyRocketIds = rockets
+    .filter((rocket): rocket is Rocket => rocket !== null && !explodedRocketIds.includes(rocket.id))
+    .filter((rocket) => (rocket.locationLayer ?? 'surface') === 'surface')
     .slice(0, rocketsWithFuel)
-    .map(r => r.id);
+    .map((rocket) => rocket.id);
      
   const autoBuildInterval = Math.max(1, Math.floor(AUTOMATION.BASE_INTERVAL / buildMultiplier));
   const autoBuildProgress = autoBuildEnabled && autoBuildActive
@@ -100,8 +104,12 @@ export function SpaceportView() {
                      const rocket = rockets[rocketIndex];
                      if (rocket) {
                        const isExploded = explodedRocketIds.includes(rocket.id);
-                       const hasFuel = activeRocketIds.includes(rocket.id);
-                       const isActive = !isExploded && hasFuel;
+                       const locationLayer = rocket.locationLayer ?? 'surface';
+                       const isLaunching = recentlyLaunchedRocketIds.includes(rocket.id);
+                       const isDockedInOrbit = !isExploded && locationLayer === 'orbit';
+                       const isInTransit = !isExploded && locationLayer === 'transit';
+                       const isOnMoon = !isExploded && locationLayer === 'moon';
+                       const isSurfaceReady = !isExploded && locationLayer === 'surface' && surfaceReadyRocketIds.includes(rocket.id);
                        
                        if (isExploded) {
                          return (
@@ -115,15 +123,56 @@ export function SpaceportView() {
                            </div>
                          );
                        } else {
+                         const title = isDockedInOrbit
+                           ? `Rocket #${rocket.id} docked in orbit`
+                           : isOnMoon
+                             ? `Rocket #${rocket.id} currently on the Moon`
+                           : isInTransit
+                             ? rocket.transitRoute === 'surface_to_moon'
+                               ? `Rocket #${rocket.id} en route to the Moon`
+                               : rocket.transitRoute === 'moon_to_surface'
+                                 ? `Rocket #${rocket.id} returning from the Moon`
+                                 : `Rocket #${rocket.id} en route to orbit`
+                             : isLaunching
+                               ? `Rocket #${rocket.id} launched`
+                               : isSurfaceReady
+                                 ? `Rocket #${rocket.id} ready for launch`
+                                 : `Rocket #${rocket.id} waiting for fuel`;
+
+                         const moonClasses = rocket.moonRole === 'colony'
+                           ? 'bg-green-950/40 border-green-400/60'
+                           : 'bg-slate-950/40 border-slate-400/60';
+                         const slotClasses = isDockedInOrbit
+                           ? 'bg-cyan-950/40 border-cyan-400/60'
+                           : isOnMoon
+                             ? moonClasses
+                           : isInTransit || isLaunching
+                             ? 'bg-purple-950/40 border-purple-400/60'
+                             : isSurfaceReady
+                               ? 'bg-blue-900/30 border-blue-500/50'
+                               : 'bg-gray-800/30 border-gray-600/50';
+
+                         const rocketClasses = isDockedInOrbit
+                           ? 'text-cyan-300'
+                           : isOnMoon
+                             ? rocket.moonRole === 'colony'
+                               ? 'text-green-300'
+                               : 'text-slate-300'
+                           : isInTransit
+                             ? 'text-purple-300 animate-pulse'
+                             : isLaunching
+                               ? 'text-blue-300 animate-cargo-launch'
+                               : isSurfaceReady
+                                 ? 'text-blue-400'
+                                 : 'text-gray-500';
+
                          return (
                            <div 
                              key={i} 
-                             className={`w-8 h-8 flex items-center justify-center border-2 rounded transition-all ${
-                               isActive ? 'bg-blue-900/30 border-blue-500/50' : 'bg-gray-800/30 border-gray-600/50'
-                             }`}
-                             title={isActive ? 'Launching!' : 'Waiting for fuel'}
+                             className={`w-8 h-8 flex items-center justify-center border-2 rounded transition-all ${slotClasses}`}
+                             title={title}
                            >
-                             <FaRocket className={`text-sm ${isActive ? 'text-blue-400 animate-cargo-launch' : 'text-gray-500'}`} style={{ transform: 'rotate(-45deg)' }} />
+                             <FaRocket className={`text-sm ${rocketClasses}`} style={{ transform: 'rotate(-45deg)' }} />
                            </div>
                          );
                        }

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useGameStore, GameState } from './useGameStore.js';
-import { DEFAULT_COMPANIES, ORBITAL, PRODUCTION } from './gameConstants.js';
+import { DEFAULT_COMPANIES, MOON, ORBITAL, PRODUCTION } from './gameConstants.js';
 
 describe('useGameStore - Orbital Space Stations', () => {
   beforeEach(() => {
@@ -247,6 +247,57 @@ describe('Auto-build (Auto-Queue)', () => {
       expect(state.money).toBeLessThan(PRODUCTION.STATION_LOGISTICS_BONUS * ORBITAL.DOCKING_BONUS_MULTIPLIER);
 
       mockRandom.mockRestore();
+    });
+
+    it('moves a launched rocket into orbital transit when a dock is available', () => {
+      useGameStore.setState({
+        fuel: 100,
+        fuelCostPerRocket: 1,
+        rocketExplosionChance: 0,
+        rockets: [{ id: 1, type: 'cargo' as const, locationLayer: 'surface' as const }],
+        explodedRocketIds: [],
+        spaceports: [{ id: 1 }],
+        spaceStations: [{ id: 'research-1', type: 'research', level: 1, maxDocks: 1, dockedRockets: [] }],
+        dockedRockets: [],
+        transitRockets: [],
+        companies: [],
+      } as unknown as GameState);
+
+      useGameStore.getState().tick();
+
+      const state = useGameStore.getState();
+      expect(state.rockets[0]?.locationLayer).toBe('transit');
+      expect(state.rockets[0]?.targetStationId).toBe('research-1');
+      expect(state.transitRockets[0]?.id).toBe(1);
+    });
+
+    it('keeps the same rocket identity through orbit docking and return', () => {
+      useGameStore.setState({
+        fuel: 100,
+        rockets: [{ id: 7, type: 'cargo' as const, locationLayer: 'transit' as const, transitRoute: 'surface_to_orbit' as const, targetStationId: 'research-1', ticksRemaining: 1 }],
+        explodedRocketIds: [],
+        spaceports: [{ id: 1 }],
+        spaceStations: [{ id: 'research-1', type: 'research', level: 1, maxDocks: 1, dockedRockets: [] }],
+        companies: [],
+      } as unknown as GameState);
+
+      useGameStore.getState().tick();
+
+      let state = useGameStore.getState();
+      expect(state.rockets[0]?.id).toBe(7);
+      expect(state.rockets[0]?.locationLayer).toBe('orbit');
+      expect(state.rockets[0]?.stationId).toBe('research-1');
+
+      useGameStore.setState({
+        rockets: [{ ...(state.rockets[0] as object), ticksRemaining: 1 }],
+      } as unknown as GameState);
+
+      useGameStore.getState().tick();
+
+      state = useGameStore.getState();
+      expect(state.rockets[0]?.id).toBe(7);
+      expect(state.rockets[0]?.locationLayer).toBe('surface');
+      expect(state.rockets[0]?.stationId).toBeUndefined();
     });
 
     it('should generate cargo from active rockets', () => {
@@ -692,6 +743,77 @@ describe('Auto-build (Auto-Queue)', () => {
       expect(state.science).toBe(25);
       expect(state.earthResources.helium3).toBe(50);
       expect(state.moonBounties).toHaveLength(0);
+    });
+  });
+
+  describe('Persistent Moon rockets', () => {
+    it('assigns a real rocket to the initial Moon landing mission', () => {
+      useGameStore.setState({
+        fuel: MOON.MISSION_COST.fuel,
+        cargo: MOON.MISSION_COST.cargo,
+        science: MOON.MISSION_COST.science,
+        lunarComponents: MOON.MISSION_COST.lunarComponents,
+        rockets: [{ id: 11, type: 'cargo' as const, locationLayer: 'surface' as const }],
+        explodedRocketIds: [],
+        researchedNodes: ['o14'],
+        moonStatus: 'ready',
+      } as unknown as GameState);
+
+      useGameStore.getState().startMoonMission();
+
+      const state = useGameStore.getState();
+      expect(state.moonStatus).toBe('transit');
+      expect(state.rockets[0]?.id).toBe(11);
+      expect(state.rockets[0]?.locationLayer).toBe('transit');
+      expect(state.rockets[0]?.transitRoute).toBe('surface_to_moon');
+      expect(state.rockets[0]?.moonRole).toBe('colony');
+    });
+
+    it('delivers Moon supply cargo with a persistent rocket and returns it to the surface', () => {
+      useGameStore.setState({
+        fuel: 1000,
+        cargo: 500,
+        moonStatus: 'unlocked',
+        rockets: [{ id: 21, type: 'cargo' as const, locationLayer: 'surface' as const }],
+        explodedRocketIds: [],
+        moonResources: { regolith: 0, helium3: 0, alloys: 0, cargo: 0 },
+      } as unknown as GameState);
+
+      useGameStore.getState().sendSupplyMission(50);
+
+      let state = useGameStore.getState();
+      expect(state.rockets[0]?.locationLayer).toBe('transit');
+      expect(state.rockets[0]?.transitRoute).toBe('surface_to_moon');
+      expect(state.rockets[0]?.cargoAmount).toBe(50);
+
+      useGameStore.setState({
+        rockets: [{ ...(state.rockets[0] as object), ticksRemaining: 1 }],
+      } as unknown as GameState);
+      useGameStore.getState().tick();
+
+      state = useGameStore.getState();
+      expect(state.moonResources.cargo).toBe(50);
+      expect(state.rockets[0]?.locationLayer).toBe('moon');
+      expect(state.rockets[0]?.moonRole).toBe('supply');
+
+      useGameStore.setState({
+        rockets: [{ ...(state.rockets[0] as object), ticksRemaining: 1 }],
+      } as unknown as GameState);
+      useGameStore.getState().tick();
+
+      state = useGameStore.getState();
+      expect(state.rockets[0]?.locationLayer).toBe('transit');
+      expect(state.rockets[0]?.transitRoute).toBe('moon_to_surface');
+
+      useGameStore.setState({
+        rockets: [{ ...(state.rockets[0] as object), ticksRemaining: 1 }],
+      } as unknown as GameState);
+      useGameStore.getState().tick();
+
+      state = useGameStore.getState();
+      expect(state.rockets[0]?.locationLayer).toBe('surface');
+      expect(state.rockets[0]?.transitRoute).toBeUndefined();
+      expect(state.rockets[0]?.cargoAmount).toBeUndefined();
     });
   });
 

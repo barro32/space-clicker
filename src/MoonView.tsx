@@ -1,4 +1,5 @@
 import { useGameStore, MoonBuildingType, MoonSector } from './useGameStore.js'
+import type { Rocket } from './useGameStore.js'
 import { useShallow } from 'zustand/react/shallow'
 import { MOON } from './gameConstants.js'
 import { FaMoon, FaRocket, FaWarehouse, FaWrench, FaBolt, FaExclamationTriangle, FaArrowRight, FaIndustry, FaSun, FaAtom, FaBatteryFull, FaGripHorizontal, FaBox, FaFlask, FaGem } from 'react-icons/fa'
@@ -8,6 +9,8 @@ export function MoonView() {
   const [
     moonStatus,
     moonMissionTicksRemaining,
+    rockets,
+    explodedRocketIds,
     moonSectors,
     moonResources,
     earthResources,
@@ -30,6 +33,8 @@ export function MoonView() {
   ] = useGameStore(useShallow((state) => [
     state.moonStatus,
     state.moonMissionTicksRemaining,
+    state.rockets,
+    state.explodedRocketIds,
     state.moonSectors,
     state.moonResources,
     state.earthResources,
@@ -73,11 +78,32 @@ export function MoonView() {
   const hasLunarManufacturing = getEffectMultiplier('unlockLunarManufacturing') > 0
   const hasPlanetaryExpansion = getEffectMultiplier('unlockPlanetaryExpansion') > 0
   const maxMoonSectors = MOON.MAX_SECTORS + (hasPlanetaryExpansion ? MOON.PLANETARY_EXPANSION_SECTOR_BONUS : 0)
+  const activeRockets = useMemo(
+    () => rockets.filter((rocket): rocket is Rocket => rocket !== null && !explodedRocketIds.includes(rocket.id)),
+    [rockets, explodedRocketIds],
+  )
+  const availableSurfaceRockets = useMemo(
+    () => activeRockets.filter((rocket) => (rocket.locationLayer ?? 'surface') === 'surface'),
+    [activeRockets],
+  )
+  const moonTransitRockets = useMemo(
+    () => activeRockets.filter((rocket) => rocket.transitRoute === 'surface_to_moon' || rocket.transitRoute === 'moon_to_surface'),
+    [activeRockets],
+  )
+  const moonLandedRockets = useMemo(
+    () => activeRockets.filter((rocket) => rocket.locationLayer === 'moon'),
+    [activeRockets],
+  )
+  const activeMoonMissionRocket = useMemo(
+    () => activeRockets.find((rocket) => rocket.moonRole === 'colony' && rocket.transitRoute === 'surface_to_moon') ?? null,
+    [activeRockets],
+  )
 
   // Mission cost check
   const cost = MOON.MISSION_COST
   const canAffordMission = fuel >= cost.fuel && cargo >= cost.cargo && 
-                          science >= cost.science && lunarComponents >= cost.lunarComponents
+                          science >= cost.science && lunarComponents >= cost.lunarComponents &&
+                          availableSurfaceRockets.length > 0
 
   // Locked state - show requirements
   if (!hasMoonMissions) {
@@ -162,6 +188,15 @@ export function MoonView() {
                 <h3 className="text-green-400 mb-2">TRANSIT TIME:</h3>
                 <p className="text-green-400/60">{MOON.MISSION_DURATION_BASE} ticks (~{Math.round(MOON.MISSION_DURATION_BASE / 60)} minutes)</p>
               </div>
+
+              <div className="border-t border-green-500/20 pt-4">
+                <h3 className="text-green-400 mb-2">ASSIGNED VEHICLES:</h3>
+                <p className="text-green-400/60">
+                  {availableSurfaceRockets.length > 0
+                    ? `${availableSurfaceRockets.length} rocket${availableSurfaceRockets.length > 1 ? 's' : ''} available on the surface`
+                    : 'No surface rocket is available for the landing mission'}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -218,6 +253,18 @@ export function MoonView() {
                 <span className="text-green-500/60">Distance:</span>
                 <span className="text-green-400 ml-2">{(384400 * (1 - progress / 100)).toFixed(0)} km</span>
               </div>
+              {activeMoonMissionRocket && (
+                <>
+                  <div>
+                    <span className="text-green-500/60">Rocket:</span>
+                    <span className="text-green-400 ml-2">#{activeMoonMissionRocket.id}</span>
+                  </div>
+                  <div>
+                    <span className="text-green-500/60">Route:</span>
+                    <span className="text-green-400 ml-2">Surface → Moon</span>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="border-t border-green-500/20 pt-4">
@@ -229,6 +276,12 @@ export function MoonView() {
               </div>
             </div>
           </div>
+
+          {activeMoonMissionRocket && (
+            <div className="text-xs text-green-400/70 font-mono">
+              Tracking persistent vehicle ID #{activeMoonMissionRocket.id}
+            </div>
+          )}
         </div>
       </div>
     )
@@ -491,8 +544,8 @@ export function MoonView() {
             </div>
           </div>
 
-           {/* Earth Resources */}
-           <div className="border-t border-green-500/20 pt-2 mt-2">
+          {/* Earth Resources */}
+          <div className="border-t border-green-500/20 pt-2 mt-2">
              <div className="text-xs text-green-400 font-bold mb-1">Earth Reserves</div>
              <div className="text-xs space-y-1">
                <div className="text-cyan-400">
@@ -501,6 +554,32 @@ export function MoonView() {
                <div className="text-purple-400">
                  Alloys: {Math.floor(earthResources.alloys).toLocaleString()}
                </div>
+             </div>
+           </div>
+
+           {/* Active Lunar Traffic */}
+           <div className="border-t border-green-500/20 pt-2 mt-2">
+             <div className="text-xs text-green-400 font-bold mb-2">Lunar Traffic</div>
+             <div className="space-y-1 text-xs">
+               {moonTransitRockets.length === 0 && moonLandedRockets.length === 0 && (
+                 <div className="text-green-500/60">No Moon-bound rockets active.</div>
+               )}
+               {moonTransitRockets.map((rocket) => (
+                 <div key={`moon-transit-${rocket.id}`} className="flex items-center justify-between rounded border border-blue-500/20 bg-blue-950/20 px-2 py-1">
+                   <span className="text-blue-300">Rocket #{rocket.id}</span>
+                   <span className="text-blue-200/80">
+                     {rocket.transitRoute === 'surface_to_moon' ? 'Inbound' : 'Returning'} · {rocket.ticksRemaining ?? 0}s
+                   </span>
+                 </div>
+               ))}
+               {moonLandedRockets.map((rocket) => (
+                 <div key={`moon-landed-${rocket.id}`} className="flex items-center justify-between rounded border border-slate-500/20 bg-slate-950/20 px-2 py-1">
+                   <span className="text-slate-200">Rocket #{rocket.id}</span>
+                   <span className="text-slate-300/70">
+                     {rocket.moonRole === 'colony' ? 'Landed colony ship' : `Surface turnaround · ${rocket.ticksRemaining ?? 0}s`}
+                   </span>
+                 </div>
+               ))}
              </div>
            </div>
            
@@ -536,9 +615,9 @@ export function MoonView() {
                
                <button
                  onClick={() => sendSupplyMission(supplyMissionCargo)}
-                 disabled={supplyMissionCargo <= 0 || fuel < MOON.FUEL_CONSUMPTION_PER_MOON_TRIP || cargo < supplyMissionCargo}
+                 disabled={supplyMissionCargo <= 0 || fuel < MOON.FUEL_CONSUMPTION_PER_MOON_TRIP || cargo < supplyMissionCargo || availableSurfaceRockets.length === 0}
                  className={`terminal-button w-full py-1 text-xs transition ${
-                   supplyMissionCargo > 0 && fuel >= MOON.FUEL_CONSUMPTION_PER_MOON_TRIP && cargo >= supplyMissionCargo
+                   supplyMissionCargo > 0 && fuel >= MOON.FUEL_CONSUMPTION_PER_MOON_TRIP && cargo >= supplyMissionCargo && availableSurfaceRockets.length > 0
                      ? 'bg-blue-900/50 border-blue-500 text-blue-400 hover:bg-blue-800/50'
                      : 'bg-gray-900/50 border-gray-600 text-gray-500'
                  }`}
@@ -547,6 +626,11 @@ export function MoonView() {
                  <FaRocket className="inline mr-1 w-3 h-3" />
                  SEND SUPPLY ({Math.floor(fuel)}/{MOON.FUEL_CONSUMPTION_PER_MOON_TRIP} fuel)
                </button>
+               <div className="text-[11px] text-green-500/60">
+                 {availableSurfaceRockets.length > 0
+                   ? `${availableSurfaceRockets.length} surface rocket${availableSurfaceRockets.length > 1 ? 's are' : ' is'} available`
+                   : 'No surface rocket available for a supply run'}
+               </div>
              </div>
            </div>
 

@@ -294,6 +294,8 @@ export const MOON = {
     lunarComponents: 100,
   },
   MISSION_DURATION_BASE: 120, // Ticks (2 minutes at 1 tick/sec)
+  SUPPLY_MISSION_DURATION: 45,
+  SUPPLY_TURNAROUND_TICKS: 8,
   
   // === LUNAR GRID SYSTEM ===
   // Sector mechanics

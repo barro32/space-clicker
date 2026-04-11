@@ -77,10 +77,11 @@ function calculateGameMetrics(state: GameState): GameMetrics {
   const researchedNodes = state.researchedNodes || [];
   
    // Fleet counts
-   const allRockets = (state.rockets || []).filter((r): r is { id: number; type: 'cargo' } => r !== null);
+   const allRockets = (state.rockets || []).filter((rocket): rocket is NonNullable<(typeof state.rockets)[number]> => rocket !== null);
    const explodedIds = state.explodedRocketIds || [];
-   const activeRockets = allRockets.filter(r => !explodedIds.includes(r.id));
-   const cargoRockets = activeRockets.length;
+   const activeRockets = allRockets.filter((rocket) => !explodedIds.includes(rocket.id));
+   const surfaceRockets = activeRockets.filter((rocket) => (rocket.locationLayer ?? 'surface') === 'surface');
+   const cargoRockets = surfaceRockets.length;
    const totalRockets = activeRockets.length;
    const explodedRockets = explodedIds.length;
    
@@ -99,8 +100,8 @@ function calculateGameMetrics(state: GameState): GameMetrics {
   const successRate = Math.max(0, 1 - explosionChance);
   
     // Estimated production
-    const estimatedLaunches = Math.min(totalRockets, Math.floor((state.fuel || 0) / Math.max(1, effectiveFuelCost)));
-    const successfulCargo = Math.floor(cargoRockets * estimatedLaunches * successRate / Math.max(1, totalRockets));
+    const estimatedLaunches = Math.min(cargoRockets, Math.floor((state.fuel || 0) / Math.max(1, effectiveFuelCost)));
+    const successfulCargo = Math.floor(estimatedLaunches * successRate);
     const moneyPerSec = successfulCargo * (state.profitPerRocket || 1) * getEffectMultiplier('profitMultiplier', researchedNodes);
     
     // Science production from launches + company perks
@@ -110,7 +111,7 @@ function calculateGameMetrics(state: GameState): GameMetrics {
     
     // Science from explosions
     const explosionScienceBonus = PRODUCTION.SCIENCE_PER_EXPLOSION;
-    const failedLaunches = Math.floor(cargoRockets * estimatedLaunches * explosionChance / Math.max(1, totalRockets));
+    const failedLaunches = Math.floor(estimatedLaunches * explosionChance);
     const explosionScience = failedLaunches * explosionScienceBonus;
     
     // Passive science from spaceports
@@ -212,6 +213,57 @@ function normalizeLoadedState(savedState: Record<string, any> | null) {
   if (!parsed.transitRockets) parsed.transitRockets = [];
   if (!parsed.dockedRockets) parsed.dockedRockets = [];
 
+  if (parsed.rockets.length > 0) {
+    const transitByRocketId = new Map(
+      parsed.transitRockets.map((rocket: { id: number; targetStationId: string; ticksRemaining: number }) => [
+        rocket.id,
+        rocket,
+      ]),
+    );
+    const dockedByRocketId = new Map(
+      parsed.dockedRockets.map((rocket: { rocketId: number; stationId: string; ticksRemaining: number }) => [
+        rocket.rocketId,
+        rocket,
+      ]),
+    );
+
+    parsed.rockets = parsed.rockets.map((rocket: Record<string, any> | null) => {
+      if (!rocket) {
+        return null;
+      }
+
+      if (rocket.locationLayer) {
+        return rocket;
+      }
+
+      const transitRocket = transitByRocketId.get(rocket.id);
+      if (transitRocket) {
+        return {
+          ...rocket,
+          locationLayer: 'transit',
+          transitRoute: 'surface_to_orbit',
+          targetStationId: transitRocket.targetStationId,
+          ticksRemaining: transitRocket.ticksRemaining,
+        };
+      }
+
+      const dockedRocket = dockedByRocketId.get(rocket.id);
+      if (dockedRocket) {
+        return {
+          ...rocket,
+          locationLayer: 'orbit',
+          stationId: dockedRocket.stationId,
+          ticksRemaining: dockedRocket.ticksRemaining,
+        };
+      }
+
+      return {
+        ...rocket,
+        locationLayer: 'surface',
+      };
+    });
+  }
+
   if (parsed.spaceStations && parsed.spaceStations.length > 0) {
     parsed.spaceStations = parsed.spaceStations.map((station: { id: string; type: string; level: number; maxDocks?: number; dockedRockets?: number[] }) => ({
       ...station,
@@ -223,12 +275,15 @@ function normalizeLoadedState(savedState: Record<string, any> | null) {
   if (parsed.lunarComponents === undefined) parsed.lunarComponents = 0;
   if (parsed.moonStatus === undefined) parsed.moonStatus = 'locked';
   if (parsed.moonMissionTicksRemaining === undefined) parsed.moonMissionTicksRemaining = 0;
-  if (!parsed.moonBuildings) parsed.moonBuildings = { extractors: 0, refineries: 0, silos: 0, maintenances: 0, massDrivers: 0, solarArray: 0, nuclearReactor: 0, battery: 0, fabricators: 0 };
-  if (!parsed.moonResources) parsed.moonResources = { regolith: 0, helium3: 0, alloys: 0 };
+  if (!parsed.moonBuildings) parsed.moonBuildings = { extractors: 0, refineries: 0, silos: 0, maintenances: 0, massDrivers: 0, solarArray: 0, nuclearReactor: 0, battery: 0, fabricators: 0, cargoStorage: 0, starport: 0 };
+  if (!parsed.moonResources) parsed.moonResources = { regolith: 0, helium3: 0, alloys: 0, cargo: 0 };
   if (!parsed.earthResources) parsed.earthResources = { regolith: 0, helium3: 0, alloys: 0 };
 
   if (parsed.moonResources && parsed.moonResources.alloys === undefined) {
     parsed.moonResources.alloys = 0;
+  }
+  if (parsed.moonResources && parsed.moonResources.cargo === undefined) {
+    parsed.moonResources.cargo = 0;
   }
   if (parsed.earthResources && parsed.earthResources.alloys === undefined) {
     parsed.earthResources.alloys = 0;

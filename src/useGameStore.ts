@@ -94,9 +94,27 @@ export interface SpaceStation {
   fuelStorage?: number; // NEW - fuel held at refueling stations
 }
 
+export type RocketLocationLayer = 'surface' | 'transit' | 'orbit' | 'moon';
+export type RocketTransitRoute = 'surface_to_orbit' | 'surface_to_moon' | 'moon_to_surface';
+export type RocketMoonRole = 'colony' | 'supply' | 'returning';
+
+export interface Rocket {
+  id: number;
+  type: 'cargo' | 'science' | 'fuel';
+  freeLaunches?: number;
+  locationLayer?: RocketLocationLayer;
+  transitRoute?: RocketTransitRoute;
+  targetStationId?: string;
+  stationId?: string;
+  ticksRemaining?: number;
+  homeSpaceportId?: number;
+  cargoAmount?: number;
+  moonRole?: RocketMoonRole;
+}
+
 export interface TransitRocket {
    id: number;
-   type: 'cargo' | 'fuel';
+   type: 'cargo' | 'science' | 'fuel';
    targetStationId: string;
    ticksRemaining: number;
    fuel?: number; // NEW - fuel remaining for journey
@@ -142,6 +160,93 @@ export interface Contract {
   status: 'available' | 'active' | 'completed' | 'failed';
 }
 
+function getRocketLocationLayer(rocket: Rocket): RocketLocationLayer {
+  return rocket.locationLayer ?? 'surface';
+}
+
+function deriveOrbitTracking(rockets: (Rocket | null)[], spaceStations: SpaceStation[], explodedRocketIds: number[] = []) {
+  const activeStationIds = new Set(spaceStations.map((station) => station.id));
+  const spaceStationsWithDockedRockets = spaceStations.map((station) => ({
+    ...station,
+    dockedRockets: [] as number[],
+  }));
+  const dockedRockets: DockedRocket[] = [];
+  const transitRockets: TransitRocket[] = [];
+
+  rockets.forEach((rocket) => {
+    if (!rocket || explodedRocketIds.includes(rocket.id)) {
+      return;
+    }
+
+    const locationLayer = getRocketLocationLayer(rocket);
+    const ticksRemaining = rocket.ticksRemaining ?? 0;
+
+    if (
+      locationLayer === 'transit' &&
+      rocket.transitRoute === 'surface_to_orbit' &&
+      rocket.targetStationId &&
+      activeStationIds.has(rocket.targetStationId)
+    ) {
+      transitRockets.push({
+        id: rocket.id,
+        type: rocket.type,
+        targetStationId: rocket.targetStationId,
+        ticksRemaining,
+      });
+      return;
+    }
+
+    if (locationLayer === 'orbit' && rocket.stationId && activeStationIds.has(rocket.stationId)) {
+      dockedRockets.push({
+        rocketId: rocket.id,
+        stationId: rocket.stationId,
+        ticksRemaining,
+      });
+
+      const stationIndex = spaceStationsWithDockedRockets.findIndex((station) => station.id === rocket.stationId);
+      if (stationIndex !== -1) {
+        spaceStationsWithDockedRockets[stationIndex].dockedRockets.push(rocket.id);
+      }
+    }
+  });
+
+  return {
+    spaceStations: spaceStationsWithDockedRockets,
+    dockedRockets,
+    transitRockets,
+  };
+}
+
+function getOrbitTrackingSnapshot(
+  rockets: (Rocket | null)[],
+  spaceStations: SpaceStation[],
+  explodedRocketIds: number[] = [],
+  legacyDockedRockets: DockedRocket[] = [],
+  legacyTransitRockets: TransitRocket[] = [],
+) {
+  const persistentTracking = deriveOrbitTracking(rockets, spaceStations, explodedRocketIds);
+  if (persistentTracking.dockedRockets.length > 0 || persistentTracking.transitRockets.length > 0) {
+    return persistentTracking;
+  }
+
+  if (legacyDockedRockets.length === 0 && legacyTransitRockets.length === 0) {
+    return persistentTracking;
+  }
+
+  const spaceStationsWithDockedRockets = spaceStations.map((station) => ({
+    ...station,
+    dockedRockets: legacyDockedRockets
+      .filter((dockedRocket) => dockedRocket.stationId === station.id)
+      .map((dockedRocket) => dockedRocket.rocketId),
+  }));
+
+  return {
+    spaceStations: spaceStationsWithDockedRockets,
+    dockedRockets: legacyDockedRockets,
+    transitRockets: legacyTransitRockets,
+  };
+}
+
 export interface GameState {
    money: number
    science: number
@@ -160,7 +265,7 @@ export interface GameState {
    availableContracts: Contract[];
     activeContracts: Contract[]; // Changed from activeContract to array
     contractRefreshTimer: number; // Countdown to next contract refresh
-    rockets: ({ id: number; type: 'cargo' | 'science'; freeLaunches?: number } | null)[];
+    rockets: (Rocket | null)[];
     nextRocketId: number;
     rocketCost: number
     profitPerRocket: number;
@@ -318,12 +423,21 @@ export const useGameStore = create<GameState>((set, get) => ({
     previouslyAvailableResearch: [],
     autoBuildActive: false,
     autoSalvageActive: false,
-    settings: DEFAULT_SETTINGS,
+   settings: DEFAULT_SETTINGS,
    
    tick: () => set(state => {
     // Clear animation flags at start of each tick
-    const activeRockets = state.rockets.filter((r): r is { id: number; type: 'cargo' } => r !== null).filter(r => !state.explodedRocketIds.includes(r.id));
     const updatedRockets = [...state.rockets];
+    const initialOrbitTracking = getOrbitTrackingSnapshot(
+      updatedRockets,
+      state.spaceStations,
+      state.explodedRocketIds,
+      state.dockedRockets,
+      state.transitRockets,
+    );
+    const activeRockets = updatedRockets
+      .filter((rocket): rocket is Rocket => rocket !== null)
+      .filter((rocket) => !state.explodedRocketIds.includes(rocket.id) && getRocketLocationLayer(rocket) === 'surface');
     const rocketIndexById = new Map<number, number>();
 
     updatedRockets.forEach((rocket, index) => {
@@ -347,9 +461,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     let newActiveContracts = state.activeContracts.map(c => ({ ...c }));
     let newCompanies = [...state.companies];
     let recentlyLaunchedIds: number[] = [];
-    
-    // New transit rockets to add this tick
-    let newTransitRockets: TransitRocket[] = [...state.transitRockets];
+    let plannedTransitRockets: TransitRocket[] = [...initialOrbitTracking.transitRockets];
 
      // Get combined multipliers (research + company perks)
      let baseFuelCost = state.fuelCostPerRocket * state.getTotalEffectValue('fuelCostMultiplier');
@@ -370,23 +482,22 @@ export const useGameStore = create<GameState>((set, get) => ({
          
          // Roll for explosion (unless rocket has free launch)
          if (hasFreeLaunch || Math.random() >= effectiveExplosionChance) {
+           let nextRocketState = rocketData ? { ...rocketData } : { ...rocket };
+
            // Consume free launch if used
-           if (hasFreeLaunch && rocketData) {
-             updatedRockets[rocketIndex!] = {
-               ...rocketData,
-               freeLaunches: (rocketData.freeLaunches || 1) - 1,
-             };
+           if (hasFreeLaunch) {
+             nextRocketState.freeLaunches = (nextRocketState.freeLaunches || 1) - 1;
            }
            
             // Track successful launches for animation
             recentlyLaunchedIds.push(rocket.id);
             successfulCargoLaunches += 1;
             
-            // === ORBITAL DOCKING: Send rocket to orbit if there's a free dock ===
+           // === ORBITAL DOCKING: Send rocket to orbit if there's a free dock ===
            // Find a station with available docks
            const stationsWithDocks = state.spaceStations.filter(s => {
-             const dockedCount = state.dockedRockets.filter(d => d.stationId === s.id).length;
-             const transitCount = newTransitRockets.filter(t => t.targetStationId === s.id).length;
+             const dockedCount = initialOrbitTracking.dockedRockets.filter(d => d.stationId === s.id).length;
+             const transitCount = plannedTransitRockets.filter(t => t.targetStationId === s.id).length;
              return dockedCount + transitCount < s.maxDocks;
            });
            
@@ -396,7 +507,15 @@ export const useGameStore = create<GameState>((set, get) => ({
              // Transit speed multiplier (Zenith perk: Express Transit)
              const transitSpeedMultiplier = state.getCompanyPerkValue('transitSpeedMultiplier') || 1;
              const transitDuration = Math.max(1, Math.floor(ORBITAL.TRANSIT_DURATION_TICKS * transitSpeedMultiplier));
-             newTransitRockets.push({
+             nextRocketState = {
+               ...nextRocketState,
+               locationLayer: 'transit',
+               transitRoute: 'surface_to_orbit',
+               targetStationId: targetStation.id,
+               stationId: undefined,
+               ticksRemaining: transitDuration,
+             };
+             plannedTransitRockets.push({
                id: rocket.id,
                type: rocket.type,
                targetStationId: targetStation.id,
@@ -404,6 +523,10 @@ export const useGameStore = create<GameState>((set, get) => ({
              });
            } else if (state.spaceStations.length > 0) {
              blockedOrbitTransfers += 1;
+           }
+
+           if (rocketIndex !== undefined) {
+             updatedRockets[rocketIndex] = nextRocketState;
            }
          } else {
            newExplodedRocketIds.push(rocket.id);
@@ -430,55 +553,66 @@ export const useGameStore = create<GameState>((set, get) => ({
              }
            }
          }
-       }
+     }
      }
     
     // === ORBITAL MECHANICS ===
-    
-    // Process transit rockets (decrement timer, convert to docked)
-    let newDockedRockets: DockedRocket[] = [...state.dockedRockets];
-    let newSpaceStations = state.spaceStations.map(s => ({ ...s, dockedRockets: [...s.dockedRockets] }));
-    
-    const arrivedTransit: TransitRocket[] = [];
-    const stillInTransit: TransitRocket[] = [];
-    
-    for (const transit of newTransitRockets) {
-      if (transit.ticksRemaining <= 1) {
-        arrivedTransit.push(transit);
-      } else {
-        stillInTransit.push({ ...transit, ticksRemaining: transit.ticksRemaining - 1 });
-      }
-    }
-    
-    // Dock arrived rockets
     const dockingDurationReduction = state.getCompanyPerkValue('dockingDurationReduction') || 0;
     const effectiveDockingDuration = Math.max(1, Math.floor(ORBITAL.DOCKING_DURATION_TICKS * (1 - dockingDurationReduction)));
-    for (const arrived of arrivedTransit) {
-      const stationIndex = newSpaceStations.findIndex(s => s.id === arrived.targetStationId);
-      if (stationIndex !== -1) {
-        newSpaceStations[stationIndex].dockedRockets.push(arrived.id);
-        newDockedRockets.push({
-          rocketId: arrived.id,
-          stationId: arrived.targetStationId,
-          ticksRemaining: effectiveDockingDuration,
-        });
+    updatedRockets.forEach((rocket, index) => {
+      if (!rocket || newExplodedRocketIds.includes(rocket.id)) {
+        return;
       }
-    }
-    
-    // Process docked rockets (decrement timer, undock when done)
-    const stillDocked: DockedRocket[] = [];
-    for (const docked of newDockedRockets) {
-      if (docked.ticksRemaining <= 1) {
-        // Undock - remove from station
-        const stationIndex = newSpaceStations.findIndex(s => s.id === docked.stationId);
-        if (stationIndex !== -1) {
-          newSpaceStations[stationIndex].dockedRockets = newSpaceStations[stationIndex].dockedRockets.filter(id => id !== docked.rocketId);
+
+      const locationLayer = getRocketLocationLayer(rocket);
+      const ticksRemaining = rocket.ticksRemaining ?? 0;
+
+      if (locationLayer === 'transit' && rocket.transitRoute === 'surface_to_orbit' && rocket.targetStationId) {
+        if (ticksRemaining <= 1) {
+          updatedRockets[index] = {
+            ...rocket,
+            locationLayer: 'orbit',
+            transitRoute: undefined,
+            stationId: rocket.targetStationId,
+            targetStationId: undefined,
+            ticksRemaining: effectiveDockingDuration,
+          };
+        } else {
+          updatedRockets[index] = {
+            ...rocket,
+            ticksRemaining: ticksRemaining - 1,
+          };
         }
-      } else {
-        stillDocked.push({ ...docked, ticksRemaining: docked.ticksRemaining - 1 });
+        return;
       }
-    }
-    newDockedRockets = stillDocked;
+
+      if (locationLayer === 'orbit' && rocket.stationId) {
+        if (ticksRemaining <= 1) {
+          updatedRockets[index] = {
+            ...rocket,
+            locationLayer: 'surface',
+            stationId: undefined,
+            ticksRemaining: undefined,
+          };
+        } else {
+          updatedRockets[index] = {
+            ...rocket,
+            ticksRemaining: ticksRemaining - 1,
+          };
+        }
+      }
+    });
+
+    const orbitTracking = getOrbitTrackingSnapshot(
+      updatedRockets,
+      state.spaceStations,
+      newExplodedRocketIds,
+      initialOrbitTracking.dockedRockets,
+      initialOrbitTracking.transitRockets,
+    );
+    const newSpaceStations = orbitTracking.spaceStations;
+    const newDockedRockets = orbitTracking.dockedRockets;
+    const stillInTransit = orbitTracking.transitRockets;
     
     // Spawn debris randomly
     let newDebris = [...state.spaceDebris];
@@ -781,7 +915,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           
           if (finalMoney >= cost) {
             const newRockets = [...finalRockets];
-            const newRocket = { id: finalNextId, type: 'cargo' as const };
+            const newRocket = { id: finalNextId, type: 'cargo' as const, locationLayer: 'surface' as RocketLocationLayer };
             const firstNullIndex = newRockets.findIndex(r => r === null);
             if (firstNullIndex !== -1) {
               newRockets[firstNullIndex] = newRocket;
@@ -843,13 +977,121 @@ export const useGameStore = create<GameState>((set, get) => ({
      let newMoonLog = [...state.moonLog];
      let newMoonPowerSystem = { ...state.moonPowerSystem };
      
-    // Check if lunar manufacturing is unlocked to show "ready" status
+     // Check if lunar manufacturing is unlocked to show "ready" status
     if (state.moonStatus === 'locked' && state.getEffectMultiplier('unlockLunarManufacturing') > 0) {
       newMoonStatus = 'ready';
     }
-    
-    // Process Moon mission transit
-    if (state.moonStatus === 'transit') {
+    const moonStorageCapacity = state.getMoonStorageCapacity();
+    const hasRocketDrivenMoonMission = finalRockets.some(
+      (rocket) => rocket !== null && rocket.transitRoute === 'surface_to_moon' && rocket.moonRole === 'colony',
+    );
+
+    finalRockets = finalRockets.map((rocket) => {
+      if (!rocket || finalExplodedRocketIds.includes(rocket.id)) {
+        return rocket;
+      }
+
+      if (rocket.locationLayer === 'transit' && rocket.transitRoute === 'surface_to_moon') {
+        const nextTicksRemaining = Math.max(0, (rocket.ticksRemaining ?? 0) - 1);
+
+        if (rocket.moonRole === 'colony') {
+          newMoonMissionTicks = nextTicksRemaining;
+        }
+
+        if (nextTicksRemaining > 0) {
+          return {
+            ...rocket,
+            ticksRemaining: nextTicksRemaining,
+          };
+        }
+
+        const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+
+        if (rocket.moonRole === 'colony') {
+          newMoonStatus = 'unlocked';
+          newMoonMissionTicks = 0;
+          newMoonResources.cargo = Math.min(
+            moonStorageCapacity.cargo,
+            newMoonResources.cargo + MOON.INITIAL_MOON_CARGO,
+          );
+          newMoonLog = [`[${timestamp}] LANDING SUCCESSFUL - Rocket #${rocket.id} established the lunar base`, ...newMoonLog]
+            .slice(0, MOON.LOG_MAX_ENTRIES);
+          notificationsToAdd.push(`Lunar Landing Successful! Rocket #${rocket.id} is now on the Moon.`);
+
+          return {
+            ...rocket,
+            locationLayer: 'moon',
+            transitRoute: undefined,
+            ticksRemaining: undefined,
+            cargoAmount: undefined,
+            moonRole: 'colony',
+          };
+        }
+
+        const deliveredCargo = Math.min(
+          rocket.cargoAmount || 0,
+          Math.max(0, moonStorageCapacity.cargo - newMoonResources.cargo),
+        );
+        newMoonResources.cargo += deliveredCargo;
+        newMoonLog = [`[${timestamp}] SUPPLY ARRIVAL - Rocket #${rocket.id} delivered ${deliveredCargo} cargo`, ...newMoonLog]
+          .slice(0, MOON.LOG_MAX_ENTRIES);
+        notificationsToAdd.push(`Rocket #${rocket.id} delivered ${deliveredCargo} cargo to the Moon.`);
+
+        return {
+          ...rocket,
+          locationLayer: 'moon',
+          transitRoute: undefined,
+          ticksRemaining: MOON.SUPPLY_TURNAROUND_TICKS,
+          moonRole: 'supply',
+        };
+      }
+
+      if (rocket.locationLayer === 'moon' && rocket.moonRole === 'supply') {
+        const nextTicksRemaining = Math.max(0, (rocket.ticksRemaining ?? 0) - 1);
+        if (nextTicksRemaining > 0) {
+          return {
+            ...rocket,
+            ticksRemaining: nextTicksRemaining,
+          };
+        }
+
+        const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+        newMoonLog = [`[${timestamp}] RETURN BURN - Rocket #${rocket.id} departing for Earth orbit`, ...newMoonLog]
+          .slice(0, MOON.LOG_MAX_ENTRIES);
+
+        return {
+          ...rocket,
+          locationLayer: 'transit',
+          transitRoute: 'moon_to_surface',
+          ticksRemaining: MOON.SUPPLY_MISSION_DURATION,
+          moonRole: 'returning',
+        };
+      }
+
+      if (rocket.locationLayer === 'transit' && rocket.transitRoute === 'moon_to_surface') {
+        const nextTicksRemaining = Math.max(0, (rocket.ticksRemaining ?? 0) - 1);
+        if (nextTicksRemaining > 0) {
+          return {
+            ...rocket,
+            ticksRemaining: nextTicksRemaining,
+          };
+        }
+
+        return {
+          ...rocket,
+          locationLayer: 'surface',
+          transitRoute: undefined,
+          ticksRemaining: undefined,
+          cargoAmount: undefined,
+          moonRole: undefined,
+        };
+      }
+
+      return rocket;
+    });
+
+    // Legacy fallback for older saves that still have only the global mission timer.
+    if (state.moonStatus === 'transit' && !hasRocketDrivenMoonMission) {
       newMoonMissionTicks = state.moonMissionTicksRemaining - 1;
       
       // Mission complete!
@@ -1162,10 +1404,11 @@ export const useGameStore = create<GameState>((set, get) => ({
          const newRockets = [...state.rockets];
          const hasFreeLaunch = state.getEffectMultiplier('unlockFreeLaunch') > 0;
          for (let i = 0; i < affordableCount; i++) {
-           const newRocket = { 
+         const newRocket = { 
              id: state.nextRocketId + i, 
              type: 'cargo' as const,
-             freeLaunches: hasFreeLaunch ? 1 : undefined
+             freeLaunches: hasFreeLaunch ? 1 : undefined,
+             locationLayer: 'surface' as RocketLocationLayer,
            };
            const firstNullIndex = newRockets.findIndex(r => r === null);
            if (firstNullIndex !== -1) {
@@ -1896,15 +2139,40 @@ export const useGameStore = create<GameState>((set, get) => ({
     // Calculate mission duration (can be reduced by research)
     const durationMultiplier = state.getEffectMultiplier('missionDurationMultiplier' as EffectType) || 1;
     const duration = Math.round(MOON.MISSION_DURATION_BASE * durationMultiplier);
+
+    const availableRocketIndex = state.rockets.findIndex((rocket) =>
+      rocket !== null &&
+      !state.explodedRocketIds.includes(rocket.id) &&
+      getRocketLocationLayer(rocket) === 'surface',
+    );
+    if (availableRocketIndex === -1) {
+      get().addNotification('No surface rocket available for the lunar landing mission.');
+      return {};
+    }
+
+    const missionRocket = state.rockets[availableRocketIndex];
+    if (!missionRocket) {
+      return {};
+    }
+    const updatedRockets = [...state.rockets];
+    updatedRockets[availableRocketIndex] = {
+      ...missionRocket,
+      locationLayer: 'transit',
+      transitRoute: 'surface_to_moon',
+      ticksRemaining: duration,
+      moonRole: 'colony',
+      cargoAmount: MOON.INITIAL_MOON_CARGO,
+    };
     
-    get().addMoonLog('MISSION INITIATED - Lunar lander en route');
-    get().addNotification('Lunar Landing Mission launched!');
+    get().addMoonLog(`MISSION INITIATED - Rocket #${missionRocket.id} en route to the Moon`);
+    get().addNotification(`Lunar Landing Mission launched with Rocket #${missionRocket.id}!`);
     
     return {
       fuel: state.fuel - cost.fuel,
       cargo: state.cargo - cost.cargo,
       science: state.science - cost.science,
       lunarComponents: state.lunarComponents - cost.lunarComponents,
+      rockets: updatedRockets,
       moonStatus: 'transit' as MoonStatus,
       moonMissionTicksRemaining: duration,
     };
@@ -2159,25 +2427,40 @@ export const useGameStore = create<GameState>((set, get) => ({
         get().addNotification(`Insufficient fuel! Need ${fuelCost}, have ${Math.floor(state.fuel)}`);
         return {};
       }
-      
-      // Create supply mission (auto-delivers cargo to moon storage)
-      // For now, directly transfer cargo to moon storage instead of transit rocket
-      // TODO: Implement proper transit rocket system with supply mission phase
-      const moonCargo = state.moonResources.cargo || 0;
-      const cargoStorage = state.getMoonStorageCapacity().cargo;
-      const cargoAfterDelivery = Math.min(moonCargo + requestedCargo, cargoStorage);
-      const cargoStored = cargoAfterDelivery - moonCargo;
-      
-      get().addMoonLog(`SUPPLY MISSION RECEIVED: ${cargoStored} cargo delivered to moon cargo storage`);
-      get().addNotification(`Supply mission complete! ${cargoStored} cargo delivered to moon.`);
+
+      const availableRocketIndex = state.rockets.findIndex((rocket) =>
+        rocket !== null &&
+        !state.explodedRocketIds.includes(rocket.id) &&
+        getRocketLocationLayer(rocket) === 'surface',
+      );
+      if (availableRocketIndex === -1) {
+        get().addNotification('No surface rocket available for a supply mission.');
+        return {};
+      }
+
+      const missionRocket = state.rockets[availableRocketIndex];
+      if (!missionRocket) {
+        return {};
+      }
+
+      const duration = MOON.SUPPLY_MISSION_DURATION;
+      const updatedRockets = [...state.rockets];
+      updatedRockets[availableRocketIndex] = {
+        ...missionRocket,
+        locationLayer: 'transit',
+        transitRoute: 'surface_to_moon',
+        ticksRemaining: duration,
+        cargoAmount: requestedCargo,
+        moonRole: 'supply',
+      };
+
+      get().addMoonLog(`SUPPLY LAUNCHED: Rocket #${missionRocket.id} carrying ${requestedCargo} cargo to the Moon`);
+      get().addNotification(`Rocket #${missionRocket.id} launched a Moon supply run.`);
       
       return {
         cargo: state.cargo - requestedCargo,
         fuel: state.fuel - fuelCost,
-        moonResources: {
-          ...state.moonResources,
-          cargo: cargoAfterDelivery,
-        },
+        rockets: updatedRockets,
       };
     }),
 
