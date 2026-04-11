@@ -70,9 +70,62 @@ const renderEffectDescription = (effect: { type: string; value: number }, curren
     return `+${increase}% cargo`;
   } else if (efType === 'passiveCargoBonus') {
     return `+${efVal} cargo/tick`;
+  } else if (efType === 'passiveMoneyBonus') {
+    return `+${efVal} money/tick`;
+  } else if (efType === 'cargoPerLaunchBonus') {
+    return `+${efVal} cargo/launch`;
+  } else if (efType === 'fuelCapacityBonus') {
+    return `+${efVal} fuel cap`;
+  } else if (efType === 'refineryCapacityBonus') {
+    return `+${efVal} fuel/refinery`;
+  } else if (efType === 'sciencePerRocketBonus') {
+    return `+${efVal} sci/launch`;
   } else if (efType === 'maxActiveContractsBonus' || efType === 'maxAvailableContractsBonus') {
     return `+${efVal} contract slot`;
+  } else if (efType === 'stationDocksBonus') {
+    return `+${efVal} dock slots`;
+  } else if (efType === 'maxSatellitesBonus') {
+    return `+${efVal} satellites`;
+  } else if (efType === 'dockingBonusMultiplier') {
+    return `x${efVal} docking`;
+  } else if (efType === 'satelliteBonusMultiplier') {
+    return `x${efVal} satellite`;
+  } else if (efType === 'lunarProductionMultiplier') {
+    return `x${efVal} lunar output`;
+  } else if (efType === 'contractRefreshMultiplier') {
+    return `x${efVal} refresh`;
+  } else if (efType === 'companyXPMultiplier') {
+    return `+${Math.round((efVal - 1) * 100)}% company prog`;
+  } else if (efType === 'researchCostMultiplier') {
+    return `-${Math.round((1 - efVal) * 100)}% research`;
+  } else if (efType === 'missionDurationMultiplier') {
+    return `-${Math.round((1 - efVal) * 100)}% travel`;
+  } else if (efType === 'extractorOutputMultiplier') {
+    return `+${Math.round((efVal - 1) * 100)}% extractor`;
+  } else if (efType === 'moonRefineryOutputMultiplier') {
+    return `+${Math.round((efVal - 1) * 100)}% moon refine`;
+  } else if (efType === 'moonStorageMultiplier') {
+    return `x${efVal} storage`;
+  } else if (efType === 'hazardDurationMultiplier') {
+    return `-${Math.round((1 - efVal) * 100)}% hazard time`;
+  } else if (efType === 'massDriverEfficiency') {
+    return `x${efVal} mass driver`;
+  } else if (efType === 'sectorScanCostReduction') {
+    return `-${Math.round((1 - efVal) * 100)}% scan cost`;
+  } else if (efType === 'buildingSlotsPerSectorBonus') {
+    return `+${efVal} slots/sector`;
+  } else if (efType === 'massDriverCapacityBonus') {
+    return `x${efVal} payload`;
+  } else if (efType === 'fabricatorOutputMultiplier') {
+    return `+${Math.round((efVal - 1) * 100)}% fabricator`;
+  } else if (efType === 'fabricatorCostReduction') {
+    return `-${Math.round((1 - efVal) * 100)}% fab cost`;
+  } else if (efType === 'alloysStorageBonus') {
+    return `+${efVal} alloy cap`;
   } else if (efType.startsWith('unlock')) {
+    if (efType === 'unlockExplosionClearing') return 'Unlock salvage';
+    if (efType === 'unlockFreeLaunch') return 'Free launch';
+    if (efType === 'unlockPlanetaryExpansion') return 'Unlock planets';
     return 'Unlock';
   } else if (efType.endsWith('Multiplier')) {
     return `x${efVal}`;

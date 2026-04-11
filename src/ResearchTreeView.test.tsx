@@ -25,11 +25,11 @@ describe('ResearchTreeView Component', () => {
 
       render(<ResearchTreeView />);
       
-      // Surface-layer branches only (commercial is now in Contracts sidebar)
+      // Surface-layer branches only
       expect(screen.getByRole('heading', { name: /propulsion/i, level: 2 })).toBeDefined();
       expect(screen.getByRole('heading', { name: /infrastructure/i, level: 2 })).toBeDefined();
-      expect(screen.getByRole('heading', { name: /orbital/i, level: 2 })).toBeDefined();
       expect(screen.getByRole('heading', { name: /control/i, level: 2 })).toBeDefined();
+      expect(screen.queryByRole('heading', { name: /orbital/i, level: 2 })).toBeNull();
 
        // At least one control node should render (u3 has no prerequisites)
        const u3Node = screen.getByTestId('node-u3');

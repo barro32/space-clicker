@@ -15,6 +15,8 @@ import { useGameStore } from './useGameStore.js';
 
 describe('App navigation & persistence', () => {
   beforeEach(() => {
+    vi.useRealTimers();
+
     // Provide a simple localStorage shim for the test environment
     (window as any).localStorage = {
       _store: {} as Record<string, string>,
@@ -139,4 +141,67 @@ describe('App navigation & persistence', () => {
        expect(calledWith.researchedNodes).toEqual(['p1']);
      }
    });
+
+  it('autosave persists fuel refineries', async () => {
+    vi.useFakeTimers();
+
+    const mockState = {
+      currentView: 'surface',
+      setView: vi.fn(),
+      money: 100,
+      science: 50,
+      fuel: 75,
+      cargo: 20,
+      tick: vi.fn(),
+      notifications: [],
+      researchedNodes: [],
+      rockets: [],
+      explodedRocketIds: [],
+      fuelRefineries: 3,
+      spaceports: [{ id: 1 }],
+      fuelCostPerRocket: 1,
+      rocketExplosionChance: 0.5,
+      profitPerRocket: 1,
+      totalSuccessfulLaunches: 0,
+      spaceStations: [],
+      activeContracts: [],
+      availableContracts: [],
+      contractRefreshTimer: 300,
+      satellites: 0,
+      maxSatellites: 5,
+      transitRockets: [],
+      dockedRockets: [],
+      lunarComponents: 0,
+      moonStatus: 'locked',
+      moonMissionTicksRemaining: 0,
+      moonBuildings: {},
+      moonResources: { regolith: 0, helium3: 0, alloys: 0 },
+      earthResources: { regolith: 0, helium3: 0, alloys: 0 },
+      activeHazard: null,
+      moonLog: [],
+      moonSectors: [],
+      moonPowerSystem: {},
+      moonBounties: [],
+      moonBountyRefreshTimer: 0,
+      companies: [],
+      getEffectMultiplier: () => 1,
+      getCompanyPerkValue: () => 0,
+      getMaxFuel: () => 100,
+    };
+
+    (useGameStore as any).mockImplementation((selector?: (state: any) => any) => {
+      if (typeof selector === 'function') {
+        return selector(mockState);
+      }
+      return mockState;
+    });
+    (useGameStore as any).getState = () => mockState;
+
+    render(<App />);
+
+    await vi.advanceTimersByTimeAsync(30000);
+
+    const saved = JSON.parse(window.localStorage.getItem('gameState') || '{}');
+    expect(saved.fuelRefineries).toBe(3);
+  });
 });

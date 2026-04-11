@@ -69,7 +69,10 @@ export function MoonView() {
     }
   }, [moonSectors, getEffectMultiplier])
 
-  const hasLunarManufacturing = researchedNodes.includes('o14')
+  const hasMoonMissions = getEffectMultiplier('unlockMoonMissions') > 0
+  const hasLunarManufacturing = getEffectMultiplier('unlockLunarManufacturing') > 0
+  const hasPlanetaryExpansion = getEffectMultiplier('unlockPlanetaryExpansion') > 0
+  const maxMoonSectors = MOON.MAX_SECTORS + (hasPlanetaryExpansion ? MOON.PLANETARY_EXPANSION_SECTOR_BONUS : 0)
 
   // Mission cost check
   const cost = MOON.MISSION_COST
@@ -77,7 +80,7 @@ export function MoonView() {
                           science >= cost.science && lunarComponents >= cost.lunarComponents
 
   // Locked state - show requirements
-  if (!hasLunarManufacturing) {
+  if (!hasMoonMissions) {
     return (
       <div className="terminal-container h-full flex flex-col items-center justify-center">
         <div className="text-center space-y-6">
@@ -86,7 +89,24 @@ export function MoonView() {
           </div>
           <h2 className="terminal-title text-2xl">LUNAR ACCESS RESTRICTED</h2>
           <div className="terminal-text text-gray-500 max-w-md">
-            <p>Research "Lunar Prototype" (o14) required to unlock Moon missions.</p>
+            <p>Research "Lunar Gateway" (o3) required to begin lunar mission planning.</p>
+            <p className="mt-4 text-xs">This unlocks the first viable path toward Moon operations.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!hasLunarManufacturing) {
+    return (
+      <div className="terminal-container h-full flex flex-col items-center justify-center">
+        <div className="text-center space-y-6">
+          <div className="text-6xl text-gray-500 animate-pulse">
+            <FaMoon />
+          </div>
+          <h2 className="terminal-title text-2xl">LUNAR PROTOTYPE REQUIRED</h2>
+          <div className="terminal-text text-gray-400 max-w-md">
+            <p>Mission planning is unlocked, but you still need "Lunar Prototype" (o14) before a landing can launch.</p>
             <p className="mt-4 text-xs">Requires: 2000 Science, 1000 Cargo, 50 Lunar Components</p>
           </div>
         </div>
@@ -256,7 +276,13 @@ export function MoonView() {
         
         {/* Left Column: Sector Grid */}
         <div className="col-span-1 terminal-panel p-3 space-y-2 overflow-y-auto">
-          <h2 className="terminal-text text-xs border-b border-green-500/30 pb-1 mb-2">SECTORS ({moonSectors.length}/{MOON.MAX_SECTORS})</h2>
+          <h2 className="terminal-text text-xs border-b border-green-500/30 pb-1 mb-2">SECTORS ({moonSectors.length}/{maxMoonSectors})</h2>
+
+          {hasPlanetaryExpansion && (
+            <div className="rounded border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 text-[11px] text-cyan-200/80">
+              Frontier survey uplink active. Deep-range scans can now chart additional lunar sectors.
+            </div>
+          )}
           
           <div className="space-y-1">
             {moonSectors.map(sector => (
@@ -282,7 +308,7 @@ export function MoonView() {
             ))}
           </div>
 
-          {moonSectors.length < MOON.MAX_SECTORS && (
+          {moonSectors.length < maxMoonSectors && (
             <button
               onClick={scanSector}
               disabled={science < MOON.SECTOR_SCAN_COST.science || cargo < MOON.SECTOR_SCAN_COST.cargo}

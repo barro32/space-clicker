@@ -46,7 +46,7 @@ export function ResearchTreeView() {
   ]))
 
   const branches: ResearchBranch[] = Array.from(new Set(surfaceResearchTree.map(n => n.branch)));
-  const preferredOrder = ['propulsion', 'infrastructure', 'commercial', 'orbital', 'control'] as ResearchBranch[];
+  const preferredOrder = ['propulsion', 'infrastructure', 'control', 'commercial', 'orbital'] as ResearchBranch[];
   branches.sort((a, b) => preferredOrder.indexOf(a) - preferredOrder.indexOf(b));
 
    const isUnlocked = (id: string) => researchedNodes.includes(id);
@@ -154,9 +154,13 @@ export function ResearchTreeView() {
     } else if (efType === 'cargoGenerationMultiplier') {
       const increase = Math.round((efVal - 1) * 100);
       return `+${increase}% cargo per launch`;
+    } else if (efType === 'cargoPerLaunchBonus') {
+      return `+${efVal} cargo per launch`;
     } else if (efType === 'refineryOutputMultiplier') {
       const increase = Math.round((efVal - 1) * 100);
       return `+${increase}% fuel production`;
+    } else if (efType === 'refineryCapacityBonus') {
+      return `+${efVal} fuel capacity per refinery`;
     } else if (efType === 'contractMoneyMultiplier') {
       const increase = Math.round((efVal - 1) * 100);
       return `+${increase}% contract rewards`;
@@ -177,22 +181,87 @@ export function ResearchTreeView() {
       return `+${efVal} cleared per click`;
     } else if (efType === 'autoBuildEnabled') {
       return 'Enables auto-build toggle';
+    } else if (efType === 'autoSalvageEnabled') {
+      return 'Enables auto-salvage toggle';
     } else if (efType === 'uiTelemetryFlag') {
-      return 'Enhanced stats display';
-    } else if (efType === 'unlockHighValueContracts') {
-      return 'Unlocks premium contracts';
+      return 'Shows advanced telemetry metrics';
     } else if (efType === 'unlockMoonMissions') {
       return 'Unlocks lunar operations';
-    } else if (efType === 'unlockScienceRockets') {
-      return 'Build rockets that generate science';
     } else if (efType === 'unlockSpaceports') {
       return 'Build additional spaceports';
     } else if (efType === 'unlockRefineries') {
       return 'Build fuel refineries';
     } else if (efType === 'unlockExplosionClearing') {
-      return 'Clear exploded rockets for +1 science';
+      return 'Salvage wrecks for science';
+    } else if (efType === 'unlockFreeLaunch') {
+      return 'New rockets get one guaranteed safe launch';
+    } else if (efType === 'contractRefreshMultiplier') {
+      return `×${efVal} contract refresh rate`;
+    } else if (efType === 'maxActiveContractsBonus') {
+      return `+${efVal} active contract slot`;
+    } else if (efType === 'maxAvailableContractsBonus') {
+      return `+${efVal} available contract slot`;
+    } else if (efType === 'missionDurationMultiplier') {
+      return `−${Math.round((1 - efVal) * 100)}% mission travel time`;
+    } else if (efType === 'extractorOutputMultiplier') {
+      return `+${Math.round((efVal - 1) * 100)}% extractor output`;
+    } else if (efType === 'moonRefineryOutputMultiplier') {
+      return `+${Math.round((efVal - 1) * 100)}% lunar refinery output`;
+    } else if (efType === 'moonStorageMultiplier') {
+      return `×${efVal} lunar storage capacity`;
+    } else if (efType === 'hazardDurationMultiplier') {
+      return `−${Math.round((1 - efVal) * 100)}% hazard duration`;
+    } else if (efType === 'massDriverEfficiency') {
+      return `×${efVal} Mass Driver efficiency`;
+    } else if (efType === 'unlockPlanetaryExpansion') {
+      return 'Unlocks planetary expansion';
+    } else if (efType === 'sectorScanCostReduction') {
+      return `−${Math.round((1 - efVal) * 100)}% sector scan cost`;
+    } else if (efType === 'buildingSlotsPerSectorBonus') {
+      return `+${efVal} building slots per sector`;
+    } else if (efType === 'massDriverCapacityBonus') {
+      return `×${efVal} Mass Driver capacity`;
+    } else if (efType === 'fabricatorOutputMultiplier') {
+      return `+${Math.round((efVal - 1) * 100)}% fabricator output`;
+    } else if (efType === 'fabricatorCostReduction') {
+      return `−${Math.round((1 - efVal) * 100)}% fabricator regolith cost`;
+    } else if (efType === 'alloysStorageBonus') {
+      return `+${efVal} alloy storage`;
+    } else if (efType === 'researchCostMultiplier') {
+      return `−${Math.round((1 - efVal) * 100)}% research costs`;
+    } else if (efType === 'companyXPMultiplier') {
+      return `+${Math.round((efVal - 1) * 100)}% company progress`;
+    } else if (efType === 'fuelCapacityBonus') {
+      return `+${efVal} fuel capacity`;
+    } else if (efType === 'passiveCargoBonus') {
+      return `+${efVal} cargo per tick`;
+    } else if (efType === 'passiveMoneyBonus') {
+      return `+${efVal} money per tick`;
+    } else if (efType === 'sciencePerRocketBonus') {
+      return `+${efVal} science per launch`;
+    } else if (efType === 'stationDocksBonus') {
+      return `+${efVal} docking slots per station`;
+    } else if (efType === 'maxSatellitesBonus') {
+      return `+${efVal} max satellites`;
+    } else if (efType === 'dockingBonusMultiplier') {
+      return `×${efVal} docking bonus`;
+    } else if (efType === 'satelliteBonusMultiplier') {
+      return `×${efVal} satellite bonus`;
+    } else if (efType === 'lunarProductionMultiplier') {
+      return `×${efVal} lunar component production`;
     }
     return efType;
+  };
+
+  const hasCrashRecovery = researchedNodes.includes('o7');
+  const safetyLevel = researchedNodes.filter((id) => id.startsWith('p2-')).length;
+
+  const getJourneyTag = (node: ResearchNode) => {
+    if (node.id === 'o7') return 'Starter';
+    if (node.id.startsWith('p2-')) return 'Long Haul';
+    if (node.id === 'p4' || node.id === 'p5') return 'Milestone';
+    if (node.id === 'o5' || node.id === 'o6') return 'Expansion';
+    return null;
   };
 
   return (
@@ -211,6 +280,25 @@ export function ResearchTreeView() {
             <span className="text-sm text-gray-400">SCIENCE</span>
           </div>
         </div>
+
+        {!hasCrashRecovery && (
+          <div className="mb-4 rounded-lg border border-cyan-500/40 bg-cyan-950/30 p-4">
+            <div className="text-sm font-bold uppercase tracking-wide text-cyan-300">First Breakthrough</div>
+            <div className="mt-1 text-sm text-cyan-100">
+              Early progress is meant to feel scrappy. Earn your first science from launch failures, then unlock
+              <span className="font-semibold text-white"> Crash Recovery Program</span> to turn wreckage into your first dependable research loop.
+            </div>
+          </div>
+        )}
+
+        {hasCrashRecovery && safetyLevel < 20 && (
+          <div className="mb-4 rounded-lg border border-slate-500/30 bg-slate-950/25 p-4">
+            <div className="text-sm font-bold uppercase tracking-wide text-slate-300">Reliability Phase</div>
+            <div className="mt-1 text-sm text-slate-200">
+              The slow climb is intentional here. Keep chipping away at safety and infrastructure until launches become stable enough to support expansion into orbit, contracts, and automation.
+            </div>
+          </div>
+        )}
 
         {/* Branches Grid - 4 columns for 4 branches */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 flex-1 overflow-hidden">
@@ -239,6 +327,7 @@ export function ResearchTreeView() {
                    const unlocked = isUnlockedTech(node);
                    const canAfford = science >= node.scienceCost;
                    const isNewlyAvailable = (newlyAvailableResearchIds || []).includes(node.id);
+                   const journeyTag = getJourneyTag(node);
 
                    return (
                      <div
@@ -255,7 +344,14 @@ export function ResearchTreeView() {
                      >
                       {/* Title & Cost in one row */}
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold text-sm text-white">{node.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-sm text-white">{node.name}</h3>
+                          {journeyTag && (
+                            <span className="rounded border border-cyan-400/40 bg-cyan-900/40 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-cyan-200">
+                              {journeyTag}
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2">
                           <span className={`text-sm font-mono font-bold ${canAfford ? 'text-blue-400' : 'text-red-400'}`}>
                             {node.scienceCost.toLocaleString()}
@@ -290,10 +386,11 @@ export function ResearchTreeView() {
                  // Hide if not started and prerequisites not met for first level
                  if (currentLevel === 0 && firstNode && !prerequisitesMet(firstNode)) return null;
 
-                  const canUnlockNext = nextNode && canUnlock(nextNode);
+                 const canUnlockNext = nextNode && canUnlock(nextNode);
                   const canAffordNext = nextNode && science >= nextNode.scienceCost;
                   const isUnlockedNext = nextNode && isUnlockedTech(nextNode);
                   const cleanName = getCleanName(firstNode.name);
+                  const journeyTag = getJourneyTag(firstNode);
 
                  return (
                    <div
@@ -314,6 +411,11 @@ export function ResearchTreeView() {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-sm text-white">{cleanName}</h3>
+                        {journeyTag && (
+                          <span className="rounded border border-cyan-400/40 bg-cyan-900/40 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-cyan-200">
+                            {journeyTag}
+                          </span>
+                        )}
                         {currentLevel > 0 && (
                           <span className="text-xs bg-purple-500/40 text-purple-200 px-1.5 py-0.5 rounded font-mono">
                             {currentLevel}/{totalLevels}
@@ -346,7 +448,6 @@ export function ResearchTreeView() {
                     <p className="text-xs text-gray-300 leading-relaxed">
                       {renderEffectDescription(firstNode.effect, currentLevel > 0 ? currentLevel : undefined)}
                     </p>
-
                     {/* Current Explosion Chance for Safety Protocols */}
                     {baseId === 'p2' && (
                       <div className="text-xs text-orange-400 mt-2 font-mono bg-orange-900/30 px-2 py-1 rounded">

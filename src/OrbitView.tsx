@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useGameStore, SpaceStation } from "./useGameStore.js"
 import { FaSatellite, FaGlobe, FaMicroscope, FaTruckLoading, FaRocket, FaFlask, FaArrowUp, FaTimes, FaExclamationTriangle, FaMoon, FaInfoCircle } from "react-icons/fa"
 import { ORBITAL, PRODUCTION } from "./gameConstants.js"
+import { calculateOrbitPressure } from "./orbitalHelpers.js"
 
 export function OrbitView() {
   const [
@@ -91,10 +92,18 @@ export function OrbitView() {
   
   // Calculate debris penalty
   const debrisPenalty = hasDebrisImmunity ? 0 : Math.min(spaceDebris.length * ORBITAL.DEBRIS_PENALTY_PER_PIECE * 100, ORBITAL.MAX_DEBRIS_PENALTY * 100)
+  const orbitPressure = useMemo(() => calculateOrbitPressure({
+    spaceStations,
+    dockedRockets,
+    transitRockets,
+    satellites,
+    spaceDebris,
+  }), [spaceStations, dockedRockets, transitRockets, satellites, spaceDebris])
   
   // Calculate current lunar component production rate
   const satelliteBonus = 1 + (satellites * ORBITAL.SATELLITE_GLOBAL_BONUS * satelliteBonusMultiplier)
   const debrisMultiplier = hasDebrisImmunity ? 1 : (1 - debrisPenalty / 100)
+  const congestionMultiplier = 1 - orbitPressure.congestion
   
   // Helper to calculate effective station output
   const getEffectiveStationOutput = (station: typeof spaceStations[0]) => {
@@ -103,13 +112,14 @@ export function OrbitView() {
     
     if (station.type === 'research') {
       const baseOutput = PRODUCTION.STATION_SCIENCE_BONUS * station.level
+      const researchIdleMultiplier = dockedCount > 0 ? 1 : ORBITAL.RESEARCH_IDLE_MULTIPLIER
       const withMultipliers = baseOutput * stationScienceMultiplier * stationBonusMultiplier
-      const effective = withMultipliers * stationDockingBonus * debrisMultiplier * satelliteBonus
+      const effective = withMultipliers * researchIdleMultiplier * stationDockingBonus * debrisMultiplier * satelliteBonus * congestionMultiplier
       return { base: baseOutput, effective: effective, unit: 'Sci' }
     } else {
       const baseOutput = PRODUCTION.STATION_LOGISTICS_BONUS * station.level
       const withMultipliers = baseOutput * stationLogisticsMultiplier * stationBonusMultiplier
-      const effective = withMultipliers * stationDockingBonus * debrisMultiplier * satelliteBonus
+      const effective = withMultipliers * stationDockingBonus * debrisMultiplier * satelliteBonus * congestionMultiplier
       return { base: baseOutput, effective: effective, unit: '$' }
     }
   }
@@ -119,7 +129,7 @@ export function OrbitView() {
     if (station.type === 'research') {
       const dockedCount = dockedRockets.filter(d => d.stationId === station.id).length
       if (dockedCount > 0) {
-        currentLunarProduction += dockedCount * ORBITAL.LUNAR_COMPONENT_PRODUCTION_RATE * station.level * lunarProductionMultiplier
+        currentLunarProduction += dockedCount * ORBITAL.LUNAR_COMPONENT_PRODUCTION_RATE * station.level * lunarProductionMultiplier * congestionMultiplier
       }
     }
   })
@@ -140,7 +150,7 @@ export function OrbitView() {
     })
     
     return { science: totalScience, money: totalMoney }
-  }, [spaceStations, dockedRockets, satelliteBonus, debrisMultiplier, stationScienceMultiplier, stationLogisticsMultiplier, stationBonusMultiplier, dockingBonusMultiplier])
+  }, [spaceStations, dockedRockets, satelliteBonus, debrisMultiplier, congestionMultiplier, stationScienceMultiplier, stationLogisticsMultiplier, stationBonusMultiplier, dockingBonusMultiplier])
 
   // Calculate incoming rockets per station
   const incomingRocketsPerStation = useMemo(() => {
@@ -353,6 +363,30 @@ export function OrbitView() {
           <span className="text-gray-400">({spaceDebris.length} pieces - click to clear)</span>
         </div>
       )}
+
+      {(orbitPressure.congestion > 0 || orbitPressure.occupiedDocks > 0) && (
+        <div className="flex flex-wrap items-center justify-center gap-3 text-sm bg-amber-950/40 border border-amber-500/40 px-4 py-2 rounded-lg w-full max-w-3xl">
+          <div className="text-amber-300">
+            Orbital Congestion: <span className="font-bold">{(orbitPressure.congestion * 100).toFixed(0)}%</span>
+          </div>
+          <div className="text-gray-300">
+            Dock Load: <span className="font-bold">{orbitPressure.occupiedDocks}/{Math.max(orbitPressure.totalDockCapacity, 1)}</span>
+          </div>
+          {orbitPressure.logisticsMitigation > 0 && (
+            <div className="text-green-300">
+              Logistics relief: <span className="font-bold">-{(orbitPressure.logisticsMitigation * 100).toFixed(0)}%</span>
+            </div>
+          )}
+          {orbitPressure.satelliteMitigation > 0 && (
+            <div className="text-cyan-300">
+              Satellite control: <span className="font-bold">-{(orbitPressure.satelliteMitigation * 100).toFixed(0)}%</span>
+            </div>
+          )}
+          <div className="text-amber-200/80">
+            Congestion cuts all orbital output and makes debris more likely.
+          </div>
+        </div>
+      )}
       
       {/* Selected Station Panel */}
       {selectedStation && (
@@ -406,6 +440,9 @@ export function OrbitView() {
                   {output.unit === '$' ? `+$${output.effective.toFixed(1)}` : `+${output.effective.toFixed(1)} ${output.unit}`}/tick
                 </div>
                 <div className="text-gray-500 mt-1 space-y-0.5">
+                  {selectedStation.type === 'research' && dockedCount === 0 && (
+                    <div className="text-amber-400">Idle research penalty: ×{ORBITAL.RESEARCH_IDLE_MULTIPLIER.toFixed(2)}</div>
+                  )}
                   {typeMultiplier !== 1 && (
                     <div>Research: ×{typeMultiplier.toFixed(2)}</div>
                   )}
@@ -420,6 +457,9 @@ export function OrbitView() {
                   )}
                   {debrisMultiplier !== 1 && (
                     <div className="text-orange-400">Debris: ×{debrisMultiplier.toFixed(2)}</div>
+                  )}
+                  {congestionMultiplier !== 1 && (
+                    <div className="text-amber-400">Congestion: ×{congestionMultiplier.toFixed(2)}</div>
                   )}
                 </div>
               </div>
@@ -487,7 +527,7 @@ export function OrbitView() {
           <FaMicroscope className="text-2xl text-blue-400" />
           <div className="font-bold text-sm">Research Station</div>
           <div className="text-xs text-gray-400">{ORBITAL.STATION_COST_CARGO} Cargo / {ORBITAL.STATION_COST_SCIENCE} Sci</div>
-          <div className="text-xs text-blue-300">+{PRODUCTION.STATION_SCIENCE_BONUS} Sci/tick</div>
+          <div className="text-xs text-blue-300">High science, but weak while idle</div>
         </div>
 
         {/* Build Logistics Station */}
@@ -502,7 +542,7 @@ export function OrbitView() {
           <FaTruckLoading className="text-2xl text-green-400" />
           <div className="font-bold text-sm">Logistics Station</div>
           <div className="text-xs text-gray-400">{ORBITAL.STATION_COST_CARGO} Cargo / {ORBITAL.STATION_COST_SCIENCE} Sci</div>
-          <div className="text-xs text-green-300">+${PRODUCTION.STATION_LOGISTICS_BONUS}/tick</div>
+          <div className="text-xs text-green-300">Revenue + congestion relief</div>
         </div>
 
         {/* Launch Satellite */}
@@ -519,6 +559,7 @@ export function OrbitView() {
             <div className="font-bold text-sm">Launch Satellite</div>
             <div className="text-xs text-gray-400">{ORBITAL.SATELLITE_COST_CARGO} Cargo / {ORBITAL.SATELLITE_COST_SCIENCE} Sci</div>
             <div className="text-xs text-cyan-300">+{(ORBITAL.SATELLITE_GLOBAL_BONUS * 100).toFixed(1)}% Global</div>
+            <div className="text-xs text-cyan-200">-{(ORBITAL.SATELLITE_TRAFFIC_CONTROL * 100).toFixed(0)}% congestion</div>
             <div className="text-xs text-gray-500">{satellites}/{effectiveMaxSatellites}</div>
           </div>
         ) : (
@@ -539,9 +580,9 @@ export function OrbitView() {
             Build your first space station to start producing resources in orbit.
           </div>
           <div className="text-xs text-gray-500 space-y-1">
-            <div><span className="text-blue-400">Research Stations</span> generate Science per tick</div>
-            <div><span className="text-green-400">Logistics Stations</span> generate Money per tick</div>
-            <div className="pt-2 text-gray-400">Rockets will automatically dock at stations, boosting output!</div>
+            <div><span className="text-blue-400">Research Stations</span> need docked traffic to stay efficient</div>
+            <div><span className="text-green-400">Logistics Stations</span> earn money and stabilize traffic</div>
+            <div className="pt-2 text-gray-400">Too much traffic creates congestion, which cuts output and spawns debris.</div>
           </div>
         </div>
       )}

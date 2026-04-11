@@ -248,18 +248,30 @@ export const ORBITAL = {
   BASE_DOCKS_PER_STATION: 2,
   DOCKING_DURATION_TICKS: 15, // How long a rocket stays docked
   DOCKING_BONUS_MULTIPLIER: 3, // Station output multiplier when rocket is docked
+  RESEARCH_IDLE_MULTIPLIER: 0.35, // Research stations need traffic to perform well
+  LOGISTICS_CONGESTION_REDUCTION_PER_LEVEL: 0.04,
   
   // Satellites
   SATELLITE_COST_CARGO: 100,
   SATELLITE_COST_SCIENCE: 50,
   MAX_SATELLITES_BASE: 10,
   SATELLITE_GLOBAL_BONUS: 0.005, // 0.5% per satellite
+  SATELLITE_TRAFFIC_CONTROL: 0.01, // Each satellite slightly stabilizes orbital traffic
   
   // Space debris
-  DEBRIS_SPAWN_CHANCE: 0.05, // 5% per tick
+  DEBRIS_SPAWN_CHANCE: 0.01, // Base chance is low; pressure should create most debris
   DEBRIS_PENALTY_PER_PIECE: 0.05, // 5% production reduction per debris
   MAX_DEBRIS_PENALTY: 0.5, // Cap at 50% reduction
-  DEBRIS_CLEAR_SCIENCE_REWARD: 2,
+  DEBRIS_CLEAR_SCIENCE_REWARD: 5,
+  DEBRIS_FROM_EXPLOSION_CHANCE: 0.2,
+  DEBRIS_FROM_BLOCKED_TRANSFER_CHANCE: 0.15,
+
+  // Orbital traffic / congestion
+  CONGESTION_PER_TRANSIT_ROCKET: 0.04,
+  CONGESTION_PER_DOCK_OVERLOAD: 0.8,
+  CONGESTION_PER_DEBRIS: 0.05,
+  CONGESTION_SAFE_DOCK_UTILIZATION: 0.5,
+  MAX_CONGESTION_PENALTY: 0.65,
   
   // Station upgrade costs (multiplied by level)
   STATION_UPGRADE_CARGO_BASE: 200,
@@ -288,6 +300,7 @@ export const MOON = {
   SECTOR_SCAN_COST: { science: 500, cargo: 200 },
   BUILDING_SLOTS_PER_SECTOR: 4,
   MAX_SECTORS: 25, // Max number of sectors players can unlock
+  PLANETARY_EXPANSION_SECTOR_BONUS: 10,
   
   // Sector Traits (applied as multipliers)
   SECTOR_TRAITS: {

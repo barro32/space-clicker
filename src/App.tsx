@@ -85,8 +85,12 @@ function calculateGameMetrics(state: GameState): GameMetrics {
    const explodedRockets = explodedIds.length;
    
    // Fuel calculations
-   const fuelProduction = PRODUCTION.PASSIVE_FUEL_PER_TICK;
-  const effectiveFuelCost = (state.fuelCostPerRocket || 1) * getEffectMultiplier('fuelCostMultiplier', researchedNodes);
+   const refineryOutputMultiplier = state.getTotalEffectValue ? state.getTotalEffectValue('refineryOutputMultiplier') : getEffectMultiplier('refineryOutputMultiplier', researchedNodes);
+   const fuelProduction =
+     PRODUCTION.PASSIVE_FUEL_PER_TICK +
+     ((state.fuelRefineries || 0) * PRODUCTION.FUEL_REFINERY_PRODUCTION_PER_TICK * (refineryOutputMultiplier || 1));
+  const fuelCostMultiplier = state.getTotalEffectValue ? state.getTotalEffectValue('fuelCostMultiplier') : getEffectMultiplier('fuelCostMultiplier', researchedNodes);
+  const effectiveFuelCost = (state.fuelCostPerRocket || 1) * fuelCostMultiplier;
   const fuelConsumption = totalRockets * effectiveFuelCost;
   const fuelNet = fuelProduction - fuelConsumption;
   
@@ -172,6 +176,7 @@ function normalizeLoadedState(savedState: Record<string, any> | null) {
   if (parsed.profitPerRocket === undefined) parsed.profitPerRocket = INITIAL_STATE.PROFIT_PER_ROCKET;
   parsed.spaceportCapacity = INITIAL_STATE.SPACEPORT_CAPACITY;
   if (!parsed.spaceports) parsed.spaceports = [{ id: 1 }];
+  if (parsed.fuelRefineries === undefined) parsed.fuelRefineries = 0;
   if (parsed.spaceportCost === undefined) parsed.spaceportCost = INITIAL_STATE.SPACEPORT_COST;
   if (parsed.fuelCostPerRocket === undefined) parsed.fuelCostPerRocket = INITIAL_STATE.FUEL_COST_PER_ROCKET;
   if (!parsed.explodedRocketIds) parsed.explodedRocketIds = [];
@@ -422,6 +427,24 @@ export function App() {
     return calculateGameMetrics(state);
    }, [researchedNodes, rockets, explodedRocketIds, fuel, spaceports, spaceStations, activeContracts, satellites, spaceDebris]);
 
+  const fuelFillPercent = maxFuel > 0 ? Math.min(100, Math.max(0, (fuel / maxFuel) * 100)) : 0;
+  const fuelTrend = metrics.fuelNet > 0.05 ? 'rising' : metrics.fuelNet < -0.05 ? 'falling' : 'steady';
+  const fuelTrendColor = fuelTrend === 'rising'
+    ? 'text-emerald-400'
+    : fuelTrend === 'falling'
+      ? 'text-red-400'
+      : 'text-slate-400';
+  const fuelBarColor = fuelTrend === 'rising'
+    ? 'from-emerald-500 to-orange-400'
+    : fuelTrend === 'falling'
+      ? 'from-red-500 to-orange-500'
+      : 'from-orange-500 to-amber-400';
+  const fuelTankColor = fuelFillPercent >= 70
+    ? 'border-emerald-500/40'
+    : fuelFillPercent >= 30
+      ? 'border-orange-500/40'
+      : 'border-red-500/40';
+
   // Check if there's affordable research available
   const hasAffordableResearch = useMemo(() => {
     const availableNodes = researchTree.filter((node: ResearchNode) => {
@@ -454,11 +477,13 @@ export function App() {
   // Check if a layer is unlocked (fully accessible, not just viewable)
   // DOM order: moon(0) -> orbit(1) -> contracts(2) -> surface(3) -> research(4)
   // Visual (bottom to top): research -> surface -> contracts -> orbit -> moon
+  const moonUnlocked = hasResearch('unlockLunarManufacturing', researchedNodes);
+
   const isLayerUnlocked = (layer: Layer): boolean => {
     if (layer === 'research' || layer === 'surface') return true;
     if (layer === 'contracts') return contractsLayerUnlocked;
     if (layer === 'orbit') return orbitLayerUnlocked;
-    if (layer === 'moon') return researchedNodes.includes('o14');
+    if (layer === 'moon') return moonUnlocked;
     return true;
   };
 
@@ -484,7 +509,7 @@ export function App() {
     // moon=0 scrollable if orbit unlocked
     if (!contractsLayerUnlocked) return 2; // Can scroll to contracts (first locked)
     if (!orbitLayerUnlocked) return 1; // Can scroll to orbit (next locked)
-    if (!researchedNodes.includes('o14')) return 0; // Can scroll to moon (next locked)
+    if (!moonUnlocked) return 0; // Can scroll to moon (next locked)
     return 0; // All layers accessible
   };
 
@@ -666,7 +691,8 @@ export function App() {
         contractRefreshTimer: state.contractRefreshTimer,
         rockets: state.rockets, nextRocketId: state.nextRocketId, rocketCost: state.rocketCost,
          profitPerRocket: state.profitPerRocket, spaceportCapacity: state.spaceportCapacity,
-         spaceports: state.spaceports, spaceStations: state.spaceStations, spaceportCost: state.spaceportCost,
+         spaceports: state.spaceports, fuelRefineries: state.fuelRefineries,
+         spaceStations: state.spaceStations, spaceportCost: state.spaceportCost,
          fuelCostPerRocket: state.fuelCostPerRocket,
         explodedRocketIds: state.explodedRocketIds, rocketExplosionChance: state.rocketExplosionChance,
         researchedNodes: state.researchedNodes, autoBuildActive: state.autoBuildActive,
@@ -832,9 +858,28 @@ export function App() {
             </div>
             
             {/* Fuel */}
-            <div className="flex items-center gap-2 bg-black/40 border border-orange-500/30 rounded px-2.5 py-1 relative">
-              <FaGasPump className="text-orange-400 text-sm" />
-              <span className="text-orange-400 font-bold font-mono">{Math.floor(fuel).toLocaleString()} / {Math.floor(maxFuel).toLocaleString()}</span>
+            <div
+              className={`min-w-[132px] bg-black/40 border rounded px-2.5 py-1 relative ${fuelTankColor}`}
+              title={`Fuel ${Math.floor(fuel).toLocaleString()}/${Math.floor(maxFuel).toLocaleString()} • Net ${metrics.fuelNet.toFixed(1)}/s • Prod ${metrics.fuelProduction.toFixed(1)}/s • Use ${metrics.fuelConsumption.toFixed(1)}/s`}
+            >
+              <div className="flex items-center gap-2">
+                <FaGasPump className="text-orange-400 text-sm shrink-0" />
+                <span className="text-orange-400 font-bold font-mono leading-none">
+                  {Math.floor(fuel).toLocaleString()}
+                </span>
+                <span className="text-[10px] font-mono text-gray-500 leading-none">
+                  /{Math.floor(maxFuel).toLocaleString()}
+                </span>
+                <span className={`ml-auto text-[10px] font-mono leading-none ${fuelTrendColor}`}>
+                  {metrics.fuelNet > 0 ? '+' : ''}{metrics.fuelNet.toFixed(1)}/s
+                </span>
+              </div>
+              <div className="mt-1 h-1 overflow-hidden rounded-full bg-gray-800/80 border border-white/5">
+                <div
+                  className={`h-full bg-gradient-to-r ${fuelBarColor} transition-all duration-300`}
+                  style={{ width: `${fuelFillPercent}%` }}
+                />
+              </div>
               {resourceChanges.filter(c => c.type === 'fuel').map(change => (
                 <div key={change.id} className="absolute -top-2 right-1 animate-float-up text-orange-400 font-bold pointer-events-none text-xs">+{change.amount}</div>
               ))}

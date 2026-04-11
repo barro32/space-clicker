@@ -93,7 +93,7 @@ const generateSafetyProtocols = (): ResearchNode[] => {
     nodes.push({
       id: `p2-${i}`,
       name: 'Safety Protocols',
-      description: i === 1 ? '-{reduction}% explosion chance' : '-{reduction}% explosion chance',
+      description: 'Reduce launch explosion risk',
       branch: 'propulsion',
       scienceCost: i + 1,
       prerequisites: [],
@@ -115,7 +115,7 @@ const generateModularSpaceports = (): ResearchNode[] => {
     nodes.push({
       id: `i1-${i}`,
       name: `Modular Spaceports ${toRoman(i)}`,
-      description: i === 1 ? '+{value} spaceport slot' : '+{value} spaceport slot',
+      description: 'Add more rocket slots to every spaceport',
       branch: 'infrastructure',
       scienceCost: baseCosts[i - 1] || 7812500 * Math.pow(5, i - 9),
       prerequisites: [],
@@ -137,7 +137,7 @@ const generateAssemblyOptimization = (): ResearchNode[] => {
     nodes.push({
       id: `u1-${i}`,
       name: `Assembly Optimization ${toRoman(i)}`,
-      description: i === 1 ? 'Build button ×{increase}%' : 'Build button ×{increase}%',
+      description: 'Increase manual rocket assembly speed',
       branch: 'control',
       scienceCost: 20 + i * 10,
       prerequisites: i === 1 ? ['u7'] : [], // First level requires Auto-Queue
@@ -159,7 +159,7 @@ const generateRecoveryProtocols = (): ResearchNode[] => {
     nodes.push({
       id: `u2-${i}`,
       name: `Recovery Protocols ${toRoman(i)}`,
-      description: i === 1 ? 'Clear action ×{increase}%' : 'Clear action ×{increase}%',
+      description: 'Increase manual wreck recovery speed',
       branch: 'control',
       scienceCost: 20 + i * 10,
       prerequisites: i === 1 ? ['u8'] : [], // First level requires Auto-Salvage
@@ -180,7 +180,7 @@ const generateCargoOptimization = (): ResearchNode[] => {
     nodes.push({
       id: `l1-${i}`,
       name: `Cargo Optimization ${toRoman(i)}`,
-      description: i === 1 ? '+{increase}% cargo per launch' : '+{increase}% cargo per launch',
+      description: 'Increase cargo delivered by each successful launch',
       branch: 'commercial',
       scienceCost: 50 + i * 30,
       prerequisites: [],
@@ -202,7 +202,7 @@ const generateEfficientEngines = (): ResearchNode[] => {
     nodes.push({
       id: `p1-${i}`,
       name: `Efficient Engines ${toRoman(i)}`,
-      description: i === 1 ? '-{reduction}% fuel cost' : '-{reduction}% fuel cost',
+      description: 'Reduce fuel consumed by each launch',
       branch: 'propulsion',
       scienceCost: baseCosts[i - 1] || 400 + (i - 5) * 150,
       prerequisites: [],
@@ -224,7 +224,7 @@ const generateMarketAnalysis = (): ResearchNode[] => {
     nodes.push({
       id: `c1-${i}`,
       name: `Market Analysis ${toRoman(i)}`,
-      description: i === 1 ? '+{value}/tick passive income' : '+{value}/tick passive income',
+      description: 'Increase passive income from background commercial activity',
       branch: 'commercial',
       scienceCost: baseCosts[i - 1] || 700 + (i - 5) * 300,
       prerequisites: [],
@@ -246,7 +246,7 @@ const generateAdvancedRefineries = (): ResearchNode[] => {
     nodes.push({
       id: `i2-${i}`,
       name: `Advanced Refineries ${toRoman(i)}`,
-      description: i === 1 ? '+{increase}% refinery output' : '+{increase}% refinery output',
+      description: 'Increase fuel refinery output',
       branch: 'infrastructure',
       scienceCost: baseCosts[i - 1] || 1800 + (i - 5) * 600,
       prerequisites: [],
@@ -268,7 +268,7 @@ const generateFuelTanks = (): ResearchNode[] => {
     nodes.push({
       id: `f1-${i}`,
       name: `Fuel Tanks ${toRoman(i)}`,
-      description: i === 1 ? '+{value} max fuel capacity (increased tank size)' : '+{value} max fuel capacity',
+      description: 'Increase maximum fuel storage capacity',
       branch: 'infrastructure',
       scienceCost: baseCosts[i - 1] || 5500 + (i - 5) * 2000,
       prerequisites: [],
@@ -291,7 +291,7 @@ const generateHighEnergyFuel = (): ResearchNode[] => {
     nodes.push({
       id: `p3-${i}`,
       name: `High-Energy Fuel ${toRoman(i)}`,
-      description: i === 1 ? '+{value} cargo per rocket launch' : `+${i} cargo per rocket launch`,
+      description: 'Increase cargo yield from each launch',
       branch: 'propulsion',
       scienceCost: baseCosts[i - 1] || 1000 + (i - 5) * 300,
       prerequisites: [],
@@ -314,7 +314,7 @@ const generateRefineryCapacity = (): ResearchNode[] => {
     nodes.push({
       id: `f2-${i}`,
       name: `Enhanced Refinery Capacity ${toRoman(i)}`,
-      description: i === 1 ? '+{value} fuel per refinery' : `+${5 * i} fuel per refinery`,
+      description: 'Increase fuel capacity provided by each refinery',
       branch: 'infrastructure',
       scienceCost: baseCosts[i - 1] || 1200 + (i - 5) * 600,
       prerequisites: i === 1 ? ['f1-1'] : [`f2-${i - 1}`],
@@ -355,7 +355,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'p4',
     name: 'Flight Recorder System',
-    description: '+1 science per rocket launch',
+    description: 'Successful launches also generate science',
     branch: 'propulsion',
     scienceCost: 10,
     prerequisites: ['p2-5'], // Requires Safety Protocols level 5
@@ -365,7 +365,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'p5',
     name: 'Boost Initialization',
-    description: 'New rockets get 1 free launch when built',
+    description: 'Newly built rockets get one guaranteed safe launch',
     branch: 'propulsion',
     scienceCost: 500,
     prerequisites: ['p2-20'], // Requires Safety Protocols level 20
@@ -381,7 +381,7 @@ export const researchTree: ResearchNode[] = [
     {
       id: 'i3',
       name: 'Cost Reduction',
-      description: '-{reduction}% spaceport and refinery cost.',
+      description: '-{reduction}% construction costs for major infrastructure',
       branch: 'infrastructure',
       scienceCost: 600,
       prerequisites: [],
@@ -399,7 +399,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'c2',
     name: 'Lean Logistics',
-    description: '-{reduction}% contract requirements',
+    description: '-{reduction}% resources required to complete contracts',
     branch: 'commercial',
     scienceCost: 250,
     prerequisites: [],
@@ -409,7 +409,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'c3',
     name: 'Negotiation Tactics',
-    description: '+{increase}% company XP from contracts',
+    description: 'Contracts are more likely to grant bonus company progress',
     branch: 'commercial',
     scienceCost: 500,
     prerequisites: [],
@@ -419,7 +419,7 @@ export const researchTree: ResearchNode[] = [
    {
      id: 'c4',
      name: 'Project Management',
-     description: '+{value} active contract slot',
+     description: '+{value} active contract slot for parallel work',
     branch: 'commercial',
     scienceCost: 400,
     prerequisites: [],
@@ -429,7 +429,7 @@ export const researchTree: ResearchNode[] = [
    {
      id: 'c5',
      name: 'Corporate Portfolio',
-     description: '+{value} active contract slot',
+     description: '+{value} additional active contract slot',
     branch: 'commercial',
     scienceCost: 800,
     prerequisites: ['c4'],
@@ -439,7 +439,7 @@ export const researchTree: ResearchNode[] = [
    {
      id: 'c6',
      name: 'Tender Analysis',
-     description: '+{value} available contract slot',
+     description: '+{value} available contract choice when offers refresh',
     branch: 'commercial',
     scienceCost: 300,
     prerequisites: [],
@@ -449,7 +449,7 @@ export const researchTree: ResearchNode[] = [
    {
      id: 'c7',
      name: 'Global Sourcing',
-     description: '+{value} available contract slot',
+     description: '+{value} additional available contract choice',
     branch: 'commercial',
     scienceCost: 600,
     prerequisites: ['c6'],
@@ -461,7 +461,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'l2',
     name: 'Bulk Cargo Containers',
-    description: '+{increase}% cargo generation',
+    description: '+{increase}% cargo gained from successful launches',
     branch: 'commercial',
     scienceCost: 400,
     prerequisites: [],
@@ -471,7 +471,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'l3',
     name: 'Passive Cargo Income',
-    description: '+{value}/tick passive cargo',
+    description: '+{value}/tick cargo from background logistics',
     branch: 'commercial',
     scienceCost: 600,
     prerequisites: [],
@@ -481,7 +481,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'l4',
     name: 'Advanced Cargo Systems',
-    description: '+{value}/tick passive cargo',
+    description: '+{value}/tick additional background cargo',
     branch: 'commercial',
     scienceCost: 1200,
     prerequisites: ['l3'],
@@ -493,7 +493,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'o1',
     name: 'Orbital Logistics',
-    description: '+{increase}% station output',
+    description: '+{increase}% logistics station output',
     branch: 'orbital',
     scienceCost: 300,
     prerequisites: [],
@@ -503,7 +503,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'o2',
     name: 'Deep Space Scanners',
-    description: '+{increase}% station science output',
+    description: '+{increase}% research station science output',
     branch: 'orbital',
     scienceCost: 500,
     prerequisites: [],
@@ -513,7 +513,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'o3',
     name: 'Lunar Gateway',
-    description: 'Unlocks Moon missions',
+    description: 'Opens the path to lunar mission planning',
     branch: 'orbital',
     scienceCost: 1000,
     prerequisites: [],
@@ -523,8 +523,8 @@ export const researchTree: ResearchNode[] = [
    {
      id: 'o5',
      name: 'Expanded Facilities',
-     description: 'Unlocks Spaceports',
-     branch: 'orbital',
+     description: 'Unlock additional spaceports on the surface',
+     branch: 'infrastructure',
      scienceCost: 200,
     prerequisites: [],
     effect: { type: 'unlockSpaceports', value: 1 },
@@ -533,8 +533,8 @@ export const researchTree: ResearchNode[] = [
    {
      id: 'o6',
      name: 'Fuel Production',
-     description: 'Unlocks Fuel Refineries',
-     branch: 'orbital',
+     description: 'Unlock surface fuel refineries',
+     branch: 'infrastructure',
      scienceCost: 100,
      prerequisites: [],
      effect: { type: 'unlockRefineries', value: 1 },
@@ -542,9 +542,9 @@ export const researchTree: ResearchNode[] = [
    },
    {
      id: 'o7',
-     name: 'Salvage Operations',
-     description: 'Unlocks explosion clearing',
-     branch: 'orbital',
+     name: 'Crash Recovery Program',
+     description: 'Salvage wrecks for science and start the research economy',
+     branch: 'control',
      scienceCost: 1,
      prerequisites: [],
      effect: { type: 'unlockExplosionClearing', value: 1 },
@@ -553,7 +553,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'o8',
     name: 'Satellite Constellation',
-    description: 'Unlocks Satellites',
+    description: 'Unlock orbital satellites for global support bonuses',
     branch: 'orbital',
     scienceCost: 500,
     prerequisites: [],
@@ -563,7 +563,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'o9',
     name: 'Orbital Defense Grid',
-    description: 'Debris immunity',
+    description: 'Orbital infrastructure ignores debris penalties',
     branch: 'orbital',
     scienceCost: 750,
     prerequisites: ['o8'],
@@ -573,7 +573,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'o10',
     name: 'Advanced Docking Clamps',
-    description: 'Docking bonus ×{multiplier}',
+    description: 'Docked rockets provide a much stronger station bonus',
     branch: 'orbital',
     scienceCost: 1000,
     prerequisites: [],
@@ -583,7 +583,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'o11',
     name: 'Orbital Shipyards',
-    description: '+{value} docking slots per station',
+    description: '+{value} docking slots on every orbital station',
     branch: 'orbital',
     scienceCost: 1500,
     prerequisites: ['o10'],
@@ -593,7 +593,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'o12',
     name: 'Expanded Satellite Network',
-    description: '+{value} max satellites',
+    description: '+{value} maximum satellites in orbit',
     branch: 'orbital',
     scienceCost: 800,
     prerequisites: ['o8'],
@@ -603,7 +603,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'o13',
     name: 'Enhanced Satellite Arrays',
-    description: '×{multiplier} satellite production bonus',
+    description: 'Satellites provide a stronger global production bonus',
     branch: 'orbital',
     scienceCost: 1200,
     prerequisites: ['o12'],
@@ -613,7 +613,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'o14',
     name: 'Lunar Prototype',
-    description: 'Unlocks lunar manufacturing',
+    description: 'Unlock the first permanent lunar industrial operations',
     branch: 'orbital',
     scienceCost: 2000,
     cargoCost: 1000,
@@ -625,7 +625,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'o15',
     name: 'Lunar Manufacturing Efficiency',
-    description: '×{multiplier} lunar component production',
+    description: 'Research stations produce lunar components faster',
     branch: 'orbital',
     scienceCost: 3000,
     prerequisites: ['o14'],
@@ -641,7 +641,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'u3',
     name: 'Batch Assembly',
-    description: 'Build action queues +{value} rocket',
+    description: 'Each manual build queues +{value} extra rocket',
     branch: 'control',
     scienceCost: 250,
     prerequisites: [],
@@ -651,7 +651,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'u4',
     name: 'Rapid Salvage',
-    description: 'Clear action clears +{value} explosion',
+    description: 'Each manual salvage clears +{value} extra wreck',
     branch: 'control',
     scienceCost: 200,
     prerequisites: [],
@@ -661,7 +661,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'u6',
     name: 'Telemetry Dashboard',
-    description: 'Enhanced UI stats',
+    description: 'Show advanced production, fleet, orbital, and lunar metrics',
     branch: 'control',
     scienceCost: 80,
     prerequisites: [],
@@ -671,7 +671,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'u7',
     name: 'Auto-Queue',
-    description: 'Unlocks auto-build (20s interval)',
+    description: 'Unlock automatic rocket building',
     branch: 'control',
     scienceCost: 4000,
     prerequisites: [],
@@ -681,7 +681,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'u8',
     name: 'Auto-Salvage',
-    description: 'Unlocks auto-salvage (20s interval)',
+    description: 'Unlock automatic wreck salvage',
     branch: 'control',
     scienceCost: 3000,
     prerequisites: ['o7'], // Requires Salvage Operations to be unlocked first
@@ -691,7 +691,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'u9',
     name: 'High-Frequency Logistics',
-    description: '×{multiplier} contract refresh rate',
+    description: 'Refresh contract offers more frequently',
     branch: 'control',
     scienceCost: 500,
     prerequisites: [],
@@ -703,7 +703,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'm1',
     name: 'Advanced Heat Shields',
-    description: '-{reduction}% mission transit time',
+    description: 'Reduce Moon mission travel time',
     branch: 'lunar',
     scienceCost: 3000,
     prerequisites: ['o14'],
@@ -713,7 +713,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'm2',
     name: 'Regolith Sifting',
-    description: '+{increase}% extractor output',
+    description: 'Increase regolith extractor output',
     branch: 'lunar',
     scienceCost: 4000,
     prerequisites: ['o14'],
@@ -723,7 +723,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'm3',
     name: 'Helium-3 Fusion Catalysts',
-    description: '+{increase}% Moon Refinery output',
+    description: 'Increase lunar refinery helium-3 output',
     branch: 'lunar',
     scienceCost: 6000,
     prerequisites: ['m2'],
@@ -733,7 +733,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'm4',
     name: 'Reinforced Silos',
-    description: '×{multiplier} storage capacity',
+    description: 'Increase lunar storage capacity',
     branch: 'lunar',
     scienceCost: 5000,
     prerequisites: ['o14'],
@@ -743,7 +743,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'm5',
     name: 'Lead Shielding',
-    description: '-{reduction}% hazard duration',
+    description: 'Reduce the duration of lunar hazards',
     branch: 'lunar',
     scienceCost: 7000,
     prerequisites: ['o14'],
@@ -753,7 +753,7 @@ export const researchTree: ResearchNode[] = [
   {
     id: 'm6',
     name: 'Electromagnetic Mass Drivers',
-    description: '×{multiplier} Mass Driver efficiency',
+    description: 'Increase Mass Driver export efficiency',
     branch: 'lunar',
     scienceCost: 8000,
     prerequisites: ['m2', 'm3'],
@@ -763,7 +763,7 @@ export const researchTree: ResearchNode[] = [
    {
      id: 'm7',
      name: 'Planetary Trajectory',
-      description: 'Unlocks planetary expansion',
+      description: 'Expand the lunar frontier with additional sectors and prepare the next off-world stage',
      branch: 'lunar',
      scienceCost: 15000,
      cargoCost: 5000,
@@ -777,7 +777,7 @@ export const researchTree: ResearchNode[] = [
    {
      id: 'm11',
      name: 'Efficient Terraforming',
-      description: '-{reduction}% sector scan cost',
+      description: 'Reduce Moon sector scan costs',
      branch: 'lunar',
      scienceCost: 2500,
      prerequisites: ['o14'],
@@ -787,7 +787,7 @@ export const researchTree: ResearchNode[] = [
    {
      id: 'm12',
      name: 'Expanded Habitats',
-      description: '+{value} building slots per sector',
+      description: 'Add more building slots to each lunar sector',
      branch: 'lunar',
      scienceCost: 4500,
      prerequisites: ['m11'],
@@ -799,7 +799,7 @@ export const researchTree: ResearchNode[] = [
     {
       id: 'm14',
      name: 'Expanded Payload Bays',
-      description: '×{multiplier} Mass Driver capacity',
+      description: 'Increase Mass Driver payload capacity',
      branch: 'lunar',
      scienceCost: 4000,
      prerequisites: ['m6'],
@@ -809,7 +809,7 @@ export const researchTree: ResearchNode[] = [
      {
        id: 'm16',
       name: 'Alloy Furnaces',
-       description: '+{increase}% fabricator output',
+       description: 'Increase alloy fabricator output',
       branch: 'lunar',
       scienceCost: 5000,
       prerequisites: ['o14'],
@@ -819,7 +819,7 @@ export const researchTree: ResearchNode[] = [
     {
       id: 'm17',
       name: 'Efficient Smelting',
-       description: '-{reduction}% fabricator regolith cost',
+       description: 'Reduce regolith consumed by fabricators',
       branch: 'lunar',
       scienceCost: 4000,
       prerequisites: ['m16'],
@@ -829,7 +829,7 @@ export const researchTree: ResearchNode[] = [
     {
       id: 'm18',
       name: 'Expanded Storage Vaults',
-       description: '+{increase}% alloy storage capacity',
+       description: 'Increase alloy storage capacity on the Moon',
       branch: 'lunar',
       scienceCost: 3500,
       prerequisites: ['o14'],

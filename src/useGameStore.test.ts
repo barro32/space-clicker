@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useGameStore, GameState } from './useGameStore.js';
-import { DEFAULT_COMPANIES } from './gameConstants.js';
+import { DEFAULT_COMPANIES, ORBITAL, PRODUCTION } from './gameConstants.js';
 
 describe('useGameStore - Orbital Space Stations', () => {
   beforeEach(() => {
@@ -171,7 +171,7 @@ describe('Auto-build (Auto-Queue)', () => {
 
   describe('tick loop with space stations', () => {
     it('should generate extra science from research stations', () => {
-      // Mock Math.random to prevent debris spawn (needs > 0.05 to not spawn)
+      // Mock Math.random to prevent debris spawn
       const mockRandom = vi.spyOn(Math, 'random').mockReturnValue(0.5);
       
       useGameStore.setState({
@@ -190,8 +190,7 @@ describe('Auto-build (Auto-Queue)', () => {
       useGameStore.getState().tick();
 
       const state = useGameStore.getState();
-      // Assuming +10 science per tick for research station
-      expect(state.science).toBe(10);
+      expect(state.science).toBeCloseTo(PRODUCTION.STATION_SCIENCE_BONUS * ORBITAL.RESEARCH_IDLE_MULTIPLIER);
       
       mockRandom.mockRestore();
     });
@@ -214,6 +213,40 @@ describe('Auto-build (Auto-Queue)', () => {
        const state = useGameStore.getState();
        // Logistics stations generate money (via moneyProduction in tick), not cargo resources
        expect(state.money).toBeGreaterThan(0);
+    });
+
+    it('should reduce orbital output under heavy congestion', () => {
+      const mockRandom = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+
+      useGameStore.setState({
+        money: 0,
+        science: 0,
+        cargo: 0,
+        satellites: 0,
+        rockets: [],
+        spaceports: [],
+        spaceDebris: [],
+        spaceStations: [
+          { id: 'research-1', type: 'research', level: 1, maxDocks: 1, dockedRockets: [101] },
+          { id: 'logistics-1', type: 'logistics', level: 1, maxDocks: 1, dockedRockets: [102] },
+        ],
+        dockedRockets: [
+          { rocketId: 101, stationId: 'research-1', ticksRemaining: 10 },
+          { rocketId: 102, stationId: 'logistics-1', ticksRemaining: 10 },
+        ],
+        transitRockets: [
+          { id: 201, type: 'cargo', targetStationId: 'research-1', ticksRemaining: 2 },
+          { id: 202, type: 'cargo', targetStationId: 'logistics-1', ticksRemaining: 2 },
+        ],
+      } as unknown as GameState);
+
+      useGameStore.getState().tick();
+
+      const state = useGameStore.getState();
+      expect(state.science).toBeLessThan(PRODUCTION.STATION_SCIENCE_BONUS * ORBITAL.DOCKING_BONUS_MULTIPLIER);
+      expect(state.money).toBeLessThan(PRODUCTION.STATION_LOGISTICS_BONUS * ORBITAL.DOCKING_BONUS_MULTIPLIER);
+
+      mockRandom.mockRestore();
     });
 
     it('should generate cargo from active rockets', () => {
@@ -239,6 +272,38 @@ describe('Auto-build (Auto-Queue)', () => {
      const state = useGameStore.getState();
      // 1 cargo rocket * 0.1 cargo/tick = 0.1
      expect(state.cargo).toBeCloseTo(0.1);
+    });
+
+    it('applies refinery output research to fuel production', () => {
+      useGameStore.setState({
+        fuel: 0,
+        bonusFuelCapacity: 0,
+        fuelRefineries: 2,
+        rockets: [],
+        spaceports: [],
+        researchedNodes: ['i2-1'],
+        companies: DEFAULT_COMPANIES.map(c => ({ ...c })),
+      } as unknown as GameState);
+
+      useGameStore.getState().tick();
+
+      const state = useGameStore.getState();
+      expect(state.fuel).toBeCloseTo(
+        PRODUCTION.PASSIVE_FUEL_PER_TICK + (2 * PRODUCTION.FUEL_REFINERY_PRODUCTION_PER_TICK * 1.15),
+      );
+    });
+
+    it('applies enhanced refinery capacity research to max fuel', () => {
+      useGameStore.setState({
+        fuelRefineries: 3,
+        researchedNodes: ['f2-1', 'f2-2'],
+        companies: DEFAULT_COMPANIES.map(c => ({ ...c })),
+      } as unknown as GameState);
+
+      const maxFuel = useGameStore.getState().getMaxFuel();
+      expect(maxFuel).toBe(
+        500 + (3 * (PRODUCTION.FUEL_REFINERY_CAPACITY_BONUS + 15)),
+      );
     });
   });
 
@@ -448,6 +513,7 @@ describe('Auto-build (Auto-Queue)', () => {
     it('should apply fuel cost multiplier correctly', () => {
       useGameStore.setState({
          fuel: 100,
+         fuelRefineries: 0,
          fuelCostPerRocket: 10,
          researchedNodes: ['p1-1'], // 0.97 multiplier
          rockets: [{ id: 1 }],
@@ -501,6 +567,7 @@ describe('Auto-build (Auto-Queue)', () => {
     it('should consume fuel during tick if rockets launch', () => {
       useGameStore.setState({
          fuel: 10,
+         fuelRefineries: 0,
          rockets: [{ id: 1, type: 'cargo' as const }, { id: 2, type: 'cargo' as const }],
          explodedRocketIds: [],
          fuelCostPerRocket: 1,
@@ -527,6 +594,7 @@ describe('Auto-build (Auto-Queue)', () => {
      it('should NOT generate rewards if fuel is insufficient', () => {
        useGameStore.setState({
          fuel: 0,
+         fuelRefineries: 0,
          rockets: [{ id: 1, type: 'cargo' as const }],
          explodedRocketIds: [],
          fuelCostPerRocket: 2, // Cost > passive fuel (1), so shouldn't launch
@@ -534,6 +602,7 @@ describe('Auto-build (Auto-Queue)', () => {
          money: 0,
          cargo: 0,
          science: 0,
+         companies: [],
        } as unknown as GameState);
 
        useGameStore.getState().tick();
@@ -566,6 +635,16 @@ describe('Auto-build (Auto-Queue)', () => {
       const state = useGameStore.getState();
       expect(beforeTickRocket?.freeLaunches).toBe(1);
       expect(state.rockets[0]?.freeLaunches).toBe(0);
+    });
+
+    it('unlocks Moon mission staging when Lunar Gateway is researched', () => {
+      useGameStore.setState({
+        researchedNodes: ['o3'],
+      } as unknown as GameState);
+
+      const state = useGameStore.getState();
+      expect(state.getEffectMultiplier('unlockMoonMissions')).toBe(1);
+      expect(state.getEffectMultiplier('unlockLunarManufacturing')).toBe(0);
     });
   });
 

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { researchTree, ResearchNode, EffectType } from './researchTree.js'
 import { INITIAL_STATE, COST_SCALING, PRODUCTION, DEFAULT_COMPANIES, COMPANY_DEFINITIONS, CompanyPerkEffect, ORBITAL, MOON, GameSettings, DEFAULT_SETTINGS, AUTOMATION, CONTRACT, LAYER_UNLOCK, GAME } from './gameConstants.js'
+import { calculateOrbitPressure } from './orbitalHelpers.js'
 
 interface Spaceport {
   id: number;
@@ -332,14 +333,16 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
     
        const passiveFuelProduction = PRODUCTION.PASSIVE_FUEL_PER_TICK;
-       const refineryFuelProduction = state.fuelRefineries * PRODUCTION.FUEL_REFINERY_PRODUCTION_PER_TICK;
+       const refineryOutputMultiplier = state.getTotalEffectValue('refineryOutputMultiplier') || 1;
+       const refineryFuelProduction = state.fuelRefineries * PRODUCTION.FUEL_REFINERY_PRODUCTION_PER_TICK * refineryOutputMultiplier;
        const fuelProduction = passiveFuelProduction + refineryFuelProduction;
       // Apply fuel capacity bonus from research, company perks, dev bonus, and refineries
       const maxFuel = state.getMaxFuel();
       let fuelAvailable = Math.min(maxFuel, state.fuel + fuelProduction);
-     let successfulCargoLaunches = 0;
-     let explosionCount = 0;
-     let explosionScienceFromCost = 0; // Track science from Black Box perk
+    let successfulCargoLaunches = 0;
+    let explosionCount = 0;
+    let blockedOrbitTransfers = 0;
+    let explosionScienceFromCost = 0; // Track science from Black Box perk
      let newExplodedRocketIds = [...state.explodedRocketIds];
     let newActiveContracts = state.activeContracts.map(c => ({ ...c }));
     let newCompanies = [...state.companies];
@@ -399,6 +402,8 @@ export const useGameStore = create<GameState>((set, get) => ({
                targetStationId: targetStation.id,
                ticksRemaining: transitDuration,
              });
+           } else if (state.spaceStations.length > 0) {
+             blockedOrbitTransfers += 1;
            }
          } else {
            newExplodedRocketIds.push(rocket.id);
@@ -478,7 +483,21 @@ export const useGameStore = create<GameState>((set, get) => ({
     // Spawn debris randomly
     let newDebris = [...state.spaceDebris];
     const hasDebrisImmunity = state.getEffectMultiplier('debrisImmunity') > 0;
-    if (!hasDebrisImmunity && Math.random() < ORBITAL.DEBRIS_SPAWN_CHANCE && state.spaceStations.length > 0) {
+    const orbitPressure = calculateOrbitPressure({
+      spaceStations: newSpaceStations,
+      dockedRockets: newDockedRockets,
+      transitRockets: stillInTransit,
+      satellites: state.satellites,
+      spaceDebris: newDebris,
+    });
+
+    const debrisSpawnChance =
+      ORBITAL.DEBRIS_SPAWN_CHANCE +
+      orbitPressure.congestion * 0.35 +
+      blockedOrbitTransfers * ORBITAL.DEBRIS_FROM_BLOCKED_TRANSFER_CHANCE +
+      explosionCount * ORBITAL.DEBRIS_FROM_EXPLOSION_CHANCE;
+
+    if (!hasDebrisImmunity && Math.random() < debrisSpawnChance && state.spaceStations.length > 0) {
       newDebris.push({
         id: `debris-${Date.now()}-${Math.random()}`,
         angle: Math.random() * 360,
@@ -491,6 +510,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     
     // Calculate debris penalty
     const debrisPenalty = hasDebrisImmunity ? 1 : Math.max(1 - ORBITAL.MAX_DEBRIS_PENALTY, 1 - (newDebris.length * ORBITAL.DEBRIS_PENALTY_PER_PIECE));
+    const congestionMultiplier = 1 - orbitPressure.congestion;
 
       // Calculate production with company perk bonuses
        const profitMultiplier = state.getTotalEffectValue('profitMultiplier');
@@ -562,16 +582,17 @@ export const useGameStore = create<GameState>((set, get) => ({
         const stationDockingBonus = dockedCount > 0 ? 1 + (dockedCount * (dockingBonusMultiplier - 1)) : 1;
         
         if (station.type === 'research') {
+          const researchIdleMultiplier = dockedCount > 0 ? 1 : ORBITAL.RESEARCH_IDLE_MULTIPLIER;
           const baseOutput = PRODUCTION.STATION_SCIENCE_BONUS * station.level * state.getEffectMultiplier('stationScienceMultiplier') * stationBonusMultiplier;
-          sciProd += baseOutput * stationDockingBonus * debrisPenalty;
+          sciProd += baseOutput * researchIdleMultiplier * stationDockingBonus * debrisPenalty * congestionMultiplier;
           
           // Lunar component production: each docked rocket at research station produces components
           if (dockedCount > 0) {
-            lunarProd += dockedCount * ORBITAL.LUNAR_COMPONENT_PRODUCTION_RATE * station.level * lunarProductionMultiplier;
+            lunarProd += dockedCount * ORBITAL.LUNAR_COMPONENT_PRODUCTION_RATE * station.level * lunarProductionMultiplier * congestionMultiplier;
           }
          } else if (station.type === 'logistics') {
            const baseOutput = PRODUCTION.STATION_LOGISTICS_BONUS * station.level * state.getEffectMultiplier('stationLogisticsMultiplier') * stationBonusMultiplier;
-           moneyProduction += baseOutput * stationDockingBonus * debrisPenalty;
+           moneyProduction += baseOutput * stationDockingBonus * debrisPenalty * congestionMultiplier;
          }
       });
     }
@@ -822,8 +843,8 @@ export const useGameStore = create<GameState>((set, get) => ({
      let newMoonLog = [...state.moonLog];
      let newMoonPowerSystem = { ...state.moonPowerSystem };
      
-    // Check if o14 (Lunar Manufacturing) is researched to show "ready" status
-    if (state.moonStatus === 'locked' && state.researchedNodes.includes('o14')) {
+    // Check if lunar manufacturing is unlocked to show "ready" status
+    if (state.moonStatus === 'locked' && state.getEffectMultiplier('unlockLunarManufacturing') > 0) {
       newMoonStatus = 'ready';
     }
     
@@ -1139,7 +1160,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
        if (affordableCount > 0) {
          const newRockets = [...state.rockets];
-         const hasFreeLaunch = state.researchedNodes.indexOf('p5') !== -1;
+         const hasFreeLaunch = state.getEffectMultiplier('unlockFreeLaunch') > 0;
          for (let i = 0; i < affordableCount; i++) {
            const newRocket = { 
              id: state.nextRocketId + i, 
@@ -1164,7 +1185,7 @@ export const useGameStore = create<GameState>((set, get) => ({
      
    buildSpaceport: () =>
      set(state => {
-      if (state.researchedNodes.indexOf('o5') === -1) {
+      if (state.getEffectMultiplier('unlockSpaceports') === 0) {
         return {};
       }
       const spaceportCostMultiplier = state.getCompanyPerkValue('spaceportCostMultiplier') || 1;
@@ -1179,7 +1200,7 @@ export const useGameStore = create<GameState>((set, get) => ({
    buildFuelRefinery: () =>
      set(state => {
        // Check if Fuel Production research is unlocked
-       if (state.researchedNodes.indexOf('o6') === -1) {
+       if (state.getEffectMultiplier('unlockRefineries') === 0) {
          get().addNotification('Unlock Fuel Production research first');
          return {};
        }
@@ -1219,7 +1240,7 @@ export const useGameStore = create<GameState>((set, get) => ({
    
     clearExplosion: (rocketId: number) =>
     set(state => {
-      if (state.researchedNodes.indexOf('o7') === -1) {
+      if (state.getEffectMultiplier('unlockExplosionClearing') === 0) {
         return {};
       }
       
@@ -1432,7 +1453,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       getMaxFuel: () => {
         const state = get();
         const totalFuelCapacityBonus = state.getTotalEffectValue('fuelCapacityBonus');
-        const refineryCapacityBonus = state.fuelRefineries * PRODUCTION.FUEL_REFINERY_CAPACITY_BONUS;
+        const refineryCapacityBonus = state.fuelRefineries * (
+          PRODUCTION.FUEL_REFINERY_CAPACITY_BONUS + state.getEffectMultiplier('refineryCapacityBonus')
+        );
         return INITIAL_STATE.FUEL + totalFuelCapacityBonus + state.bonusFuelCapacity + refineryCapacityBonus;
       },
   
@@ -1853,8 +1876,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   
   // Moon layer actions
   startMoonMission: () => set(state => {
-    // Check if Lunar Manufacturing is unlocked (o14)
-    if (!state.researchedNodes.includes('o14')) {
+    // Check if lunar manufacturing is unlocked
+    if (state.getEffectMultiplier('unlockLunarManufacturing') === 0) {
       return {};
     }
     
@@ -2011,6 +2034,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     scanSector: () => set(state => {
       if (state.moonStatus !== 'unlocked') return {};
+      const maxSectors = MOON.MAX_SECTORS + (state.getEffectMultiplier('unlockPlanetaryExpansion') > 0 ? MOON.PLANETARY_EXPANSION_SECTOR_BONUS : 0);
       
       // Calculate scan cost with research reduction
       const costReduction = state.getEffectMultiplier('sectorScanCostReduction') || 1;
@@ -2018,7 +2042,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const costCargo = Math.round(MOON.SECTOR_SCAN_COST.cargo * costReduction);
       
       if (state.science < costScience || state.cargo < costCargo) return {};
-      if (state.moonSectors.length >= MOON.MAX_SECTORS) return {};
+      if (state.moonSectors.length >= maxSectors) return {};
       
       // Generate random sector with traits
       const traitTypes = ['regolithRich', 'regolithPoor', 'solarRich', 'solarPoor', 'stable', 'unstable'];
