@@ -11,6 +11,8 @@ import { ResearchTreeView } from "./ResearchTreeView.js"
 import { MoonView } from "./MoonView.js"
 import { ResearchSidebar } from "./components/ResearchSidebar.js"
 import { SettingsPanel } from "./components/SettingsPanel.js"
+import { GlobalFlightOverlay } from "./components/GlobalFlightOverlay.js"
+import { WorldRenderer } from "./world/WorldRenderer.js"
 import { INITIAL_STATE, TIME, DEFAULT_COMPANIES, DEFAULT_SETTINGS, PRODUCTION } from './gameConstants.js'
 import { researchTree, ResearchNode, EffectType } from './researchTree.js'
 import { isElectron, loadGameStateSync, loadGameStateAsync, saveGameState } from './persistence.js'
@@ -432,6 +434,10 @@ function LockedLayerView({ layer, cargo, totalSuccessfulLaunches, onUnlock }: Lo
 
 export function App() {
   const verticalScrollRef = useRef<HTMLDivElement>(null);
+  const worldRef = useRef<HTMLDivElement>(null);
+  const moonSectionRef = useRef<HTMLElement>(null);
+  const orbitSectionRef = useRef<HTMLElement>(null);
+  const surfaceSectionRef = useRef<HTMLElement>(null);
 
   const [
     money,
@@ -442,12 +448,18 @@ export function App() {
     maxFuel,
     researchedNodes,
     rockets,
+    recentlyLaunchedRocketIds,
     explodedRocketIds,
     spaceports,
+    fuelRefineries,
+    effectiveSurfaceCapacity,
     spaceStations,
-    activeContracts,
+    transitRockets,
+    dockedRockets,
     satellites,
     spaceDebris,
+    clearDebris,
+    activeContracts,
     totalSuccessfulLaunches,
     orbitLayerUnlocked,
     contractsLayerUnlocked,
@@ -461,12 +473,18 @@ export function App() {
     state.getMaxFuel(),
     state.researchedNodes,
     state.rockets,
+    state.recentlyLaunchedRocketIds,
     state.explodedRocketIds,
     state.spaceports,
+    state.fuelRefineries,
+    Math.max(1, state.spaceportCapacity + state.getEffectMultiplier('spaceportCapacityBonus')),
     state.spaceStations,
-    state.activeContracts,
+    state.transitRockets,
+    state.dockedRockets,
     state.satellites,
     state.spaceDebris,
+    state.clearDebris,
+    state.activeContracts,
     state.totalSuccessfulLaunches,
     state.orbitLayerUnlocked,
     state.contractsLayerUnlocked,
@@ -476,6 +494,8 @@ export function App() {
    // Current layer state
    const [currentLayer, setCurrentLayer] = useState<Layer>('surface');
    const [settingsOpen, setSettingsOpen] = useState(false);
+   const [selectedOrbitStationId, setSelectedOrbitStationId] = useState<string | null>(null);
+   const [selectedSpaceportId, setSelectedSpaceportId] = useState<number | null>(null);
   
   const metrics = useMemo(() => {
     const state = useGameStore.getState();
@@ -1043,49 +1063,61 @@ export function App() {
         onScroll={handleVerticalScroll}
         style={{ scrollSnapType: 'y mandatory' }}
       >
+        <div ref={worldRef} className="relative w-full">
+          <WorldRenderer
+            clearDebris={clearDebris}
+            effectiveSurfaceCapacity={effectiveSurfaceCapacity}
+            dockedRockets={dockedRockets}
+            fuelRefineries={fuelRefineries}
+            onSelectStation={setSelectedOrbitStationId}
+            onSelectSpaceport={setSelectedSpaceportId}
+            rockets={rockets}
+            explodedRocketIds={explodedRocketIds}
+            recentlyLaunchedRocketIds={recentlyLaunchedRocketIds}
+            satellites={satellites}
+            selectedSpaceportId={selectedSpaceportId}
+            selectedStationId={selectedOrbitStationId}
+            spaceports={spaceports}
+            spaceDebris={spaceDebris}
+            spaceStations={spaceStations}
+            transitRockets={transitRockets}
+            worldRef={worldRef}
+            moonRef={moonSectionRef}
+            orbitRef={orbitSectionRef}
+            surfaceRef={surfaceSectionRef}
+          />
+          <GlobalFlightOverlay
+            explodedRocketIds={explodedRocketIds}
+            recentlyLaunchedRocketIds={recentlyLaunchedRocketIds}
+            rockets={rockets}
+            worldRef={worldRef}
+            moonRef={moonSectionRef}
+            orbitRef={orbitSectionRef}
+            surfaceRef={surfaceSectionRef}
+          />
         {/* MOON LAYER (index 0) - top of scroll, visually highest */}
-        <section 
-          className="w-full min-h-screen layer-moon relative flex items-center justify-center pt-16 pb-8"
-          style={{ scrollSnapAlign: 'start', background: 'linear-gradient(to bottom, #0a0a0a, #111111)' }}
+        <section
+          ref={moonSectionRef}
+          className="relative flex min-h-screen w-full items-center justify-center bg-[linear-gradient(180deg,#06080d_0%,#0b0f16_100%)] pt-16 pb-8"
+          style={{ scrollSnapAlign: 'start' }}
         >
-          {/* Moon surface decorations */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            {/* Crater patterns */}
-            <div className="absolute top-20 left-20 w-48 h-48 rounded-full border border-gray-800/50" />
-            <div className="absolute top-60 right-32 w-32 h-32 rounded-full border border-gray-700/30" />
-            <div className="absolute bottom-32 left-1/4 w-24 h-24 rounded-full bg-gray-800/20" />
-            <div className="absolute top-1/3 right-1/4 w-16 h-16 rounded-full bg-gray-700/10" />
-            
-            {/* Scanline overlay effect */}
-            <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,255,0,0.03)_2px,rgba(0,255,0,0.03)_4px)]" />
-          </div>
-          
-          <div className="relative z-10 w-full max-w-6xl px-8 h-full">
+          <div className="relative z-20 w-full max-w-6xl px-8 h-full">
             <MoonView />
-          </div>
-          
-          {/* Scroll hint - Moon is at top, can only go down to Orbit */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-gray-500 font-mono text-xs animate-bounce">
-            <FaChevronDown className="mx-auto mb-1" />
-            Scroll down to Orbit
           </div>
         </section>
 
         {/* ORBIT LAYER (index 1) */}
-        <section 
-          className="w-full min-h-screen layer-orbit stars relative flex items-center justify-center pt-16 pb-8"
+        <section
+          ref={orbitSectionRef}
+          className="layer-orbit relative flex min-h-screen w-full items-center justify-center pt-16 pb-8"
           style={{ scrollSnapAlign: 'start' }}
         >
-          {/* Orbit decorations */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-20 left-20 w-32 h-32 rounded-full border border-blue-500/20" />
-            <div className="absolute top-40 right-40 w-48 h-48 rounded-full border border-cyan-500/10" />
-            <div className="absolute bottom-20 left-1/3 w-24 h-24 rounded-full bg-blue-500/5" />
-          </div>
-          
-          <div className="relative z-10 w-full max-w-6xl px-8">
+          <div className="relative z-20 w-full max-w-6xl px-8">
             {orbitLayerUnlocked ? (
-              <OrbitView />
+              <OrbitView
+                selectedStationId={selectedOrbitStationId}
+                onSelectStation={setSelectedOrbitStationId}
+              />
             ) : (
               <LockedLayerView 
                 layer="orbit" 
@@ -1095,31 +1127,14 @@ export function App() {
               />
             )}
           </div>
-          
-          {/* Scroll hints */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-gray-500 font-mono text-xs animate-bounce">
-            <FaChevronDown className="mx-auto mb-1" />
-            Scroll down to Contracts
-          </div>
-          <div className="absolute top-20 left-1/2 -translate-x-1/2 text-gray-500 font-mono text-xs animate-bounce">
-            <FaChevronUp className="mx-auto mb-1" />
-            Scroll up to Moon
-          </div>
         </section>
 
         {/* CONTRACTS LAYER (index 2) */}
         <section 
-          className="w-full min-h-screen layer-contracts relative flex items-center justify-center pt-16 pb-8"
-          style={{ scrollSnapAlign: 'start', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%)' }}
+          className="layer-contracts relative flex min-h-screen w-full items-center justify-center pt-16 pb-8"
+          style={{ scrollSnapAlign: 'start' }}
         >
-          {/* Contracts decorations */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-20 left-20 w-24 h-24 rounded-lg border border-purple-500/20 rotate-12" />
-            <div className="absolute top-40 right-40 w-32 h-32 rounded-lg border border-purple-500/10 -rotate-6" />
-            <div className="absolute bottom-32 left-1/3 w-20 h-20 rounded bg-purple-500/5" />
-          </div>
-          
-          <div className="relative z-10 w-full max-w-6xl px-8">
+          <div className="relative z-20 w-full max-w-6xl px-8">
             {contractsLayerUnlocked ? (
               <ContractsView />
             ) : (
@@ -1131,77 +1146,32 @@ export function App() {
               />
             )}
           </div>
-          
-          {/* Scroll hints */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-gray-500 font-mono text-xs animate-bounce">
-            <FaChevronDown className="mx-auto mb-1" />
-            Scroll down to Surface
-          </div>
-          <div className="absolute top-20 left-1/2 -translate-x-1/2 text-gray-500 font-mono text-xs animate-bounce">
-            <FaChevronUp className="mx-auto mb-1" />
-            Scroll up to Orbit
-          </div>
         </section>
 
         {/* SURFACE LAYER (index 3) */}
-        <section 
-          className="w-full min-h-screen layer-surface relative flex items-center justify-center pt-16 pb-8"
+        <section
+          ref={surfaceSectionRef}
+          className="layer-surface relative flex min-h-screen w-full items-center justify-center pt-16 pb-8"
           style={{ scrollSnapAlign: 'start' }}
         >
-          <div className="relative z-10 w-full max-w-6xl px-8">
-            <SpaceportView />
-          </div>
-          
-          {/* Surface decorations */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-900 to-transparent" />
-          </div>
-          
-          {/* Scroll hints */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-gray-500 font-mono text-xs animate-bounce">
-            <FaChevronDown className="mx-auto mb-1" />
-            Scroll down to Research
-          </div>
-          <div className="absolute top-20 left-1/2 -translate-x-1/2 text-gray-500 font-mono text-xs animate-bounce">
-            <FaChevronUp className="mx-auto mb-1" />
-            Scroll up to Contracts
+          <div className="relative z-20 w-full max-w-6xl px-8">
+            <SpaceportView
+              selectedSpaceportId={selectedSpaceportId}
+              onSelectSpaceport={setSelectedSpaceportId}
+            />
           </div>
         </section>
 
         {/* RESEARCH LAYER (index 4) - bottom of scroll, visually lowest (underground) */}
         <section 
-          className="w-full min-h-screen layer-research underground-glow relative pt-16 pb-8"
+          className="layer-research relative min-h-screen w-full pt-16 pb-8"
           style={{ scrollSnapAlign: 'start' }}
         >
-          {/* Underground lab decorations */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            {/* Pipes and cables */}
-            <div className="absolute top-0 left-10 w-2 h-full bg-gradient-to-b from-purple-900/50 to-transparent" />
-            <div className="absolute top-0 right-20 w-1 h-full bg-gradient-to-b from-pink-900/30 to-transparent" />
-            <div className="absolute top-0 left-1/4 w-1 h-2/3 bg-gradient-to-b from-purple-800/40 to-transparent" />
-            
-            {/* Glowing elements */}
-            <div className="absolute top-20 left-40 w-4 h-4 rounded-full bg-purple-500/50 animate-pulse" />
-            <div className="absolute top-40 right-60 w-3 h-3 rounded-full bg-pink-500/40 animate-pulse" style={{ animationDelay: '0.5s' }} />
-            <div className="absolute bottom-40 left-60 w-5 h-5 rounded-full bg-purple-400/30 animate-pulse" style={{ animationDelay: '1s' }} />
-            
-            {/* Top gradient (coming from surface) */}
-            <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-gray-900 to-transparent" />
-            
-            {/* Bottom dark */}
-            <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black to-transparent" />
-          </div>
-          
-          <div className="relative z-10 w-full max-w-7xl mx-auto px-4">
+          <div className="relative z-20 w-full max-w-7xl mx-auto px-4">
             <ResearchTreeView />
           </div>
-          
-          {/* Scroll hint - Research is at bottom, can only go up to Surface */}
-          <div className="absolute top-20 left-1/2 -translate-x-1/2 text-gray-500 font-mono text-xs animate-bounce">
-            <FaChevronUp className="mx-auto mb-1" />
-            Scroll up to Surface
-          </div>
         </section>
+        </div>
       </div>
 
       {/* Research Sidebar - Only show for layers that have research (orbit, contracts, moon) */}

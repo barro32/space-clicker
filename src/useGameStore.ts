@@ -107,6 +107,7 @@ export interface Rocket {
   targetStationId?: string;
   stationId?: string;
   ticksRemaining?: number;
+  totalTicks?: number;
   homeSpaceportId?: number;
   cargoAmount?: number;
   moonRole?: RocketMoonRole;
@@ -514,6 +515,7 @@ export const useGameStore = create<GameState>((set, get) => ({
                targetStationId: targetStation.id,
                stationId: undefined,
                ticksRemaining: transitDuration,
+               totalTicks: transitDuration,
              };
              plannedTransitRockets.push({
                id: rocket.id,
@@ -576,6 +578,7 @@ export const useGameStore = create<GameState>((set, get) => ({
             stationId: rocket.targetStationId,
             targetStationId: undefined,
             ticksRemaining: effectiveDockingDuration,
+            totalTicks: undefined,
           };
         } else {
           updatedRockets[index] = {
@@ -593,6 +596,7 @@ export const useGameStore = create<GameState>((set, get) => ({
             locationLayer: 'surface',
             stationId: undefined,
             ticksRemaining: undefined,
+            totalTicks: undefined,
           };
         } else {
           updatedRockets[index] = {
@@ -1023,6 +1027,7 @@ export const useGameStore = create<GameState>((set, get) => ({
             locationLayer: 'moon',
             transitRoute: undefined,
             ticksRemaining: undefined,
+            totalTicks: undefined,
             cargoAmount: undefined,
             moonRole: 'colony',
           };
@@ -1042,6 +1047,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           locationLayer: 'moon',
           transitRoute: undefined,
           ticksRemaining: MOON.SUPPLY_TURNAROUND_TICKS,
+          totalTicks: MOON.SUPPLY_TURNAROUND_TICKS,
           moonRole: 'supply',
         };
       }
@@ -1064,6 +1070,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           locationLayer: 'transit',
           transitRoute: 'moon_to_surface',
           ticksRemaining: MOON.SUPPLY_MISSION_DURATION,
+          totalTicks: MOON.SUPPLY_MISSION_DURATION,
           moonRole: 'returning',
         };
       }
@@ -1082,6 +1089,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           locationLayer: 'surface',
           transitRoute: undefined,
           ticksRemaining: undefined,
+          totalTicks: undefined,
           cargoAmount: undefined,
           moonRole: undefined,
         };
@@ -2160,6 +2168,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       locationLayer: 'transit',
       transitRoute: 'surface_to_moon',
       ticksRemaining: duration,
+      totalTicks: duration,
       moonRole: 'colony',
       cargoAmount: MOON.INITIAL_MOON_CARGO,
     };
@@ -2450,6 +2459,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         locationLayer: 'transit',
         transitRoute: 'surface_to_moon',
         ticksRemaining: duration,
+        totalTicks: duration,
         cargoAmount: requestedCargo,
         moonRole: 'supply',
       };

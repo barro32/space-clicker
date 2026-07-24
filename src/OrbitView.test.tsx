@@ -58,9 +58,8 @@ describe('OrbitView Component', () => {
 
     render(<OrbitView />);
     
-    // The level badges now show "L1" and "L2" format
-    expect(screen.getByText(/L1/i)).toBeDefined();
-    expect(screen.getByText(/L2/i)).toBeDefined();
+    expect(screen.getByText(/Upgrade L1 to L2/i)).toBeDefined();
+    expect(screen.getByText(/Upgrade L2 to L3/i)).toBeDefined();
   });
 
   it('calls buildSpaceStation when buttons are clicked', () => {
